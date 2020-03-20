@@ -7,4 +7,6 @@ DeepLabCut Toolbox (deeplabcut.org)
 Licensed under GNU Lesser General Public License v3.0
 """
 
-import os
+from dlclive.version import __version__, VERSION
+from dlclive.dlclive import DLCLive
+from dlclive.processor import Processor

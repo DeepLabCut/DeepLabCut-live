@@ -18,11 +18,12 @@ setuptools.setup(
     version="0.0.b0",
     author="A. & M. Mathis Labs",
     author_email="alexander@deeplabcut.org",
-    description="abc",
+    description="Class to load exported DLC networks and perform pose estimation on single frames (from camera feed)",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/DeepLabCut/deeplabcut-live",
-    install_requires=['easydict'],
+    url="https://github.com/DeepLabCut/DeepLabCut-live",
+    python_requires = '>=3.5, <3.8',
+    install_requires=['opencv-python', 'scikit-image', 'numpy', 'ruamel.yaml'],
     packages=setuptools.find_packages(),
     include_package_data=True,
     classifiers=(
@@ -32,4 +33,3 @@ setuptools.setup(
     ),
     entry_points="",
 )
-
