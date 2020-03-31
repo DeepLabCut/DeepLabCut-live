@@ -1,8 +1,6 @@
-# DeepLabCut-live
+# DeepLabCut-live - running DeepLabCut on live video feed to provide feedback.
 
-Use DeepLabCut on live video feed to provide feedback.
-
-This package contains a DLCLive class which enables pose estimation online to provide feedback. This object loads and prepares a DLC network for inference, and will return the predicted pose for single images.
+This package contains a DeepLabCut inference pipeline that has minimal (software) dependencies. Thus, it is as easy to install as possible (in particular on unypical systems like embeeded systems). This package contains a DLCLive class which enables pose estimation online to provide feedback. This object loads and prepares a DLC network for inference, and will return the predicted pose for single images.
 
 To perform processing on poses (such as predicting the future pose of an animal given it's current pose, or to trigger external hardware like send TTL pulses to a laser for optogenetic stimulation), this object takes in a `Processor` object. Processor objects must contain two methods: process and save.
 - The `process` method takes in a pose, performs some processing, and returns processed pose.
