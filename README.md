@@ -1,4 +1,4 @@
-# DeepLabCut-live - running DeepLabCut on live video feed to provide feedback.
+# DeepLabCut-live
 
 This package contains a DeepLabCut inference pipeline that has minimal (software) dependencies. Thus, it is as easy to install as possible (in particular on unypical systems like embeeded systems). This package contains a DLCLive class which enables pose estimation online to provide feedback. This object loads and prepares a DLC network for inference, and will return the predicted pose for single images.
 
