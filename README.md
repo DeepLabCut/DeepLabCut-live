@@ -40,5 +40,6 @@ Please see our instruction manual to install on a [Windows or Linux machine](doc
 from dlclive import DLCLive, Processor
 dlc_proc = Processor()
 dlc_live = DLCLive(<path to exported model directory>, processor=dlc_proc)
+dlc_live.init_inference(<your image>)
 dlc_live.get_pose(<your image>)
 ```
