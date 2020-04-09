@@ -8,10 +8,8 @@ Licensed under GNU Lesser General Public License v3.0
 import os
 import ruamel.yaml
 import glob
+import warnings
 import numpy as np
-import cv2
-from skimage.util import img_as_ubyte
-import threading
 import tensorflow as tf
 
 TFVER = [int(v) for v in tf.__version__.split('.')]
@@ -22,16 +20,9 @@ else:
 
 from dlclive.graph import read_graph, finalize_graph, get_output_nodes, get_output_tensors, extract_graph
 from dlclive.pose import extract_cnn_output, argmax_pose_predict, multi_pose_predict
-from dlclive.display import Display
-
-
-class DLCLiveError(Exception):
-    ''' Generic error type for incorrect use of the DLCLive class '''
-    pass
-
-
-class DLCLiveWarning(Warning):
-    ''' Generic warning for incorrect use of the DLCLive class '''
+from dlclive.display import Display 
+from dlclive import utils
+from dlclive.exceptions import DLCLiveError, DLCLiveWarning
 
 
 class DLCLive(object):
@@ -75,12 +66,15 @@ class DLCLive(object):
     display : bool, optional
         Display frames with DeepLabCut labels?
         This is useful for testing model accuracy and cropping parameters, but it is very slow.
+
+    display_lik : float, optional
+        Likelihood threshold for display
     '''
 
     def __init__(self, model_path,
                  model_type='base', precision='FP16',
                  cropping=None, dynamic=(False,.5,10), resize=None,
-                 processor=None, display=False):
+                 processor=None, display=False, display_lik=0.5):
 
         self.path = model_path
         self.cfg = None
@@ -91,7 +85,7 @@ class DLCLive(object):
         self.dynamic_cropping = None
         self.resize = resize
         self.processor = processor
-        self.display = Display() if display else None
+        self.display = Display(lik=display_lik) if display else None
 
         self.sess = None
         self.inputs = None
@@ -99,31 +93,37 @@ class DLCLive(object):
         self.graph = None
         self.tflite_interpreter = None
         self.pose = None
+        self.is_initialized = False
 
         ### checks
 
         if self.model_type=='tflite' and self.dynamic[0]:
             self.dynamic[0] = False
-            raise DLCLiveWarning('Dynamic cropping is not supported for tensorflow lite inference. Dynamic cropping will not be used...')
+            warnings.warn("Dynamic cropping is not supported for tensorflow lite inference. Dynamic cropping will not be used...", DLCLiveWarning)
 
 
         self.read_config()
 
 
     def read_config(self):
-        '''
-        Reads configuration yaml file
-        '''
+        """ Reads configuration yaml file
+
+        Raises
+        ------
+        FileNotFoundError
+            error thrown if pose configuration file does nott exist
+        """
+
 
         cfg_path = os.path.normpath(self.path+'/pose_cfg.yaml')
         if not os.path.isfile(cfg_path):
-            FileNotFoundError(('The pose configuration file for the exported model at {} was not found. Please check the path to the exported model directory'.format(cfg_path)))
+            raise FileNotFoundError(('The pose configuration file for the exported model at {} was not found. Please check the path to the exported model directory'.format(cfg_path)))
 
         ruamel_file = ruamel.yaml.YAML()
         self.cfg = ruamel_file.load(open(cfg_path, 'r'))
 
 
-    def crop_frame(self, frame):
+    def process_frame(self, frame):
         '''
         Crops an image according to the object's cropping and dynamic properties.
 
@@ -135,8 +135,12 @@ class DLCLive(object):
         Returns
         ----------
         frame :class:`numpy.ndarray`
-            cropped frame
+            processed frame: convert type, crop, convert color
         '''
+
+        if frame.dtype != np.uint8:
+
+            frame = utils.convert_to_ubyte(frame)
 
         if self.cropping:
 
@@ -165,59 +169,14 @@ class DLCLive(object):
 
                     self.dynamic_cropping = None
 
-        if self.resize is not None:
 
-            new_x = int(frame.shape[0] * self.resize)
-            new_y = int(frame.shape[1] * self.resize)
-            frame = cv2.resize(frame, dsize=(new_y, new_x))
-
-        return frame
+        if self.resize != 1:
+            frame = utils.resize_frame(frame, self.resize)
 
 
-    def convert_frame(self, frame):
-        '''
-        Ensures an image has three dimensions (i.e. is not grayscale) and is an 8-bit integer format.
-        Will convert grayscale images to RGB, and not 8-bit integer to 8-bit interger.
+        if frame.ndim == 2:
+            frame = utils.gray_to_rgb(frame)
 
-        Parameters
-        -----------
-        frame :class:`numpy.ndarray`
-            image as a numpy array
-
-        Returns
-        ----------
-        frame :class:`numpy.ndarray`
-            image as not grayscale, 8-bit integer
-        '''
-
-        if len(frame.shape) == 2:
-            frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
-
-        if not frame.dtype == 'uint8':
-            frame = img_as_ubyte(frame)
-
-        return frame
-
-
-    def process_frame(self, frame):
-        '''
-        Processes a frame for inference:
-        - crops images according to cropping and dynamic properties
-        - checks that image is not grayscale and is an 8-bit integer.
-
-        Parameters
-        -----------
-        frame :class:`numpy.ndarray`
-            image as a numpy array
-
-        Returns
-        ----------
-        frame :class:`numpy.ndarray`
-            processed image
-        '''
-
-        frame = self.crop_frame(frame)
-        frame = self.convert_frame(frame)
         return frame
 
 
@@ -240,7 +199,7 @@ class DLCLive(object):
 
         model_file = glob.glob(os.path.normpath(self.path + '/*.pb'))[0]
         if not os.path.isfile(model_file):
-            FileNotFoundError("The model file {} does not exist.".format(model_file))
+            raise FileNotFoundError("The model file {} does not exist.".format(model_file))
 
         ### process frame
 
@@ -295,13 +254,15 @@ class DLCLive(object):
 
             if (TFVER[0] > 1) | (TFVER[0]==1 & TFVER[1] >= 14):
                 converter = trt.TrtGraphConverter(input_graph_def=graph_def,
-                                                  nodes_blacklist=output_tensors)
+                                                  nodes_blacklist=output_tensors,
+                                                  is_dynamic_op=True)
                 graph_def = converter.convert()
             else:
                 graph_def = trt.create_inference_graph(input_graph_def=graph_def,
                                                         outputs=output_tensors,
                                                         max_batch_size=1,
-                                                        precision_mode=self.precision)
+                                                        precision_mode=self.precision,
+                                                        is_dynamic_op=True)
 
             self.graph, self.inputs = finalize_graph(graph_def)
             self.sess, self.outputs = extract_graph(self.graph)
@@ -313,6 +274,8 @@ class DLCLive(object):
         ### get pose of first frame (first inference is often very slow)
 
         pose = self.get_pose(frame)
+
+        self.is_initialized = True
 
         return pose
 
@@ -333,7 +296,7 @@ class DLCLive(object):
         '''
 
         if frame is None:
-            raise DLCLiveException("No frame provided for live pose estimation")
+            raise DLCLiveError("No frame provided for live pose estimation")
 
         frame = self.process_frame(frame)
 
@@ -372,7 +335,7 @@ class DLCLive(object):
         else:
             self.pose = pose_output[0]
 
-        # display image if display=True before correcting pose for cropping
+        # display image if display=True before correcting pose for cropping/resizing
 
         if self.display is not None:
             self.display.display_frame(frame, self.pose)

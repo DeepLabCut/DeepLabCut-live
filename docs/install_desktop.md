@@ -15,3 +15,8 @@ Activate the conda environment and install the DeepLabCut-live package:
 conda activate dlc-live
 pip install git+https://github.com/AlexEMG/DeepLabCut-live.git
 ```
+
+We also recommend that you have OpenCV installed:
+```
+pip install opencv-python
+```
