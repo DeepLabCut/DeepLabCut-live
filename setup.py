@@ -31,5 +31,5 @@ setuptools.setup(
         "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
         "Operating System :: OS Independent",
     ),
-    entry_points = {'console_scripts' : ['dlclive_human_demo=demos.human.run_live_human']}
+    # entry_points = {'console_scripts' : ['dlclive_human_demo=demos.human.run_live_human']}
 )
