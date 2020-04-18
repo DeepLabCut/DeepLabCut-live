@@ -26,7 +26,7 @@ DLCLive parameters:
   - `resize` = float, optional; factor by which to resize image (resize=0.5 downsizes both width and height of image by half). Can be used to downsize large images for faster inference
   - `processor` = dlc pose processor object, optional
   - `display` = bool, optional; display processed image with DeepLabCut points? Can be used to troubleshoot cropping and resizing parameters, but is very slow
-```
+
 
 ### Installation:
 
@@ -39,7 +39,7 @@ Please see our instruction manual to install on a [Windows or Linux machine](doc
 2. Initialize the DLCLive object
 3. Perform pose estimation
 
-```
+```python
 from dlclive import DLCLive, Processor
 dlc_proc = Processor()
 dlc_live = DLCLive(<path to exported model directory>, processor=dlc_proc)
