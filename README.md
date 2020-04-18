@@ -12,20 +12,21 @@ For examples, please see the [processor directory](processor)
 ###### Note :: this object does not record video or capture images from a camera. This must be done separately.
 
 DLCLive parameters:
-  - path = string; full path to the exported DLC model directory
-  - model_type = string; the type of model to use for inference. Types include:
-    - 'base' = the base DeepLabCut model
-    - 'tensorrt' = apply [tensorrt](https://developer.nvidia.com/tensorrt) optimizations to model
-    - 'tflite' = use [tensorflow lite](https://www.tensorflow.org/lite) inference (in progress...)
-  - cropping = list of int, optional; cropping parameters in pixel number: [x1, x2, y1, y2]
-  - dynamic = tuple, optional; defines parameters for dynamic cropping of images
-    - index 0 = use dynamic cropping, bool
-    - index 1 = detection threshold, float
-    - index 2 = margin (in pixels) around identified points, int
-  - resize = float, optional; factor by which to resize image (resize=0.5 downsizes both width and height of image by half). Can be used to downsize large images for faster inference
-  - processor = dlc pose processor object, optional
-  - display = bool, optional; display processed image with DeepLabCut points? Can be used to troubleshoot cropping and resizing parameters, but is very slow
 
+  - `path` = string; full path to the exported DLC model directory
+  - `model_type` = string; the type of model to use for inference. Types include:
+      - `base` = the base DeepLabCut model
+      - `tensorrt` = apply [tensorrt](https://developer.nvidia.com/tensorrt) optimizations to model
+      - `tflite` = use [tensorflow lite](https://www.tensorflow.org/lite) inference (in progress...)
+  - `cropping` = list of int, optional; cropping parameters in pixel number: [x1, x2, y1, y2]
+  - `dynamic` = tuple, optional; defines parameters for dynamic cropping of images
+      - `index 0` = use dynamic cropping, bool
+      - `index 1` = detection threshold, float
+      - `index 2` = margin (in pixels) around identified points, int
+  - `resize` = float, optional; factor by which to resize image (resize=0.5 downsizes both width and height of image by half). Can be used to downsize large images for faster inference
+  - `processor` = dlc pose processor object, optional
+  - `display` = bool, optional; display processed image with DeepLabCut points? Can be used to troubleshoot cropping and resizing parameters, but is very slow
+```
 
 ### Installation:
 
