@@ -12,11 +12,14 @@ import warnings
 import numpy as np
 import tensorflow as tf
 
-TFVER = [int(v) for v in tf.__version__.split('.')]
-if TFVER[1] < 14:
-    from tensorflow.contrib.tensorrt import trt_convert as trt
-else:
-    from tensorflow.python.compiler.tensorrt import trt_convert as trt
+try:
+    TFVER = [int(v) for v in tf.__version__.split('.')]
+    if TFVER[1] < 14:
+        from tensorflow.contrib.tensorrt import trt_convert as trt
+    else:
+        from tensorflow.python.compiler.tensorrt import trt_convert as trt
+except ImportError:
+    pass
 
 from dlclive.graph import read_graph, finalize_graph, get_output_nodes, get_output_tensors, extract_graph
 from dlclive.pose import extract_cnn_output, argmax_pose_predict, multi_pose_predict
@@ -359,3 +362,12 @@ class DLCLive(object):
             self.pose = self.processor.process(self.pose)
 
         return self.pose
+
+
+    def close(self):
+        """ Close tensorflow session
+        """
+
+        self.sess.close()
+        self.sess = None
+        self.is_initialized = False
