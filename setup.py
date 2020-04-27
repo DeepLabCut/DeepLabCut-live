@@ -9,9 +9,19 @@ Licensed under GNU Lesser General Public License v3.0
 
 
 import setuptools
+from importlib.util import find_spec
+import warnings
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
+
+install_requires = ['numpy', 'ruamel.yaml', 'colorcet', 'pillow']
+
+if find_spec('cv2') is None:
+    install_requires.append('opencv-python')
+if (find_spec('tensorflow') is None):
+    warnings.warn("tensorflow is not yet installed. Installing tensorflow CPU version. if you wish to use the GPU version, please run: pip install tensorflow-gpu==1.13.1")
+    install_requires.append('tensorflow==1.13.1')
 
 setuptools.setup(
     name="deeplabcut-live",
@@ -23,7 +33,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/DeepLabCut/DeepLabCut-live",
     python_requires = '>=3.5, <3.8',
-    install_requires=['numpy', 'ruamel.yaml', 'colorcet', 'pillow'],
+    install_requires=install_requires,
     packages=setuptools.find_packages(),
     include_package_data=True,
     classifiers=(
@@ -31,5 +41,5 @@ setuptools.setup(
         "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
         "Operating System :: OS Independent",
     ),
-    # entry_points = {'console_scripts' : ['dlclive_human_demo=demos.human.run_live_human']}
+    entry_points = {'console_scripts' : ['dlc-live-bench=dlclive.bench:main']}
 )
