@@ -42,7 +42,10 @@ def get_system_info():
 
     op_sys = platform.platform()
     host_name = platform.node()
-    host_python = sys.executable.split(os.path.sep)[-3]
+    if platform.system() == 'Windows':
+        host_python = sys.executable.split(os.path.sep)[-2]
+    else:
+        host_python = sys.executable.split(os.path.sep)[-3]
 
     ### get device info (GPU or CPU)
 
