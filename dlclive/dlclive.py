@@ -18,7 +18,7 @@ try:
         from tensorflow.contrib.tensorrt import trt_convert as trt
     else:
         from tensorflow.python.compiler.tensorrt import trt_convert as trt
-except ImportError:
+except Exception:
     pass
 
 from dlclive.graph import read_graph, finalize_graph, get_output_nodes, get_output_tensors, extract_graph
