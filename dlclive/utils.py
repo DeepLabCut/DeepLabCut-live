@@ -13,13 +13,13 @@ from dlclive.exceptions import DLCLiveWarning
 try:
     import skimage
     SK_IM = True
-except ModuleNotFoundError:
+except Exception:
     SK_IM = False
 
 try:
     import cv2
     OPEN_CV = True
-except ModuleNotFoundError:
+except Exception:
     from PIL import Image
     OPEN_CV = False
     warnings.warn("OpenCV is not installed. Using pillow for image processing, which is slower.", DLCLiveWarning)
