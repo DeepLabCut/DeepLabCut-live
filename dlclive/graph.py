@@ -25,10 +25,10 @@ def read_graph(file):
     '''
 
     graph = tf.Graph()
-    graph_def = tf.GraphDef()
-    graph_def.ParseFromString(tf.gfile.GFile(file, 'rb').read())
-
-    return graph_def
+    with tf.gfile.GFile(file, 'rb') as f:
+        graph_def = tf.GraphDef()
+        graph_def.ParseFromString(f.read())
+        return graph_def
 
 
 def finalize_graph(graph_def):
@@ -101,7 +101,7 @@ def get_output_tensors(graph):
     return output_tensor
 
 
-def extract_graph(graph):
+def extract_graph(graph, tf_config=None):
     '''
     Initializes a tensorflow session with the specified graph and extracts the model's inputs and outputs
 
@@ -109,6 +109,7 @@ def extract_graph(graph):
     -----------
     graph :class:`tensorflow.Graph`
         a tensorflow graph containing the desired model
+    tf_config :class:`tensorflow.ConfigProto`
 
     Returns
     --------
@@ -119,7 +120,29 @@ def extract_graph(graph):
     '''
 
     output_tensor = get_output_tensors(graph)
-    sess = tf.Session(graph=graph)
+    sess = tf.Session(graph=graph, config=tf_config)
     outputs = [graph.get_tensor_by_name(out) for out in output_tensor]
 
     return sess, outputs
+
+
+def load_graph(pb_file):
+
+    graph = tf.Graph()
+    with tf.gfile.GFile(pb_file, 'rb') as f:
+        graph_def = tf.GraphDef()
+        graph_def.ParseFromString(f.read())
+
+    with graph.as_default():
+        tf.import_graph_def(graph_def, name='DLC')
+    graph.finalize()
+
+    op_names = [op.name for op in graph.get_operations()]
+    inputs = graph.get_tensor_by_name(op_names[0] + ':0')
+    outputs = [graph.get_tensor_by_name(op_names[-1] + ':0')]
+    if 'Sigmoid' in op_names[-1]:
+        outputs.append(graph.get_tensor_by_name(op_names[-2] + ':0'))
+
+    sess = tf.Session(graph=graph)
+
+    return sess, inputs, outputs
