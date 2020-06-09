@@ -21,9 +21,9 @@ try:
 except Exception:
     pass
 
-from dlclive.graph import read_graph, finalize_graph, get_output_nodes, get_output_tensors, extract_graph
+from dlclive.graph import read_graph, finalize_graph, get_output_nodes, get_output_tensors, extract_graph, load_graph
 from dlclive.pose import extract_cnn_output, argmax_pose_predict, multi_pose_predict
-from dlclive.display import Display 
+from dlclive.display import Display
 from dlclive import utils
 from dlclive.exceptions import DLCLiveError, DLCLiveWarning
 
@@ -75,13 +75,14 @@ class DLCLive(object):
     '''
 
     def __init__(self, model_path,
-                 model_type='base', precision='FP16',
+                 model_type='base', precision='FP16', tf_config=None,
                  cropping=None, dynamic=(False,.5,10), resize=None,
                  processor=None, display=False, display_lik=0.5):
 
         self.path = model_path
         self.cfg = None
         self.model_type = model_type
+        self.tf_config = tf_config
         self.precision = precision
         self.cropping = cropping
         self.dynamic = dynamic
@@ -215,9 +216,11 @@ class DLCLive(object):
 
         if self.model_type == 'base':
 
-            graph_def = read_graph(model_file)
-            self.graph, self.inputs = finalize_graph(graph_def)
-            self.sess, self.outputs = extract_graph(self.graph)
+            # graph_def = read_graph(model_file)
+            # self.graph, self.inputs = finalize_graph(graph_def)
+            # self.sess, self.outputs = extract_graph(self.graph, tf_config=self.tf_config)
+
+            self.sess, self.inputs, self.outputs = load_graph(model_file)
 
         elif self.model_type == 'tflite':
 
@@ -268,7 +271,7 @@ class DLCLive(object):
                                                         is_dynamic_op=True)
 
             self.graph, self.inputs = finalize_graph(graph_def)
-            self.sess, self.outputs = extract_graph(self.graph)
+            self.sess, self.outputs = extract_graph(self.graph, tf_config=self.tf_config)
 
         else:
 
