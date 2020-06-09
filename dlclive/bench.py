@@ -64,7 +64,7 @@ def get_system_info():
     return host_name, op_sys, host_python, (dev_type, dev)
 
 
-def run_benchmark(model_path, video_path, tf_config=None, resize=None, pixels=None, n_frames=10000, print_rate=False, display=False, display_lik=0.0, dotsize=3):
+def run_benchmark(model_path, video_path, tf_config=None, resize=None, pixels=None, n_frames=10000, print_rate=False, display=False, display_lik=0.0, display_radius=3):
     """ Benchmark on inference times for a given DLC model and video
     
     Parameters
@@ -104,13 +104,13 @@ def run_benchmark(model_path, video_path, tf_config=None, resize=None, pixels=No
 
     ### initialize live object
 
-    live = DLCLive(model_path, tf_config=tf_config, resize=resize, display=display, display_lik=display_lik, dotsize=dotsize)
+    live = DLCLive(model_path, tf_config=tf_config, resize=resize, display=display, display_lik=display_lik, display_radius=display_radius)
     live.init_inference(frame)
     TFGPUinference = True if len(live.outputs) == 1 else False
 
     ### perform inference
 
-    iterator = range(n_frames) if print_rate else tqdm(range(n_frames))
+    iterator = range(n_frames) if (print_rate) or (display) else tqdm(range(n_frames))
     inf_times = np.zeros(n_frames)
 
     for i in iterator:
@@ -202,7 +202,7 @@ def save_benchmark(sys_info, inf_times, pixels, TFGPUinference, model=None, out_
     return True
 
 
-def benchmark_model_by_size(model_path, video_path, output=None, n_frames=10000, tf_config=None, resize=None, pixels=None, print_rate=False, display=False, display_lik=0.5, dotsize=3):
+def benchmark_model_by_size(model_path, video_path, output=None, n_frames=10000, tf_config=None, resize=None, pixels=None, print_rate=False, display=False, display_lik=0.5, display_radius=3):
     """Benchmark DLC model by image size
     
     Parameters
@@ -251,7 +251,7 @@ def benchmark_model_by_size(model_path, video_path, output=None, n_frames=10000,
                                                                     print_rate=print_rate,
                                                                     display=display,
                                                                     display_lik=display_lik,
-                                                                    dotsize=dotsize)
+                                                                    display_radius=display_radius)
 
     ### save results
 
@@ -271,7 +271,7 @@ def main():
     parser.add_argument('-v', '--print_rate', default=False, action='store_true')
     parser.add_argument('-d', '--display', default=False, action='store_true')
     parser.add_argument('-l', '--display-lik', default=0.5, type=float)
-    parser.add_argument('-s', '--dotsize', default=3, type=int)
+    parser.add_argument('-s', '--display-radius', default=3, type=int)
     args = parser.parse_args()
 
 
@@ -284,7 +284,7 @@ def main():
                             print_rate=args.print_rate,
                             display=args.display,
                             display_lik=args.display_lik,
-                            dotsize=args.dotsize)
+                            display_radius=args.display_radius)
 
 
 if __name__ == "__main__":

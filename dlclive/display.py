@@ -86,7 +86,6 @@ class Display(object):
                         y0 = pose[i,1] - self.radius if pose[i,1] - self.radius > 0 else 0
                         y1 = pose[i,1] + self.radius if pose[i,1] + self.radius < im_size[0] else im_size[0]
                         coords = [x0, y0, x1, y1]
-                        print(coords)
                         draw.ellipse(coords, fill=self.colors[i], outline=self.colors[i])
                     except Exception as e:
                         print(e)
