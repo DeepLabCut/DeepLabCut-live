@@ -24,7 +24,7 @@ from dlclive import DLCLive
 
 def get_system_info():
     """ Return summary info for system running benchmark
-    
+
     Returns
     -------
     str
@@ -64,7 +64,7 @@ def get_system_info():
     return host_name, op_sys, host_python, (dev_type, dev)
 
 
-def run_benchmark(model_path, video_path, resize=None, pixels=None, n_frames=10000, print_rate=False):
+def run_benchmark(model_path, video_path, tf_config=None, resize=None, pixels=None, n_frames=10000, print_rate=False, display=False, display_lik=0.0, dotsize=3):
     """ Benchmark on inference times for a given DLC model and video
     
     Parameters
@@ -94,6 +94,7 @@ def run_benchmark(model_path, video_path, resize=None, pixels=None, n_frames=100
 
     cap = cv2.VideoCapture(video_path)
     ret, frame = cap.read()
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     im_size = (cap.get(cv2.CAP_PROP_FRAME_WIDTH), cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
     ### get resize factor
@@ -103,7 +104,7 @@ def run_benchmark(model_path, video_path, resize=None, pixels=None, n_frames=100
 
     ### initialize live object
 
-    live = DLCLive(model_path, resize=resize)
+    live = DLCLive(model_path, tf_config=tf_config, resize=resize, display=display, display_lik=display_lik, dotsize=dotsize)
     live.init_inference(frame)
     TFGPUinference = True if len(live.outputs) == 1 else False
 
@@ -119,6 +120,8 @@ def run_benchmark(model_path, video_path, resize=None, pixels=None, n_frames=100
         if not ret:
             warnings.warn("Did not complete {:d} frames. There probably were not enough frames in the video {}.".format(n_frames, video_path))
             break
+        
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         start_pose = time.time()
         live.get_pose(frame)
@@ -199,7 +202,7 @@ def save_benchmark(sys_info, inf_times, pixels, TFGPUinference, model=None, out_
     return True
 
 
-def benchmark_model_by_size(model_path, video_path, output=None, n_frames=10000, resize=None, pixels=None, print_rate=False):
+def benchmark_model_by_size(model_path, video_path, output=None, n_frames=10000, tf_config=None, resize=None, pixels=None, print_rate=False, display=False, display_lik=0.5, dotsize=3):
     """Benchmark DLC model by image size
     
     Parameters
@@ -241,10 +244,14 @@ def benchmark_model_by_size(model_path, video_path, output=None, n_frames=10000,
 
         inf_times[i], pixels_out[i], TFGPUinference = run_benchmark(model_path,
                                                                     video_path,
+                                                                    tf_config=tf_config,
                                                                     resize=resize[i],
                                                                     pixels=pixels[i],
                                                                     n_frames=n_frames,
-                                                                    print_rate=print_rate)
+                                                                    print_rate=print_rate,
+                                                                    display=display,
+                                                                    display_lik=display_lik,
+                                                                    dotsize=dotsize)
 
     ### save results
 
@@ -258,11 +265,15 @@ def main():
     parser.add_argument('model_path', type=str)
     parser.add_argument('video_path', type=str)
     parser.add_argument('-o', '--output', type=str, default=os.getcwd())
-    parser.add_argument('-n', '--n_frames', type=int, default=10000)
+    parser.add_argument('-n', '--n-frames', type=int, default=10000)
     parser.add_argument('-r', '--resize', type=float, nargs='+')
     parser.add_argument('-p', '--pixels', type=float, nargs='+')
     parser.add_argument('-v', '--print_rate', default=False, action='store_true')
+    parser.add_argument('-d', '--display', default=False, action='store_true')
+    parser.add_argument('-l', '--display-lik', default=0.5, type=float)
+    parser.add_argument('-s', '--dotsize', default=3, type=int)
     args = parser.parse_args()
+
 
     benchmark_model_by_size(args.model_path,
                             args.video_path,
@@ -270,7 +281,10 @@ def main():
                             resize=args.resize,
                             pixels=args.pixels,
                             n_frames=args.n_frames,
-                            print_rate=args.print_rate)
+                            print_rate=args.print_rate,
+                            display=args.display,
+                            display_lik=args.display_lik,
+                            dotsize=args.dotsize)
 
 
 if __name__ == "__main__":
