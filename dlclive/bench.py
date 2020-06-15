@@ -10,6 +10,7 @@ import platform
 import os
 import time
 import sys
+import warnings
 import argparse
 import pickle
 
@@ -94,7 +95,6 @@ def run_benchmark(model_path, video_path, tf_config=None, resize=None, pixels=No
 
     cap = cv2.VideoCapture(video_path)
     ret, frame = cap.read()
-    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     im_size = (cap.get(cv2.CAP_PROP_FRAME_WIDTH), cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
     ### get resize factor
@@ -121,8 +121,6 @@ def run_benchmark(model_path, video_path, tf_config=None, resize=None, pixels=No
             warnings.warn("Did not complete {:d} frames. There probably were not enough frames in the video {}.".format(n_frames, video_path))
             break
         
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
         start_pose = time.time()
         live.get_pose(frame)
         inf_times[i] = time.time() - start_pose

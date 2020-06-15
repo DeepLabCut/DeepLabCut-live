@@ -49,12 +49,15 @@ def finalize_graph(graph_def):
     '''
 
     graph = tf.Graph()
+    # with graph.as_default():
+    #     inputs = tf.placeholder(tf.float32, shape=[1, None, None, 3])
+    #     tf.import_graph_def(graph_def, {'Placeholder' : inputs}, name='Placeholder')
     with graph.as_default():
-        inputs = tf.placeholder(tf.float32, shape=[1, None, None, 3])
-        tf.import_graph_def(graph_def, {'Placeholder' : inputs}, name='Placeholder')
+        tf.import_graph_def(graph_def, name="DLC")
     graph.finalize()
 
-    return graph, inputs
+    #return graph, inputs
+    return graph
 
 
 def get_output_nodes(graph):
@@ -97,8 +100,14 @@ def get_output_tensors(graph):
     '''
 
     output_nodes = get_output_nodes(graph)
-    output_tensor = [out+':0' for out in output_nodes]
+    output_tensor = [out+":0" for out in output_nodes]
     return output_tensor
+
+
+def get_input_tensor(graph):
+
+    input_tensor = str(graph.get_operations()[0].name) + ":0"
+    return input_tensor
 
 
 def extract_graph(graph, tf_config=None):
@@ -119,30 +128,32 @@ def extract_graph(graph, tf_config=None):
         the output tensor(s) for the model
     '''
 
+    input_tensor = get_input_tensor(graph)
     output_tensor = get_output_tensors(graph)
     sess = tf.Session(graph=graph, config=tf_config)
+    inputs = graph.get_tensor_by_name(input_tensor)
     outputs = [graph.get_tensor_by_name(out) for out in output_tensor]
 
-    return sess, outputs
-
-
-def load_graph(pb_file):
-
-    graph = tf.Graph()
-    with tf.gfile.GFile(pb_file, 'rb') as f:
-        graph_def = tf.GraphDef()
-        graph_def.ParseFromString(f.read())
-
-    with graph.as_default():
-        tf.import_graph_def(graph_def, name='DLC')
-    graph.finalize()
-
-    op_names = [op.name for op in graph.get_operations()]
-    inputs = graph.get_tensor_by_name(op_names[0] + ':0')
-    outputs = [graph.get_tensor_by_name(op_names[-1] + ':0')]
-    if 'Sigmoid' in op_names[-1]:
-        outputs.append(graph.get_tensor_by_name(op_names[-2] + ':0'))
-
-    sess = tf.Session(graph=graph)
-
     return sess, inputs, outputs
+
+
+# def load_graph(pb_file):
+
+#     graph = tf.Graph()
+#     with tf.gfile.GFile(pb_file, 'rb') as f:
+#         graph_def = tf.GraphDef()
+#         graph_def.ParseFromString(f.read())
+
+#     with graph.as_default():
+#         tf.import_graph_def(graph_def, name='DLC')
+#     graph.finalize()
+
+#     op_names = [op.name for op in graph.get_operations()]
+#     inputs = graph.get_tensor_by_name(op_names[0] + ':0')
+#     outputs = [graph.get_tensor_by_name(op_names[-1] + ':0')]
+#     if 'Sigmoid' in op_names[-1]:
+#         outputs.append(graph.get_tensor_by_name(op_names[-2] + ':0'))
+
+#     sess = tf.Session(graph=graph)
+
+#     return sess, inputs, outputs

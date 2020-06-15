@@ -55,9 +55,7 @@ def resize_frame(frame, resize=None):
         an image as a numpy array
     """
 
-
     if (resize is not None) and (resize != 1):
-
 
         if OPEN_CV:
 
@@ -75,10 +73,9 @@ def resize_frame(frame, resize=None):
 
         return frame
 
+def img_to_rgb(frame):
+    """ Convert an image to RGB. Uses OpenCV is installed, otherwise uses pillow.
 
-def gray_to_rgb(frame):
-    """ Convert an image from grayscale to RGB. Uses OpenCV is installed, otherwise uses pillow.
-    
     Parameters
     ----------
     frame : :class:`numpy.ndarray
@@ -87,19 +84,56 @@ def gray_to_rgb(frame):
 
     if frame.ndim == 2:
 
-        if OPEN_CV:
+        return gray_to_rgb(frame)
 
-            return cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
-        
-        else:
+    elif frame.ndim == 3:
 
-            img = Image.fromarray(frame)
-            img = img.convert('RGB')
-            return np.asarray(img)
+        return bgr_to_rgb(frame)
 
     else:
 
+        warnings.warn(f"Image has {frame.ndim} dimensions. Must be 2 or 3 dimensions to convert to RGB", DLCLiveWarning)
         return frame
+
+
+def gray_to_rgb(frame):
+    """ Convert an image from grayscale to RGB. Uses OpenCV is installed, otherwise uses pillow.
+
+    Parameters
+    ----------
+    frame : :class:`numpy.ndarray
+        an image as a numpy array
+    """
+
+    if OPEN_CV:
+
+        return cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
+
+    else:
+
+        img = Image.fromarray(frame)
+        img = img.convert('RGB')
+        return np.asarray(img)
+
+
+def bgr_to_rgb(frame):
+    """ Convert an image from BGR to RGB. Uses OpenCV is installed, otherwise uses pillow.
+
+    Parameters
+    ----------
+    frame : :class:`numpy.ndarray
+        an image as a numpy array
+    """
+
+    if OPEN_CV:
+
+        return cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+    else:
+
+        img = Image.fromarray(frame)
+        img = img.convert('RGB')
+        return np.asarray(img)
 
 
 def _img_as_ubyte_np(frame):
