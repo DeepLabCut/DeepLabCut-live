@@ -8,7 +8,7 @@ https://github.com/AlexEMG/DeepLabCut/blob/master/AUTHORS
 Licensed under GNU Lesser General Public License v3.0
 """
 
-from ..processor import Processor
+from dlclive.processor.processor import Processor
 import serial
 import struct
 import time
@@ -50,7 +50,7 @@ class TeensyLaser(Processor):
             self.stim_off_time.append(time.time())
 
 
-    def process(self, pose):
+    def process(self, pose, **kwargs):
 
         # define criteria to stimulate (e.g. if first point is in a corner of the video)
         box = [[0,100],[0,100]]

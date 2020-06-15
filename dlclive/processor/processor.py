@@ -19,7 +19,7 @@ class Processor(object):
     def __init__(self):
         pass
 
-    def process(self, pose):
+    def process(self, pose, **kwargs):
         return pose
 
     def save(self, file=''):

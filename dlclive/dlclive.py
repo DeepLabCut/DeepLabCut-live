@@ -286,7 +286,7 @@ class DLCLive(object):
         return pose
 
 
-    def get_pose(self, frame=None):
+    def get_pose(self, frame=None, **kwargs):
         '''
         Get the pose of an image
 
@@ -362,7 +362,7 @@ class DLCLive(object):
         # process the pose
 
         if self.processor:
-            self.pose = self.processor.process(self.pose)
+            self.pose = self.processor.process(self.pose, **kwargs)
 
         return self.pose
 
