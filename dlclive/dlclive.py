@@ -199,7 +199,7 @@ class DLCLive(object):
         return frame
 
 
-    def init_inference(self, frame=None):
+    def init_inference(self, frame=None, **kwargs):
         '''
         Load model and perform inference on first frame -- the first inference is usually very slow.
 
@@ -296,7 +296,7 @@ class DLCLive(object):
 
         ### get pose of first frame (first inference is often very slow)
 
-        pose = self.get_pose(frame)
+        pose = self.get_pose(frame, **kwargs)
 
         self.is_initialized = True
 
