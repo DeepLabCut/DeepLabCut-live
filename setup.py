@@ -15,7 +15,7 @@ import warnings
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-install_requires = ['numpy', 'ruamel.yaml', 'colorcet', 'pillow', 'py-cpuinfo', 'tqdm']
+install_requires = ['numpy', 'ruamel.yaml', 'colorcet', 'pillow', 'py-cpuinfo==5.0.0', 'tqdm']
 
 if find_spec('cv2') is None:
     install_requires.append('opencv-python')
