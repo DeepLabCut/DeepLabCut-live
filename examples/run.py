@@ -1,4 +1,4 @@
-# Example script for running benchmark tests in Kane et al, 2020. 
+# Example script for running benchmark tests in Kane et al, 2020.
 
 import os
 import glob
@@ -13,7 +13,7 @@ mouse_models = glob.glob(this_dir + '/mouse_lick/*[!avi]')
 mouse_video = glob.glob(this_dir + '/mouse_lick/*.avi')[0]
 out_dir = os.path.normpath(this_dir + '/results')
 
-n_frames = 100
+n_frames = 10000
 pixels = [2500, 10000, 40000, 160000, 320000, 640000]
 ind = 1
 
