@@ -1,2 +1,0 @@
-# NOTES, for benchmarking you also need:
-pip install py-cpuinfo==5.0
