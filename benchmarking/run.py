@@ -5,15 +5,20 @@ import glob
 
 from dlclive import benchmark_model_by_size
 
-this_dir = os.path.dirname(os.path.realpath(__file__))
+# Update the datafolder to where the data is:
+datafolder='/media/alex/dropboxdisk/DLC-LiveBenchmarking/DLC-live-benchmarkingdata'
 
-dog_models = glob.glob(this_dir + '/dog/*[!avi]')
-dog_video = glob.glob(this_dir + '/dog/*.avi')[0]
-mouse_models = glob.glob(this_dir + '/mouse_lick/*[!avi]')
-mouse_video = glob.glob(this_dir + '/mouse_lick/*.avi')[0]
+
+dog_models = glob.glob(datafolder + '/dog/*[!avi]')
+dog_video = glob.glob(datafolder + '/dog/*.avi')[0]
+mouse_models = glob.glob(datafolder + '/mouse_lick/*[!avi]')
+mouse_video = glob.glob(datafolder + '/mouse_lick/*.avi')[0]
+
+this_dir = os.path.dirname(os.path.realpath(__file__))
+#storing results in /benchmarking/results: (for your PR)
 out_dir = os.path.normpath(this_dir + '/results')
 
-n_frames = 10000
+n_frames = 1000
 pixels = [2500, 10000, 40000, 160000, 320000, 640000]
 ind = 1
 

@@ -1,0 +1,23 @@
+https://github.com/DeepLabCut/DeepLabCut-live/blob/master/docs/install_desktop.md
+
+Installation:
+```
+conda create -n dlc-live python=3.7 tensorflow-gpu==1.13.1 # if using GPU
+```
+
+From commit:
+https://github.com/DeepLabCut/DeepLabCut-live/commit/58636b2178a322f03c9084542a932ace39044815
+
+```
+conda activate dlc-live
+pip install git+https://github.com/AlexEMG/DeepLabCut-live.git
+pip install opencv-python
+```
+
+download data...
+
+go to /benchmarking/run.py 
+
+and update your datafolder to where the data is.
+
+run n_frames = 1000 on a CPU and 10k on GPU!

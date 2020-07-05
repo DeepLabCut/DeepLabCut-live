@@ -8,5 +8,5 @@ Licensed under GNU Lesser General Public License v3.0
 """
 
 
-__version__ = '0.0.b0'
+__version__ = '0.0.b1'
 VERSION = __version__
