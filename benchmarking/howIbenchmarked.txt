@@ -10,11 +10,10 @@ https://github.com/DeepLabCut/DeepLabCut-live/commit/58636b2178a322f03c9084542a9
 
 ```
 conda activate dlc-live
-pip install git+https://github.com/AlexEMG/DeepLabCut-live.git
-pip install opencv-python
+pip install git+https://github.com/DeepLabCut/DeepLabCut-live.git
 ```
 
-download data...
+download data... 
 
 go to /benchmarking/run.py 
 
