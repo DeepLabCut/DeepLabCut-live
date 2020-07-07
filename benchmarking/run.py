@@ -18,7 +18,7 @@ this_dir = os.path.dirname(os.path.realpath(__file__))
 #storing results in /benchmarking/results: (for your PR)
 out_dir = os.path.normpath(this_dir + '/results')
 
-n_frames = 1000
+n_frames = 1000 #change to 10000 for GPU!
 pixels = [2500, 10000, 40000, 160000, 320000, 640000]
 ind = 1
 
