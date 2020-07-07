@@ -13,7 +13,7 @@ conda activate dlc-live
 pip install git+https://github.com/DeepLabCut/DeepLabCut-live.git
 ```
 
-download data... 
+download data... https://drive.google.com/drive/folders/1pYGujfN_tjfP5r4lwL2yKNe8WnZSdmKc
 
 go to /benchmarking/run.py 
 
