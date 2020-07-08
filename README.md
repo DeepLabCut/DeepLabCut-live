@@ -32,7 +32,7 @@ dlc_live.init_inference(<your image>)
 dlc_live.get_pose(<your image>)
 ```
 
-`DLCLive` parameters:
+`DLCLive` **parameters:**
 
   - `path` = string; full path to the exported DLC model directory
   - `model_type` = string; the type of model to use for inference. Types include:
@@ -47,3 +47,8 @@ dlc_live.get_pose(<your image>)
   - `resize` = float, optional; factor by which to resize image (resize=0.5 downsizes both width and height of image by half). Can be used to downsize large images for faster inference
   - `processor` = dlc pose processor object, optional
   - `display` = bool, optional; display processed image with DeepLabCut points? Can be used to troubleshoot cropping and resizing parameters, but is very slow
+  
+`DLCLive` **inputs:**
+
+  - `<path to exported model directory>` = path to the folder that has the `.pb` files that you acquire after running `deeplabcut.export_model`
+  - `<your image>` = is a numpy array of each frame
