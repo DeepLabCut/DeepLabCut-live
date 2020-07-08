@@ -228,6 +228,11 @@ def benchmark_model_by_size(model_path, video_path, output=None, n_frames=10000,
         list of pixel image sizes (as ints), can only use one of resize or pixels, if both specified will use pixels, by default None
     print_rate : bool, optional
         flag to print frame by frame inference rate, by default False
+    
+    Example
+    --------
+    Linux/MacOs
+    dlclive.bench.benchmark_model_by_size('/path/to/pbfiles/', '/pathto/video.mp4', n_frames=10000, print_rate=True)
     """
 
     ### fix resize
