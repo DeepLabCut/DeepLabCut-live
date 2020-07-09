@@ -66,7 +66,7 @@ dlclive.analyze_videos('/path/to/exported/model', ['/path/to/video1', '/path/to/
 dlc-live-analyze /path/to/exported/model /path/to/video1 /path/to/video2 -o /path/to/output -r 1.0 0.75 0.5
 ```
 
-2. Display keypoints to visually inspect the accuracy of exported models on different image sizes:
+2. Display keypoints to visually inspect the accuracy of exported models on different image sizes (note, this is slow):
 ```
 # python
 dlclive.analyze_videos('/path/to/exported/model', '/path/to/video', resize=[0.5], display=True, pcutoff=0.5, display_radius=4, cmap='bmy')
