@@ -391,3 +391,5 @@ class DLCLive(object):
         self.sess.close()
         self.sess = None
         self.is_initialized = False
+        if self.display is not None:
+            self.display.destroy()
