@@ -24,7 +24,6 @@ def read_graph(file):
         The graph definition of the DeepLabCut model found at the object's path
     '''
 
-    graph = tf.Graph()
     with tf.gfile.GFile(file, 'rb') as f:
         graph_def = tf.GraphDef()
         graph_def.ParseFromString(f.read())
@@ -49,14 +48,10 @@ def finalize_graph(graph_def):
     '''
 
     graph = tf.Graph()
-    # with graph.as_default():
-    #     inputs = tf.placeholder(tf.float32, shape=[1, None, None, 3])
-    #     tf.import_graph_def(graph_def, {'Placeholder' : inputs}, name='Placeholder')
     with graph.as_default():
         tf.import_graph_def(graph_def, name="DLC")
     graph.finalize()
 
-    #return graph, inputs
     return graph
 
 
@@ -135,25 +130,3 @@ def extract_graph(graph, tf_config=None):
     outputs = [graph.get_tensor_by_name(out) for out in output_tensor]
 
     return sess, inputs, outputs
-
-
-# def load_graph(pb_file):
-
-#     graph = tf.Graph()
-#     with tf.gfile.GFile(pb_file, 'rb') as f:
-#         graph_def = tf.GraphDef()
-#         graph_def.ParseFromString(f.read())
-
-#     with graph.as_default():
-#         tf.import_graph_def(graph_def, name='DLC')
-#     graph.finalize()
-
-#     op_names = [op.name for op in graph.get_operations()]
-#     inputs = graph.get_tensor_by_name(op_names[0] + ':0')
-#     outputs = [graph.get_tensor_by_name(op_names[-1] + ':0')]
-#     if 'Sigmoid' in op_names[-1]:
-#         outputs.append(graph.get_tensor_by_name(op_names[-2] + ':0'))
-
-#     sess = tf.Session(graph=graph)
-
-#     return sess, inputs, outputs

@@ -110,7 +110,6 @@ class DLCLive(object):
         self.sess = None
         self.inputs = None
         self.outputs = None
-        self.graph = None
         self.tflite_interpreter = None
         self.pose = None
         self.is_initialized = False
@@ -287,8 +286,8 @@ class DLCLive(object):
                                                         precision_mode=self.precision,
                                                         is_dynamic_op=True)
 
-            self.graph, self.inputs = finalize_graph(graph_def)
-            self.sess, self.outputs = extract_graph(self.graph, tf_config=self.tf_config)
+            graph = finalize_graph(graph_def)
+            self.sess, self.inputs, self.outputs = extract_graph(graph, tf_config=self.tf_config)
 
         else:
 
