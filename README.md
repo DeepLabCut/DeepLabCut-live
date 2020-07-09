@@ -72,7 +72,7 @@ dlc-live-analyze /path/to/exported/model /path/to/video1 /path/to/video2 -o /pat
 dlclive.analyze_videos('/path/to/exported/model', '/path/to/video', resize=0.5, display=True, pcutoff=0.5, display_radius=4, cmap='bmy')
 
 # command line
-dlc-live-analyze /path/to/exported/model /path/to/video -r 0.5 --display --display-lik 0.5 --display-radius 4 --cmap bmy
+dlc-live-analyze /path/to/exported/model /path/to/video -r 0.5 --display --pcutoff 0.5 --display-radius 4 --cmap bmy
 ```
 
 3. Analyze and create a labeled video using the exported model and desired resize parameters. This option functions similar to `deeplabcut.analyze_videos` and `deeplabcut.create_labeled_video`.
