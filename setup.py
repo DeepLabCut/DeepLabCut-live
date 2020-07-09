@@ -41,5 +41,6 @@ setuptools.setup(
         "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
         "Operating System :: OS Independent",
     ),
-    entry_points = {'console_scripts' : ['dlc-live-bench=dlclive.bench:main']}
+    entry_points = {'console_scripts' : ['dlc-live-bench=dlclive.bench:main',
+                                         'dlc-live-analyze=dlclive.analyze:main']}
 )
