@@ -159,7 +159,7 @@ def analyze(model_path,
 
     ### initialize live object
 
-    live = DLCLive(model_path, tf_config=tf_config, resize=resize, display=display, display_lik=display_lik, display_radius=display_radius)
+    live = DLCLive(model_path, tf_config=tf_config, resize=resize, display=display, display_lik=display_lik, display_radius=display_radius, display_cmap=cmap)
     live.init_inference(frame)
     TFGPUinference = True if len(live.outputs) == 1 else False
 
@@ -320,9 +320,9 @@ def analyze_videos(model_path,
                    display=False,
                    display_lik=0.5,
                    display_radius=3,
+                   cmap='bmy',
                    save_poses=False,
-                   save_video=False,
-                   cmap='bmy'):
+                   save_video=False):
     """Analyze videos using DeepLabCut-live exported models. 
     Analyze multiple videos and/or multiple options for the size of the video 
     by specifying a resizing factor or the number of pixels to use in the image (keeping aspect ratio constant).
@@ -446,7 +446,6 @@ def main():
     parser.add_argument('--save-poses', action='store_true')
     parser.add_argument('--save-video', action='store_true')
     args = parser.parse_args()
-
 
     analyze_videos(args.model_path,
                    args.video_path,

@@ -92,7 +92,8 @@ class DLCLive(object):
                  processor=None,
                  display=False,
                  display_lik=0.5,
-                 display_radius=3):
+                 display_radius=3,
+                 display_cmap='bmy'):
 
         self.path = model_path
         self.cfg = None
@@ -105,7 +106,7 @@ class DLCLive(object):
         self.resize = resize
         self.processor = processor
         self.convert2rgb = convert2rgb
-        self.display = Display(lik=display_lik, radius=display_radius) if display else None
+        self.display = Display(lik=display_lik, radius=display_radius, cmap=display_cmap) if display else None
 
         self.sess = None
         self.inputs = None
