@@ -48,6 +48,11 @@ dlc_live.get_pose(<your image>)
   - `processor` = dlc pose processor object, optional
   - `display` = bool, optional; display processed image with DeepLabCut points? Can be used to troubleshoot cropping and resizing parameters, but is very slow
 
+  `DLCLive` **inputs:**
+
+  - `<path to exported model directory>` = path to the folder that has the `.pb` files that you acquire after running `deeplabcut.export_model`
+  - `<your image>` = is a numpy array of each frame
+
 
 ### Benchmarking/Analyzing Exported DeepLabCut Models
 
