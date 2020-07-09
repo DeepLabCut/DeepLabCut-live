@@ -23,9 +23,9 @@ class KalmanFilterPredictor(Processor):
                  fps=30,
                  nderiv=2,
                  priors=[10, 1],
-                 initial_var=1,
-                 process_var=1,
-                 dlc_var=20,
+                 initial_var=5,
+                 process_var=5,
+                 dlc_var=10,
                  **kwargs):
 
         super().__init__(**kwargs)
@@ -39,6 +39,7 @@ class KalmanFilterPredictor(Processor):
         self.process_var = process_var
         self.dlc_var = dlc_var
         self.is_initialized = False
+        self.last_pose_time = 0
 
 
     def _get_forward_model(self, dt):
@@ -82,6 +83,7 @@ class KalmanFilterPredictor(Processor):
 
     def _predict(self):
 
+        #self.F = self._get_forward_model(time.time()-self.last_pose_time)
         self.Xp = np.dot(self.F, self.X)
         self.Pp = np.dot(np.dot(self.F, self.P), self.F.T) + self.Q
 
@@ -105,8 +107,6 @@ class KalmanFilterPredictor(Processor):
 
     def _get_future_pose(self, dt):
 
-        print(dt)
-
         Ff = self._get_forward_model(dt)
 
         Pf = np.diag(self.P).reshape(self.P.shape[0], 1)
@@ -116,6 +116,15 @@ class KalmanFilterPredictor(Processor):
         future_pose = Xfp[:(self.bp * 2)].reshape(self.bp, 2)
 
         return future_pose
+
+
+    def _get_state_likelihood(self, pose):
+
+        liks = pose[:, 2]
+        liks_xy = np.repeat(liks, 2)
+        liks_xy_deriv = np.tile(liks_xy, self.nderiv)
+        liks_state = liks_xy_deriv.reshape(liks_xy_deriv.shape[0], 1)
+        return(liks_state)
             
         
     def process(self, pose, **kwargs):
@@ -123,10 +132,12 @@ class KalmanFilterPredictor(Processor):
         if not self.is_initialized:
 
             self._init_kf(pose)
+
+            self.last_pose_time = time.time()
             return pose
         
         else:
-
+            
             self._predict()
             self._get_residuals(pose)
             self._update()
@@ -134,5 +145,6 @@ class KalmanFilterPredictor(Processor):
             forward_time = (time.time() - kwargs['frame_time'] + self.forward) if self.adapt else self.forward
             future_pose = self._get_future_pose(forward_time)
             future_pose = np.hstack((future_pose, pose[:,2].reshape(self.bp,1)))
-
+            
+            self.last_pose_time = time.time()
             return future_pose
