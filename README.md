@@ -47,3 +47,34 @@ dlc_live.get_pose(<your image>)
   - `resize` = float, optional; factor by which to resize image (resize=0.5 downsizes both width and height of image by half). Can be used to downsize large images for faster inference
   - `processor` = dlc pose processor object, optional
   - `display` = bool, optional; display processed image with DeepLabCut points? Can be used to troubleshoot cropping and resizing parameters, but is very slow
+
+
+### Benchmarking/Analyzing Exported DeepLabCut Models
+
+DeepLabCut-live offers some analysis tools that allow users to peform the following operations on videos, from python or from the command line: 
+1. Test inference speed across a range of image sizes, downsizing images by specifying the `resize` or `pixels` parameter. Using the `pixels` parameter will resize images to the desired number of `pixels`, without changing the aspect ratio. Results will be saved (along with system info) to a pickle file if you specify an output directory.
+```
+# python
+dlclive.analyze_videos('/path/to/exported/model', ['/path/to/video1', '/path/to/video2'], output='/path/to/output', resize=[1.0, 0.75, '0.5'])
+
+# command line
+dlc-live-analyze /path/to/exported/model /path/to/video1 /path/to/video2 -o /path/to/output -r 1.0 0.75 0.5
+```
+
+2. Display keypoints to visually inspect the accuracy of exported models on different image sizes:
+```
+# python
+dlclive.analyze_videos('/path/to/exported/model', '/path/to/video', resize=0.5, display=True, display_lik=0.5, display_radius=4, cmap='bmy')
+
+# command line
+dlc-live-analyze /path/to/exported/model /path/to/video -r 0.5 --display --display-lik 0.5 --display-radius 4 --cmap bmy
+```
+
+3. Analyze and create a labeled video using the exported model and desired resize parameters. This option functions similar to `deeplabcut.analyze_videos` and `deeplabcut.create_labeled_video`.
+```
+# python
+dlclive.analyze_videos('/path/to/exported/model', '/path/to/video', resize=[1.0, 0.75, '0.5'], display_lik=0.5, display_radius=4, cmap='bmy', save_poses=True, save_video=True)
+
+# command line
+dlc-live-analyze /path/to/exported/model /path/to/video -r 0.5 --display-lik 0.5 --display-radius 4 --cmap bmy --save_poses --save_video
+```
