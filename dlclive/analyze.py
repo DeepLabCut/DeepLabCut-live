@@ -77,7 +77,7 @@ def analyze(model_path,
             n_frames=1000,
             print_rate=False,
             display=False,
-            display_lik=0.0,
+            pcutoff=0.0,
             display_radius=3,
             cmap='bmy',
             save_poses=False,
@@ -106,7 +106,7 @@ def analyze(model_path,
         flat to print inference rate frame by frame, by default False
     display : bool, optional
         flag to display keypoints on images. Useful for checking the accuracy of exported models.
-    display_lik : float, optional
+    pcutoff : float, optional
         likelihood threshold to display keypoints
     display_radius : int, optional
         size (radius in pixels) of keypoint to display
@@ -159,7 +159,7 @@ def analyze(model_path,
 
     ### initialize live object
 
-    live = DLCLive(model_path, tf_config=tf_config, resize=resize, display=display, display_lik=display_lik, display_radius=display_radius, display_cmap=cmap)
+    live = DLCLive(model_path, tf_config=tf_config, resize=resize, display=display, pcutoff=pcutoff, display_radius=display_radius, display_cmap=cmap)
     live.init_inference(frame)
     TFGPUinference = True if len(live.outputs) == 1 else False
 
@@ -200,7 +200,7 @@ def analyze(model_path,
 
             this_pose = poses[-1]
             for j in range(this_pose.shape[0]):
-                if this_pose[j, 2] > display_lik:
+                if this_pose[j, 2] > pcutoff:
                     x = int(this_pose[j, 0])
                     y = int(this_pose[j, 1])
                     frame = cv2.circle(frame, (x, y), display_radius, colors[j], thickness=-1)
@@ -318,7 +318,7 @@ def analyze_videos(model_path,
                    pixels=None,
                    print_rate=False,
                    display=False,
-                   display_lik=0.5,
+                   pcutoff=0.5,
                    display_radius=3,
                    cmap='bmy',
                    save_poses=False,
@@ -351,7 +351,7 @@ def analyze_videos(model_path,
         flat to print inference rate frame by frame, by default False
     display : bool, optional
         flag to display keypoints on images. Useful for checking the accuracy of exported models.
-    display_lik : float, optional
+    pcutoff : float, optional
         likelihood threshold to display keypoints
     display_radius : int, optional
         size (radius in pixels) of keypoint to display
@@ -413,7 +413,7 @@ def analyze_videos(model_path,
                                                                   n_frames=n_frames,
                                                                   print_rate=print_rate,
                                                                   display=display,
-                                                                  display_lik=display_lik,
+                                                                  pcutoff=pcutoff,
                                                                   display_radius=display_radius,
                                                                   cmap=cmap,
                                                                   save_poses=save_poses,
@@ -440,7 +440,7 @@ def main():
     parser.add_argument('-p', '--pixels', type=float, nargs='+')
     parser.add_argument('-v', '--print-rate', default=False, action='store_true')
     parser.add_argument('-d', '--display', default=False, action='store_true')
-    parser.add_argument('-l', '--display-lik', default=0.5, type=float)
+    parser.add_argument('-l', '--pcutoff', default=0.5, type=float)
     parser.add_argument('-s', '--display-radius', default=3, type=int)
     parser.add_argument('-c', '--cmap', type=str, default='bmy')
     parser.add_argument('--save-poses', action='store_true')
@@ -455,7 +455,7 @@ def main():
                    n_frames=args.n_frames,
                    print_rate=args.print_rate,
                    display=args.display,
-                   display_lik=args.display_lik,
+                   pcutoff=args.pcutoff,
                    display_radius=args.display_radius,
                    cmap=args.cmap,
                    save_poses=args.save_poses,

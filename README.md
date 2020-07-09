@@ -64,7 +64,7 @@ dlc-live-analyze /path/to/exported/model /path/to/video1 /path/to/video2 -o /pat
 2. Display keypoints to visually inspect the accuracy of exported models on different image sizes:
 ```
 # python
-dlclive.analyze_videos('/path/to/exported/model', '/path/to/video', resize=0.5, display=True, display_lik=0.5, display_radius=4, cmap='bmy')
+dlclive.analyze_videos('/path/to/exported/model', '/path/to/video', resize=0.5, display=True, pcutoff=0.5, display_radius=4, cmap='bmy')
 
 # command line
 dlc-live-analyze /path/to/exported/model /path/to/video -r 0.5 --display --display-lik 0.5 --display-radius 4 --cmap bmy
@@ -73,8 +73,8 @@ dlc-live-analyze /path/to/exported/model /path/to/video -r 0.5 --display --displ
 3. Analyze and create a labeled video using the exported model and desired resize parameters. This option functions similar to `deeplabcut.analyze_videos` and `deeplabcut.create_labeled_video`.
 ```
 # python
-dlclive.analyze_videos('/path/to/exported/model', '/path/to/video', resize=[1.0, 0.75, '0.5'], display_lik=0.5, display_radius=4, cmap='bmy', save_poses=True, save_video=True)
+dlclive.analyze_videos('/path/to/exported/model', '/path/to/video', resize=[1.0, 0.75, '0.5'], pcutoff=0.5, display_radius=4, cmap='bmy', save_poses=True, save_video=True)
 
 # command line
-dlc-live-analyze /path/to/exported/model /path/to/video -r 0.5 --display-lik 0.5 --display-radius 4 --cmap bmy --save_poses --save_video
+dlc-live-analyze /path/to/exported/model /path/to/video -r 0.5 --pcutoff 0.5 --display-radius 4 --cmap bmy --save_poses --save_video
 ```

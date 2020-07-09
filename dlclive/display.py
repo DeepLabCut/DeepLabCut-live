@@ -19,19 +19,19 @@ class Display(object):
     -----------
     cmap : string
         string indicating the Matoplotlib colormap to use.
-    lik : float
+    pcutoff : float
         likelihood threshold to display points
     '''
 
 
-    def __init__(self, cmap='bmy', radius=3, lik=0.5):
+    def __init__(self, cmap='bmy', radius=3, pcutoff=0.5):
         """ Constructor method
         """
 
         self.cmap = cmap
         self.colors = None
         self.radius = radius
-        self.lik = lik
+        self.pcutoff = pcutoff
         self.window = None
 
 
@@ -79,7 +79,7 @@ class Display(object):
             draw = ImageDraw.Draw(img)
 
             for i in range(pose.shape[0]):
-                if pose[i,2] > self.lik:
+                if pose[i,2] > self.pcutoff:
                     try:
                         x0 = pose[i,0] - self.radius if pose[i,0] - self.radius > 0 else 0
                         x1 = pose[i,0] + self.radius if pose[i,0] + self.radius < im_size[1] else im_size[1]
