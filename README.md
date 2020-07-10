@@ -1,4 +1,9 @@
-# DeepLabCut-live <img src="https://images.squarespace-cdn.com/content/v1/57f6d51c9f74566f55ecf271/1572296495650-Y4ZTJ2XP2Z9XF1AD74VW/ke17ZwdGBToddI8pDm48kMulEJPOrz9Y8HeI7oJuXxR7gQa3H78H3Y0txjaiv_0fDoOvxcdMmMKkDsyUqMSsMWxHk725yiiHCCLfrh8O1z5QPOohDIaIeljMHgDF5CVlOqpeNLcJ80NK65_fV7S1UZiU3J6AN9rgO1lHw9nGbkYQrCLTag1XBHRgOrY8YAdXW07ycm2Trb21kYhaLJjddA/DLC_logo_blk-01.png?format=1000w" width="350" title="DLC-live" alt="DLC LIVE!" align="right" vspace = "50">
+# DeepLabCut-live SDK<img src="https://images.squarespace-cdn.com/content/v1/57f6d51c9f74566f55ecf271/1572296495650-Y4ZTJ2XP2Z9XF1AD74VW/ke17ZwdGBToddI8pDm48kMulEJPOrz9Y8HeI7oJuXxR7gQa3H78H3Y0txjaiv_0fDoOvxcdMmMKkDsyUqMSsMWxHk725yiiHCCLfrh8O1z5QPOohDIaIeljMHgDF5CVlOqpeNLcJ80NK65_fV7S1UZiU3J6AN9rgO1lHw9nGbkYQrCLTag1XBHRgOrY8YAdXW07ycm2Trb21kYhaLJjddA/DLC_logo_blk-01.png?format=1000w" width="350" title="DLC-live" alt="DLC LIVE!" align="right" vspace = "50">
+
+![PyPI - Python Version](https://img.shields.io/pypi/v/deeplabcut-live)
+[![License](https://img.shields.io/pypi/l/deeplabcutcore.svg)](https://github.com/DeepLabCut/deeplabcutlive/raw/master/LICENSE)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/deeplabcut-live?color=purple)
+![Python package](https://github.com/DeepLabCut/DeepLabCut-live/workflows/Python%20package/badge.svg?branch=master)
 
 This package contains a DeepLabCut inference pipeline that has minimal (software) dependencies. Thus, it is as easy to install as possible (in particular, on atypical systems like NVIDIA Jetson boards).
 
@@ -10,7 +15,7 @@ To perform processing on poses (such as predicting the future pose of an animal 
 - The `save` method saves any valuable data created by or used by the processor
 For examples, please see the [processor directory](processor)
 
-###### Note :: alone, this object does not record video or capture images from a camera. This must be done separately, i.e. see our DeepLabCut-live GUI.
+###### Note :: alone, this object does not record video or capture images from a camera. This must be done separately, i.e. see our [DeepLabCut-live GUI](https://github.com/gkane26/DeepLabCut-live-GUI).
 
 
 ### Installation:
@@ -52,3 +57,16 @@ dlc_live.get_pose(<your image>)
 
   - `<path to exported model directory>` = path to the folder that has the `.pb` files that you acquire after running `deeplabcut.export_model`
   - `<your image>` = is a numpy array of each frame
+  
+  
+### Citation:
+
+If you find our code helpful, please consider citing:
+```
+@Article{Kane020dlclive,
+  author    = {Kane, Gary and Lopes, Gocalo and Sanders, Jonny and Mathis, Alexander and and Mathis, Mackenzie},
+  title     = {Real-time DeepLabCut for closed-loop feedback based on posture},
+  journal   = {BioRxiv},
+  year      = {2020},
+}
+```
