@@ -177,9 +177,7 @@ def run_benchmark(model_path, video_path, resize=None, pixels=None, n_frames=100
 def get_savebenchmarkfn(sys_info ,i, fn_ind, out_dir=None):
     ''' get filename to save data (definitions see save_benchmark)'''
     out_dir = out_dir if out_dir is not None else os.getcwd()
-    host_name, op_sys, host_python, dev = sys_info
-
-    base_name = "benchmark_{}_{}_{}_{}.pickle".format(host_name, sys_info['device_type'], fn_ind, i)
+    base_name = "benchmark_{}_{}_{}_{}.pickle".format(sys_info['host_name'], sys_info['device_type'], fn_ind, i)
     datafilename = out_dir + '/' + base_name
     return datafilename
 
@@ -214,9 +212,6 @@ def save_benchmark(sys_info, inf_times, pixels, i, fn_ind, TFGPUinference, model
         #out_dir = out_dir if out_dir is not None else os.getcwd()
         datafilename=get_savebenchmarkfn(sys_info ,iter, fn_ind, out_dir=out_dir)
 
-    host_name, op_sys, host_python, dev = sys_info
-    host_name = host_name.replace(" ", "")
-
     model_type = None
     if model is not None:
         if 'resnet' in model:
@@ -231,7 +226,7 @@ def save_benchmark(sys_info, inf_times, pixels, i, fn_ind, TFGPUinference, model
             'TFGPUinference' : TFGPUinference,
             'pixels' : pixels,
             'inference_times' : inf_times}
-            
+
     data.update(sys_info)
 
     pickle.dump(data, open(os.path.normpath(datafilename), 'wb'))
