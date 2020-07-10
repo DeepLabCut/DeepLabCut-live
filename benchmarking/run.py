@@ -22,12 +22,12 @@ n_frames = 1000 #change to 10000 for GPU!
 pixels = [2500, 10000, 40000, 160000, 320000, 640000]
 ind = 1
 
-for m in dog_models:
-    print("\n\nMODEL {:d} / 8".format(ind))
-    benchmark_model_by_size(m, dog_video, output=out_dir, n_frames=n_frames, pixels=pixels)
-    ind += 1
+for ind_m, m in enumerate(dog_models):
+    print("\n\nMODEL {:d} / 8".format(ind_m))
+    benchmark_model_by_size(m, dog_video, ind_m, out_dir=out_dir, n_frames=n_frames, pixels=pixels)
 
-for m in mouse_models:
-    print("\n\nMODEL {:d} / 8".format(ind))
-    benchmark_model_by_size(m, mouse_video, output=out_dir, n_frames=n_frames, pixels=pixels)
-    ind += 1
+offset=ind_m+1
+
+for ind_m, m in enumerate(mouse_models):
+    print("\n\nMODEL {:d} / 8".format(ind_m))
+    benchmark_model_by_size(m, mouse_video, ind_m + offset, out_dir=out_dir, n_frames=n_frames, pixels=pixels)
