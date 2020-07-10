@@ -309,7 +309,7 @@ def save_inf_times(sys_info,
     return True
 
 
-def analyze_videos(model_path,
+def benchmark_videos(model_path,
                    video_path,
                    output=None,
                    n_frames=1000,
@@ -365,17 +365,17 @@ def analyze_videos(model_path,
     Example
     -------
     Return a vector of inference times for 10000 frames on one video or two videos:
-    dlclive.analyze_videos('/my/exported/model', 'my_video.avi', n_frames=10000)
-    dlclive.analyze_videos('/my/exported/model', ['my_video1.avi', 'my_video2.avi'], n_frames=10000)
+    dlclive.benchmark_videos('/my/exported/model', 'my_video.avi', n_frames=10000)
+    dlclive.benchmark_videos('/my/exported/model', ['my_video1.avi', 'my_video2.avi'], n_frames=10000)
 
     Return a vector of inference times, testing full size and resizing images to half the width and height for inference, for two videos
-    dlclive.analyze_videos('/my/exported/model', ['my_video1.avi', 'my_video2.avi'], n_frames=10000, resize=[1.0, 0.5])
+    dlclive.benchmark_videos('/my/exported/model', ['my_video1.avi', 'my_video2.avi'], n_frames=10000, resize=[1.0, 0.5])
 
     Display keypoints to check the accuracy of an exported model
-    dlclive.analyze_videos('/my/exported/model', 'my_video.avi', display=True)
+    dlclive.benchmark_videos('/my/exported/model', 'my_video.avi', display=True)
 
     Analyze a video (save poses to hdf5) and create a labeled video, similar to :function:`DeepLabCut.analyze_videos` and :function:`create_labeled_video`
-    dlclive.analyze_videos('/my/exported/model', 'my_video.avi', save_poses=True, save_video=True)
+    dlclive.benchmark_videos('/my/exported/model', 'my_video.avi', save_poses=True, save_video=True)
     """
 
     ### convert video_paths to list
@@ -430,7 +430,7 @@ def analyze_videos(model_path,
 
 
 def main():
-    """Provides a command line interface :function:`analyze_videos`
+    """Provides a command line interface :function:`benchmark_videos`
     """
 
     parser = argparse.ArgumentParser()
@@ -449,7 +449,7 @@ def main():
     parser.add_argument('--save-video', action='store_true')
     args = parser.parse_args()
 
-    analyze_videos(args.model_path,
+    benchmark_videos(args.model_path,
                    args.video_path,
                    output=args.output,
                    resize=args.resize,
