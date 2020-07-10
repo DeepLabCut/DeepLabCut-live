@@ -20,12 +20,12 @@ def read_graph(file):
 
     Returns
     --------
-    graph_def :class:`tensorflow.GraphDef`
+    graph_def :class:`tensorflow.tf.compat.v1.GraphDef`
         The graph definition of the DeepLabCut model found at the object's path
     '''
 
-    with tf.gfile.GFile(file, 'rb') as f:
-        graph_def = tf.GraphDef()
+    with tf.io.gfile.GFile(file, 'rb') as f:
+        graph_def = tf.compat.v1.GraphDef()
         graph_def.ParseFromString(f.read())
         return graph_def
 
@@ -36,12 +36,12 @@ def finalize_graph(graph_def):
 
     Parameters
     -----------
-    graph_def :class:`tensorflow.GraphDef`
+    graph_def :class:`tensorflow.compat.v1.GraphDef`
         The graph of the DeepLabCut model, read using the :func:`read_graph` method
 
     Returns
     --------
-    graph :class:`tensorflow.Graph`
+    graph :class:`tensorflow.compat.v1.GraphDef`
         The finalized graph of the DeepLabCut model
     inputs :class:`tensorflow.Tensor`
         Input tensor(s) for the model
@@ -125,7 +125,7 @@ def extract_graph(graph, tf_config=None):
 
     input_tensor = get_input_tensor(graph)
     output_tensor = get_output_tensors(graph)
-    sess = tf.Session(graph=graph, config=tf_config)
+    sess = tf.compat.v1.Session(graph=graph, config=tf_config)
     inputs = graph.get_tensor_by_name(input_tensor)
     outputs = [graph.get_tensor_by_name(out) for out in output_tensor]
 
