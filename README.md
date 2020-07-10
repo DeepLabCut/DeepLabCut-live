@@ -3,7 +3,7 @@
 ![PyPI - Python Version](https://img.shields.io/pypi/v/deeplabcut-live)
 [![License](https://img.shields.io/pypi/l/deeplabcutcore.svg)](https://github.com/DeepLabCut/deeplabcutlive/raw/master/LICENSE)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/deeplabcut-live?color=purple)
-![Python package](https://github.com/DeepLabCut/DeepLabCut-live/workflows/Python%20package/badge.svg?branch=master)
+![Python package](https://github.com/DeepLabCut/DeepLabCut-live/workflows/Python%20package/badge.svg)
 
 This package contains a DeepLabCut inference pipeline that has minimal (software) dependencies. Thus, it is as easy to install as possible (in particular, on atypical systems like NVIDIA Jetson boards).
 
