@@ -64,7 +64,7 @@ dlc_live.get_pose(<your image>)
 If you find our code helpful, please consider citing:
 ```
 @Article{Kane2020dlclive,
-  author    = {Kane, Gary and Lopes, Gocalo and Sanders, Jonny and Mathis, Alexander and Mathis, Mackenzie},
+  author    = {Kane, Gary and Lopes, Gonçalo and Sanders, Jonny and Mathis, Alexander and Mathis, Mackenzie},
   title     = {Real-time DeepLabCut for closed-loop feedback based on posture},
   journal   = {BioRxiv},
   year      = {2020},
