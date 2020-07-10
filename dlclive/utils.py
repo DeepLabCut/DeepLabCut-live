@@ -148,3 +148,28 @@ def _img_as_ubyte_np(frame):
 
         raise TypeError("image of type {} could not be converted to ubyte".format(im_type))
             
+def decode_fourcc(cc):
+    """
+    Convert float fourcc code from opencv to characters.
+
+    If decode fails, returns empty string.
+
+    https://stackoverflow.com/a/49138893
+
+    Arguments:
+        cc (float, int): fourcc code from opencv
+
+    Returns:
+         str: Character format of fourcc code
+
+    Examples:
+        >>> vid = cv2.VideoCapture('/some/video/path.avi')
+        >>> decode_fourcc(vid.get(cv2.CAP_PROP_FOURCC))
+        'DIVX'
+    """
+    try:
+        decoded = "".join([chr((int(cc) >> 8 * i) & 0xFF) for i in range(4)])
+    except:
+        decoded = ""
+
+    return decoded

@@ -73,6 +73,10 @@ class DLCLive(object):
     display_lik : float, optional
         Likelihood threshold for display
     '''
+    PARAMETERS = (
+        'path', 'cfg', 'model_type', 'precision', 'cropping',
+        'dynamic', 'resize', 'processor'
+    )
 
     def __init__(self, model_path,
                  model_type='base', precision='FP16',
@@ -124,6 +128,18 @@ class DLCLive(object):
 
         ruamel_file = ruamel.yaml.YAML()
         self.cfg = ruamel_file.load(open(cfg_path, 'r'))
+
+    @property
+    def parameterization(self) -> dict:
+        """
+        Return
+        Returns
+        -------
+
+        """
+        return {
+            param: getattr(self, param) for param in self.PARAMETERS
+        }
 
 
     def process_frame(self, frame):

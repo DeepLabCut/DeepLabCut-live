@@ -29,7 +29,7 @@ import cv2
 from dlclive import DLCLive
 from dlclive import VERSION
 from dlclive import __file__ as dlcfile
-
+from dlclive.utils import decode_fourcc
 
 def get_system_info() -> dict:
     """ Return summary info for system running benchmark
@@ -100,7 +100,7 @@ def get_system_info() -> dict:
     }
 
 
-def run_benchmark(model_path, video_path, resize=None, pixels=None, n_frames=10000, print_rate=False) -> typing.Tuple[np.ndarray, int, bool]:
+def run_benchmark(model_path, video_path, resize=None, pixels=None, n_frames=10000, print_rate=False) -> typing.Tuple[np.ndarray, int, bool, dict]:
     """ Benchmark on inference times for a given DLC model and video
 
     Parameters
@@ -136,6 +136,8 @@ def run_benchmark(model_path, video_path, resize=None, pixels=None, n_frames=100
 
     if pixels is not None:
         resize = np.sqrt(pixels / (im_size[0] * im_size[1]))
+    else:
+        resize = resize if resize is not None else 1
 
     ### initialize live object
 
@@ -168,11 +170,28 @@ def run_benchmark(model_path, video_path, resize=None, pixels=None, n_frames=100
 
     ### close video and tensorflow session
 
+    # gather video and test parameterization
+
+    meta = {
+        'video_path': video_path,
+        'video_codec': decode_fourcc(cap.get(cv2.CAP_PROP_FOURCC)),
+        'video_pixel_format': decode_fourcc(cap.get(cv2.CAP_PROP_CODEC_PIXEL_FORMAT)),
+        'video_fps': cap.get(cv2.CAP_PROP_FPS),
+        'video_total_frames': cap.get(cv2.CAP_PROP_FRAME_COUNT),
+        'resize': resize,
+        'original_frame_size': im_size,
+        'resized_frame_size': (im_size[0]*resize, im_size[1]*resize),
+        'pixels': pixels,
+        'dlclive_params': live.parameterization
+    }
+
     cap.release()
     live.close()
 
-    resize = resize if resize is not None else 1
-    return inf_times, resize*im_size[0] * resize*im_size[1], TFGPUinference
+
+
+
+    return inf_times, resize*im_size[0] * resize*im_size[1], TFGPUinference, meta
 
 
 def save_benchmark(sys_info: dict,
@@ -181,7 +200,8 @@ def save_benchmark(sys_info: dict,
                    iter: int,
                    TFGPUinference: bool,
                    model: str = None,
-                   out_dir: str = None):
+                   out_dir: str = None,
+                   meta: dict = None):
     """ Save benchmarking data with system information to a pickle file
 
     Parameters
@@ -235,6 +255,9 @@ def save_benchmark(sys_info: dict,
             'pixels' : pixels,
             'inference_times' : inf_times}
     data.update(sys_info)
+
+    if meta:
+        data.update(meta)
 
     pickle.dump(data, open(os.path.normpath(out_dir + '/' + base_name), 'wb'))
 
@@ -294,19 +317,23 @@ def benchmark_model_by_size(model_path, video_path, output=None, n_frames=10000,
 
         print("\nRun {:d} / {:d}\n".format(i+1, len(resize)))
 
-        inf_times, pixels_out, TFGPUinference = run_benchmark(model_path,
-                                                              video_path,
-                                                              resize=resize[i],
-                                                              pixels=pixels[i],
-                                                              n_frames=n_frames,
-                                                              print_rate=print_rate)
+        inf_times, pixels_out, TFGPUinference, benchmark_meta = run_benchmark(
+            model_path,
+            video_path,
+            resize=resize[i],
+            pixels=pixels[i],
+            n_frames=n_frames,
+            print_rate=print_rate)
 
         #TODO: check if a part has already been complted?
 
         ### saving results intermediately
 
         #print("Your system info:", sys_info)
-        save_benchmark(sys_info, inf_times, pixels_out, i, TFGPUinference, model=os.path.basename(model_path), out_dir=output)
+        save_benchmark(sys_info, inf_times, pixels_out, i, TFGPUinference,
+                       model=os.path.basename(model_path),
+                       out_dir=output,
+                       meta=benchmark_meta)
 
 
 def main():
