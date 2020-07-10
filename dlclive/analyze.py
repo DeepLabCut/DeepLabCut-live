@@ -385,8 +385,10 @@ def analyze_videos(model_path,
     ### fix resize
 
     if pixels:
+        pixels = pixels if type(pixels) is list else [pixels]
         resize = [None for p in pixels]
     elif resize:
+        resize = resize if type(resize) is list else [resize]
         pixels = [None for r in resize]
     else:
         resize = [None]
