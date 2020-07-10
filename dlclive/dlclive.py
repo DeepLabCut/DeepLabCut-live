@@ -356,7 +356,8 @@ class DLCLive(object):
             else:
                 self.pose = argmax_pose_predict(scmap, locref, self.cfg['stride'])
         else:
-            self.pose = pose_output[0]
+            pose = np.array(pose_output[0])
+            self.pose = pose[:, [1,0,2]]
 
         # display image if display=True before correcting pose for cropping/resizing
 
