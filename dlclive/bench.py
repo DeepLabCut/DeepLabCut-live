@@ -172,12 +172,36 @@ def run_benchmark(model_path, video_path, resize=None, pixels=None, n_frames=100
 
     # gather video and test parameterization
 
+    # dont want to fail here so gracefully failing on exception --
+    # eg. some packages of cv2 don't have CAP_PROP_CODEC_PIXEL_FORMAT
+    try:
+        fourcc = decode_fourcc(cap.get(cv2.CAP_PROP_FOURCC))
+    except:
+        fourcc = ""
+
+    try:
+        fps = round(cap.get(cv2.CAP_PROP_FPS))
+    except:
+        fps = None
+
+    try:
+        pix_fmt = decode_fourcc(cap.get(cv2.CAP_PROP_CODEC_PIXEL_FORMAT))
+    except:
+        pix_fmt = ""
+
+    try:
+        frame_count = round(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    except
+        frame_count = None
+
+
+
     meta = {
         'video_path': video_path,
-        'video_codec': decode_fourcc(cap.get(cv2.CAP_PROP_FOURCC)),
-        'video_pixel_format': decode_fourcc(cap.get(cv2.CAP_PROP_CODEC_PIXEL_FORMAT)),
-        'video_fps': cap.get(cv2.CAP_PROP_FPS),
-        'video_total_frames': cap.get(cv2.CAP_PROP_FRAME_COUNT),
+        'video_codec': fourcc,
+        'video_pixel_format': pix_fmt,
+        'video_fps': fps,
+        'video_total_frames': frame_count,
         'resize': resize,
         'original_frame_size': im_size,
         'resized_frame_size': (im_size[0]*resize, im_size[1]*resize),
