@@ -355,7 +355,7 @@ def main():
 
     benchmark_model_by_size(args.model_path,
                             args.video_path,
-                            output=args.output,
+                            out_dir=args.output,
                             resize=args.resize,
                             pixels=args.pixels,
                             n_frames=args.n_frames,
