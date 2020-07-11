@@ -191,7 +191,7 @@ def run_benchmark(model_path, video_path, resize=None, pixels=None, n_frames=100
 
     try:
         frame_count = round(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    except
+    except:
         frame_count = None
 
 
