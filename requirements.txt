@@ -1,0 +1,8 @@
+numpy
+ruamel.yaml
+colorcet
+pillow
+py-cpuinfo==5.0.0
+tqdm
+tables
+pandas

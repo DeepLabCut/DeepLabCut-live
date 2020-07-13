@@ -13,7 +13,7 @@ conda create -n dlc-live python=3.7 tensorflow==1.13.1 # if not using GPU
 Activate the conda environment and install the DeepLabCut-live package:
 ```
 conda activate dlc-live
-pip install git+https://github.com/AlexEMG/DeepLabCut-live.git
+pip install deeplabcut-live
 ```
 
 We also recommend that you have OpenCV installed:
