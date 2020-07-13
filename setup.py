@@ -15,7 +15,7 @@ import warnings
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-install_requires = ['numpy', 'ruamel.yaml', 'colorcet', 'pillow', 'py-cpuinfo==5.0.0', 'tqdm']
+install_requires = ['numpy', 'ruamel.yaml', 'colorcet', 'pillow', 'py-cpuinfo==5.0.0', 'tqdm', 'pandas', 'tables']
 
 if find_spec('cv2') is None:
     install_requires.append('opencv-python')
@@ -41,5 +41,6 @@ setuptools.setup(
         "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
         "Operating System :: OS Independent",
     ),
-    entry_points = {'console_scripts' : ['dlc-live-bench=dlclive.bench:main']}
+    entry_points = {'console_scripts' : ['dlc-live-bench=dlclive.bench:main',
+                                         'dlc-live-benchmark=dlclive.benchmark:main']}
 )

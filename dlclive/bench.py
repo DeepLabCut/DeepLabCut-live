@@ -10,6 +10,7 @@ import platform
 import os
 import time
 import sys
+import warnings
 import argparse
 import pickle
 import subprocess
@@ -99,8 +100,7 @@ def get_system_info() -> dict:
         'dlclive_version': VERSION
     }
 
-
-def run_benchmark(model_path, video_path, resize=None, pixels=None, n_frames=10000, print_rate=False) -> typing.Tuple[np.ndarray, int, bool]:
+def run_benchmark(model_path, video_path, tf_config=None, resize=None, pixels=None, n_frames=10000, print_rate=False, display=False, pcutoff=0.0, display_radius=3) -> typing.Tuple[np.ndarray, int, bool]:
     """ Benchmark on inference times for a given DLC model and video
 
     Parameters
@@ -139,13 +139,13 @@ def run_benchmark(model_path, video_path, resize=None, pixels=None, n_frames=100
 
     ### initialize live object
 
-    live = DLCLive(model_path, resize=resize)
+    live = DLCLive(model_path, tf_config=tf_config, resize=resize, display=display, pcutoff=pcutoff, display_radius=display_radius)
     live.init_inference(frame)
     TFGPUinference = True if len(live.outputs) == 1 else False
 
     ### perform inference
 
-    iterator = range(n_frames) if print_rate else tqdm(range(n_frames))
+    iterator = range(n_frames) if (print_rate) or (display) else tqdm(range(n_frames))
     inf_times = np.zeros(n_frames)
 
     for i in iterator:
@@ -155,7 +155,7 @@ def run_benchmark(model_path, video_path, resize=None, pixels=None, n_frames=100
         if not ret:
             warnings.warn("Did not complete {:d} frames. There probably were not enough frames in the video {}.".format(n_frames, video_path))
             break
-
+        
         start_pose = time.time()
         live.get_pose(frame)
         inf_times[i] = time.time() - start_pose
@@ -238,7 +238,7 @@ def read_pickle(filename):
     with open(filename, "rb") as handle:
         return pickle.load(handle)
 
-def benchmark_model_by_size(model_path, video_path, fn_ind, out_dir=None, n_frames=10000, resize=None, pixels=None, print_rate=False):
+def benchmark_model_by_size(model_path, video_path, output=None, n_frames=10000, tf_config=None, resize=None, pixels=None, print_rate=False, display=False, pcutoff=0.5, display_radius=3):
     """Benchmark DLC model by image size
 
     Parameters
@@ -278,17 +278,12 @@ def benchmark_model_by_size(model_path, video_path, fn_ind, out_dir=None, n_fram
 
     ### initialize full inference times
 
-    #inf_times = np.zeros((len(resize), n_frames))
-    #pixels_out = np.zeros(len(resize))
-    print(resize)
-
     # get system info once, shouldn't change between runs
     sys_info = get_system_info()
 
     for i in range(len(resize)):
 
         sys_info = get_system_info()
-        #print("Your system info:", sys_info)
         datafilename=get_savebenchmarkfn(sys_info ,i, fn_ind, out_dir=out_dir)
 
         #Check if a subset was already been completed?
@@ -313,11 +308,15 @@ def main():
     parser.add_argument('model_path', type=str)
     parser.add_argument('video_path', type=str)
     parser.add_argument('-o', '--output', type=str, default=os.getcwd())
-    parser.add_argument('-n', '--n_frames', type=int, default=10000)
+    parser.add_argument('-n', '--n-frames', type=int, default=10000)
     parser.add_argument('-r', '--resize', type=float, nargs='+')
     parser.add_argument('-p', '--pixels', type=float, nargs='+')
     parser.add_argument('-v', '--print_rate', default=False, action='store_true')
+    parser.add_argument('-d', '--display', default=False, action='store_true')
+    parser.add_argument('-l', '--pcutoff', default=0.5, type=float)
+    parser.add_argument('-s', '--display-radius', default=3, type=int)
     args = parser.parse_args()
+
 
     benchmark_model_by_size(args.model_path,
                             args.video_path,
@@ -325,7 +324,10 @@ def main():
                             resize=args.resize,
                             pixels=args.pixels,
                             n_frames=args.n_frames,
-                            print_rate=args.print_rate)
+                            print_rate=args.print_rate,
+                            display=args.display,
+                            pcutoff=args.pcutoff,
+                            display_radius=args.display_radius)
 
 
 if __name__ == "__main__":

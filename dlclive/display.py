@@ -19,19 +19,19 @@ class Display(object):
     -----------
     cmap : string
         string indicating the Matoplotlib colormap to use.
-    lik : float
+    pcutoff : float
         likelihood threshold to display points
     '''
 
 
-    def __init__(self, cmap='bmy', radius=3, lik=0.5):
+    def __init__(self, cmap='bmy', radius=3, pcutoff=0.5):
         """ Constructor method
         """
 
         self.cmap = cmap
         self.colors = None
         self.radius = radius
-        self.lik = lik
+        self.pcutoff = pcutoff
         self.window = None
 
 
@@ -79,18 +79,18 @@ class Display(object):
             draw = ImageDraw.Draw(img)
 
             for i in range(pose.shape[0]):
-                if pose[i,2] > self.lik:
+                if pose[i,2] > self.pcutoff:
                     try:
-                        x0 = pose[i,0] - self.radius if pose[i,1]-self.radius > 0 else 0
-                        x1 = pose[i,0] + self.radius if pose[i,1] + self.radius < im_size[1] else im_size[1]
-                        y0 = pose[i,1] - self.radius if pose[i,0] - self.radius > 0 else 0
-                        y1 = pose[i,1] + self.radius if pose[i,0] + self.radius < im_size[0] else im_size[0]
+                        x0 = pose[i,0] - self.radius if pose[i,0] - self.radius > 0 else 0
+                        x1 = pose[i,0] + self.radius if pose[i,0] + self.radius < im_size[1] else im_size[1]
+                        y0 = pose[i,1] - self.radius if pose[i,1] - self.radius > 0 else 0
+                        y1 = pose[i,1] + self.radius if pose[i,1] + self.radius < im_size[0] else im_size[0]
                         coords = [x0, y0, x1, y1]
                         draw.ellipse(coords, fill=self.colors[i], outline=self.colors[i])
-                    except:
-                        pass
+                    except Exception as e:
+                        print(e)
         
-        img_tk = ImageTk.PhotoImage(image=img)
+        img_tk = ImageTk.PhotoImage(image=img, master=self.window)
         self.lab.configure(image=img_tk)
         self.window.update()
 
