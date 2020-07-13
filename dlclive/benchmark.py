@@ -11,49 +11,69 @@ import os
 import time
 import sys
 import warnings
-import argparse
+import subprocess
+import typing
 import pickle
 import colorcet as cc
 from PIL import ImageColor
 import ruamel
 import pandas as pd
 
-import cpuinfo
+try:
+    from pip._internal.operations import freeze
+except ImportError:
+    from pip.operations import freeze
+
 from tqdm import tqdm
 import numpy as np
 import tensorflow as tf
 import cv2
 
 from dlclive import DLCLive
+from dlclive import VERSION
+from dlclive import __file__ as dlcfile
 
 
-def get_system_info():
+def get_system_info() -> dict:
     """ Return summary info for system running benchmark
-
     Returns
     -------
-    str
-        name of machine
-    str
-        operating system
-    str
-        path to python (which conda/virtual environment)
-    str
-        device name
+    dict
+        Dictionary containing the following system information:
+        * ``host_name`` (str): name of machine
+        * ``op_sys`` (str): operating system
+        * ``python`` (str): path to python (which conda/virtual environment)
+        * ``device`` (tuple): (device type (``'GPU'`` or ``'CPU'```), device information)
+        * ``freeze`` (list): list of installed packages and versions
+        * ``python_version`` (str): python version
+        * ``git_hash`` (str, None): If installed from git repository, hash of HEAD commit
+        * ``dlclive_version`` (str): dlclive version from :data:`dlclive.VERSION`
     """
 
 
     ### get os
 
     op_sys = platform.platform()
-    host_name = platform.node()
+    host_name = platform.node().replace(' ', '')
+
+    # A string giving the absolute path of the executable binary for the Python interpreter, on systems where this makes sense.
     if platform.system() == 'Windows':
         host_python = sys.executable.split(os.path.sep)[-2]
     else:
         host_python = sys.executable.split(os.path.sep)[-3]
 
-    ### get device info (GPU or CPU)
+    # try to get git hash if possible
+    dlc_basedir = os.path.dirname(os.path.dirname(dlcfile))
+    git_hash = None
+    try:
+        git_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=dlc_basedir)
+        git_hash = git_hash.decode('utf-8').rstrip('\n')
+    except subprocess.CalledProcessError:
+        # not installed from git repo, eg. pypi
+        # fine, pass quietly
+        pass
 
+    # get device info (GPU or CPU)
     dev = None
     if tf.test.is_gpu_available():
         gpu_name = tf.test.gpu_device_name()
@@ -66,10 +86,19 @@ def get_system_info():
         dev = [get_cpu_info()['brand']]
         dev_type = "CPU"
 
-    return host_name, op_sys, host_python, (dev_type, dev)
+    return {
+        'host_name': host_name,
+        'op_sys'   : op_sys,
+        'python': host_python,
+        'device_type': dev_type,
+        'device': dev,
+        'freeze': list(freeze.freeze()), # pip freeze to get versions of all packages
+        'python_version': sys.version,
+        'git_hash': git_hash,
+        'dlclive_version': VERSION
+    }
 
-
-def analyze(model_path,
+def benchmark(model_path,
             video_path,
             tf_config=None,
             resize=None,
@@ -82,7 +111,7 @@ def analyze(model_path,
             cmap='bmy',
             save_poses=False,
             save_video=False,
-            output=None):
+            output=None) -> typing.Tuple[np.ndarray, int, bool]:
     """ Analyze DeepLabCut-live exported model on a video:
     Calculate inference time, 
     display keypoints, or 
@@ -113,7 +142,7 @@ def analyze(model_path,
     cmap : str, optional
         a string indicating the :package:`colorcet` colormap, `options here <https://colorcet.holoviz.org/>`, by default "bmy"
     save_poses : bool, optional
-        flag to save poses to an hdf5 file. If True, operates similar to :function:`DeepLabCut.analyze_videos`, by default False
+        flag to save poses to an hdf5 file. If True, operates similar to :function:`DeepLabCut.benchmark_videos`, by default False
     save_video : bool, optional
         flag to save a labeled video. If True, operates similar to :function:`DeepLabCut.create_labeled_video`, by default False
     output : str, optional
@@ -129,16 +158,16 @@ def analyze(model_path,
     Example
     -------
     Return a vector of inference times for 10000 frames:
-    dlclive.analyze('/my/exported/model', 'my_video.avi', n_frames=10000)
+    dlclive.benchmark('/my/exported/model', 'my_video.avi', n_frames=10000)
 
     Return a vector of inference times, resizing images to half the width and height for inference
-    dlclive.analyze('/my/exported/model', 'my_video.avi', n_frames=10000, resize=0.5)
+    dlclive.benchmark('/my/exported/model', 'my_video.avi', n_frames=10000, resize=0.5)
 
     Display keypoints to check the accuracy of an exported model
-    dlclive.analyze('/my/exported/model', 'my_video.avi', display=True)
+    dlclive.benchmark('/my/exported/model', 'my_video.avi', display=True)
 
-    Analyze a video (save poses to hdf5) and create a labeled video, similar to :function:`DeepLabCut.analyze_videos` and :function:`create_labeled_video`
-    dlclive.analyze('/my/exported/model', 'my_video.avi', save_poses=True, save_video=True)
+    Analyze a video (save poses to hdf5) and create a labeled video, similar to :function:`DeepLabCut.benchmark_videos` and :function:`create_labeled_video`
+    dlclive.benchmark('/my/exported/model', 'my_video.avi', save_poses=True, save_video=True)
     """
 
     ### load video
@@ -248,15 +277,15 @@ def save_inf_times(sys_info,
                    TFGPUinference,
                    model=None,
                    output=None):
-    """ Save inference time data collected using :function:`analyze` with system information to a pickle file.
-    This is primarily used through :function:`analyze_videos`
+    """ Save inference time data collected using :function:`benchmark` with system information to a pickle file.
+    This is primarily used through :function:`benchmark_videos`
     
     Parameters
     ----------
     sys_info : tuple
         system information generated by :func:`get_system_info`
     inf_times : :class:`numpy.ndarray`
-        array of inference times generated by :func:`analyze`
+        array of inference times generated by :func:`benchmark`
     pixels : float or :class:`numpy.ndarray`
         number of pixels for each benchmark run. If an array, each index corresponds to a row in inf_times
     TFGPUinference: bool
@@ -273,8 +302,6 @@ def save_inf_times(sys_info,
     """
 
     output = output if output is not None else os.getcwd()
-    host_name, op_sys, host_python, dev = sys_info
-    host_name = host_name.replace(" ", "")
     model_type = None
     if model is not None:
         if 'resnet' in model:
@@ -285,23 +312,18 @@ def save_inf_times(sys_info,
             model_type = None
 
     fn_ind = 0
-    base_name = "benchmark_{}_{}_{}.pickle".format(host_name, dev[0], fn_ind)
+    base_name = f"benchmark_{sys_info['host_name']}_{sys_info['device'][0]}_{fn_ind}.pickle"
     while os.path.isfile(os.path.normpath(output + '/' + base_name)):
         fn_ind += 1
-        base_name = "benchmark_{}_{}_{}.pickle".format(host_name, dev[0], fn_ind)
+        base_name = f"benchmark_{sys_info['host_name']}_{sys_info['device'][0]}_{fn_ind}.pickle"
 
-    fn = os.path.normpath(output)
-
-    data = {'host_name' : host_name,
-            'op_sys' : op_sys,
-            'python' : host_python,
-            'device_type' : dev[0],
-            'device' : dev[1],
-            'model' : model,
+    data = {'model' : model,
             'model_type' : model_type,
             'TFGPUinference' : TFGPUinference,
             'pixels' : pixels,
             'inference_times' : inf_times}
+
+    data.update(sys_info)
 
     os.makedirs(os.path.normpath(output), exist_ok=True)
     pickle.dump(data, open(os.path.normpath(f"{output}/{base_name}"), 'wb'))
@@ -328,7 +350,7 @@ def benchmark_videos(model_path,
     by specifying a resizing factor or the number of pixels to use in the image (keeping aspect ratio constant).
     Options to record inference times (to examine inference speed), 
     display keypoints to visually check the accuracy, 
-    or save poses to an hdf5 file as in :function:`deeplabcut.analyze_videos` and 
+    or save poses to an hdf5 file as in :function:`deeplabcut.benchmark_videos` and 
     create a labeled video as in :function:`deeplabcut.create_labeled_video`.
     
     Parameters
@@ -358,7 +380,7 @@ def benchmark_videos(model_path,
     cmap : str, optional
         a string indicating the :package:`colorcet` colormap, `options here <https://colorcet.holoviz.org/>`, by default "bmy"
     save_poses : bool, optional
-        flag to save poses to an hdf5 file. If True, operates similar to :function:`DeepLabCut.analyze_videos`, by default False
+        flag to save poses to an hdf5 file. If True, operates similar to :function:`DeepLabCut.benchmark_videos`, by default False
     save_video : bool, optional
         flag to save a labeled video. If True, operates similar to :function:`DeepLabCut.create_labeled_video`, by default False
 
@@ -374,7 +396,7 @@ def benchmark_videos(model_path,
     Display keypoints to check the accuracy of an exported model
     dlclive.benchmark_videos('/my/exported/model', 'my_video.avi', display=True)
 
-    Analyze a video (save poses to hdf5) and create a labeled video, similar to :function:`DeepLabCut.analyze_videos` and :function:`create_labeled_video`
+    Analyze a video (save poses to hdf5) and create a labeled video, similar to :function:`DeepLabCut.benchmark_videos` and :function:`create_labeled_video`
     dlclive.benchmark_videos('/my/exported/model', 'my_video.avi', save_poses=True, save_video=True)
     """
 
@@ -405,22 +427,22 @@ def benchmark_videos(model_path,
 
         for i in range(len(resize)):
 
-            print("\nRun {:d} / {:d}\n".format(i+1, len(resize)))
+            print(f"\nRun {i+1} / {len(resize)}\n")
 
-            inf_times[i], pixels_out[i], TFGPUinference = analyze(model_path,
-                                                                  v,
-                                                                  tf_config=tf_config,
-                                                                  resize=resize[i],
-                                                                  pixels=pixels[i],
-                                                                  n_frames=n_frames,
-                                                                  print_rate=print_rate,
-                                                                  display=display,
-                                                                  pcutoff=pcutoff,
-                                                                  display_radius=display_radius,
-                                                                  cmap=cmap,
-                                                                  save_poses=save_poses,
-                                                                  save_video=save_video,
-                                                                  output=output)
+            inf_times[i], pixels_out[i], TFGPUinference = benchmark(model_path,
+                                                                    v,
+                                                                    tf_config=tf_config,
+                                                                    resize=resize[i],
+                                                                    pixels=pixels[i],
+                                                                    n_frames=n_frames,
+                                                                    print_rate=print_rate,
+                                                                    display=display,
+                                                                    pcutoff=pcutoff,
+                                                                    display_radius=display_radius,
+                                                                    cmap=cmap,
+                                                                    save_poses=save_poses,
+                                                                    save_video=save_video,
+                                                                    output=output)
 
         ### save results
 
@@ -433,11 +455,13 @@ def main():
     """Provides a command line interface :function:`benchmark_videos`
     """
 
+    import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument('model_path', type=str)
     parser.add_argument('video_path', type=str, nargs='+')
     parser.add_argument('-o', '--output', type=str, default=None)
-    parser.add_argument('-n', '--n-frames', type=int, default=10000)
+    parser.add_argument('-n', '--n-frames', type=int, default=1000)
     parser.add_argument('-r', '--resize', type=float, nargs='+')
     parser.add_argument('-p', '--pixels', type=float, nargs='+')
     parser.add_argument('-v', '--print-rate', default=False, action='store_true')
