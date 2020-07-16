@@ -100,7 +100,6 @@ def get_system_info() -> dict:
     }
 
 
-def run_benchmark(model_path, video_path, resize=None, pixels=None, n_frames=10000, print_rate=False)
 def run_benchmark(model_path, video_path, tf_config=None,
                   resize=None, pixels=None, n_frames=10000,
                   print_rate=False, display=False, pcutoff=0.0,
