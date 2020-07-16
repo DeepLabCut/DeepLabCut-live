@@ -23,7 +23,7 @@ except Exception:
 
 from dlclive.graph import read_graph, finalize_graph, get_output_nodes, get_output_tensors, extract_graph
 from dlclive.pose import extract_cnn_output, argmax_pose_predict, multi_pose_predict
-from dlclive.display import Display 
+from dlclive.display import Display
 from dlclive import utils
 from dlclive.exceptions import DLCLiveError, DLCLiveWarning
 
@@ -66,38 +66,55 @@ class DLCLive(object):
         i) to run a forward predicting model that will predict the future pose from past history of poses (history can be stored in the processor object, but is not stored in this DLCLive object)
         ii) to trigger external hardware based on pose estimation (e.g. see 'TeensyLaser' processor)
 
+    convert2rgb : bool, optional
+        boolean flag to convert frames from BGR to RGB color scheme
+
     display : bool, optional
         Display frames with DeepLabCut labels?
         This is useful for testing model accuracy and cropping parameters, but it is very slow.
 
     display_lik : float, optional
         Likelihood threshold for display
+
+    display_raidus : int, optional
+        radius for keypoint display in pixels, default=3
     '''
     PARAMETERS = (
         'path', 'cfg', 'model_type', 'precision', 'cropping',
         'dynamic', 'resize', 'processor'
     )
 
-    def __init__(self, model_path,
-                 model_type='base', precision='FP16',
-                 cropping=None, dynamic=(False,.5,10), resize=None,
-                 processor=None, display=False, display_lik=0.5):
+    def __init__(self,
+                 model_path,
+                 model_type='base',
+                 precision='FP32',
+                 tf_config=None,
+                 cropping=None,
+                 dynamic=(False,.5,10),
+                 resize=None,
+                 convert2rgb=True,
+                 processor=None,
+                 display=False,
+                 pcutoff=0.5,
+                 display_radius=3,
+                 display_cmap='bmy'):
 
         self.path = model_path
         self.cfg = None
         self.model_type = model_type
+        self.tf_config = tf_config
         self.precision = precision
         self.cropping = cropping
         self.dynamic = dynamic
         self.dynamic_cropping = None
         self.resize = resize
         self.processor = processor
-        self.display = Display(lik=display_lik) if display else None
+        self.convert2rgb = convert2rgb
+        self.display = Display(pcutoff=pcutoff, radius=display_radius, cmap=display_cmap) if display else None
 
         self.sess = None
         self.inputs = None
         self.outputs = None
-        self.graph = None
         self.tflite_interpreter = None
         self.pose = None
         self.is_initialized = False
@@ -192,14 +209,13 @@ class DLCLive(object):
         if self.resize != 1:
             frame = utils.resize_frame(frame, self.resize)
 
-
-        if frame.ndim == 2:
-            frame = utils.gray_to_rgb(frame)
+        if self.convert2rgb:
+            frame = utils.img_to_rgb(frame)
 
         return frame
 
 
-    def init_inference(self, frame=None):
+    def init_inference(self, frame=None, **kwargs):
         '''
         Load model and perform inference on first frame -- the first inference is usually very slow.
 
@@ -225,15 +241,19 @@ class DLCLive(object):
         if frame is None:
             raise DLCLiveError("No image was passed to initialize inference. An image must be passed to the init_inference method")
 
-        process_frame = self.process_frame(frame)
+        if frame.ndim == 2:
+            self.convert2rgb = True
+        frame = self.process_frame(frame)
 
         ### load model
 
         if self.model_type == 'base':
 
             graph_def = read_graph(model_file)
-            self.graph, self.inputs = finalize_graph(graph_def)
-            self.sess, self.outputs = extract_graph(self.graph)
+            graph = finalize_graph(graph_def)
+            self.sess, self.inputs, self.outputs = extract_graph(graph, tf_config=self.tf_config)
+
+            #self.sess, self.inputs, self.outputs = load_graph(model_file)
 
         elif self.model_type == 'tflite':
 
@@ -244,13 +264,13 @@ class DLCLive(object):
 
             # get input and output tensor names from graph_def
             graph_def = read_graph(model_file)
-            graph, _ = finalize_graph(graph_def)
+            graph = finalize_graph(graph_def)
             output_nodes = get_output_nodes(graph)
-            output_nodes = [on.replace('Placeholder_1/', '') for on in output_nodes]
+            output_nodes = [on.replace('DLC/', '') for on in output_nodes]
             converter = tf.lite.TFLiteConverter.from_frozen_graph(model_file,
                                                                   ['Placeholder'],
                                                                   output_nodes,
-                                                                  input_shapes={'Placeholder' : [1, process_frame.shape[0], process_frame.shape[1], 3]})
+                                                                  input_shapes={'Placeholder' : [1, frame.shape[0], frame.shape[1], 3]})
             try:
                 tflite_model = converter.convert()
             except Exception:
@@ -267,9 +287,9 @@ class DLCLive(object):
         elif self.model_type == 'tensorrt':
 
             graph_def = read_graph(model_file)
-            graph, _ = finalize_graph(graph_def)
+            graph = finalize_graph(graph_def)
             output_tensors = get_output_tensors(graph)
-            output_tensors = [ot.replace('Placeholder_1/', '') for ot in output_tensors]
+            output_tensors = [ot.replace('DLC/', '') for ot in output_tensors]
 
             if (TFVER[0] > 1) | (TFVER[0]==1 & TFVER[1] >= 14):
                 converter = trt.TrtGraphConverter(input_graph_def=graph_def,
@@ -283,8 +303,8 @@ class DLCLive(object):
                                                         precision_mode=self.precision,
                                                         is_dynamic_op=True)
 
-            self.graph, self.inputs = finalize_graph(graph_def)
-            self.sess, self.outputs = extract_graph(self.graph)
+            graph = finalize_graph(graph_def)
+            self.sess, self.inputs, self.outputs = extract_graph(graph, tf_config=self.tf_config)
 
         else:
 
@@ -292,14 +312,14 @@ class DLCLive(object):
 
         ### get pose of first frame (first inference is often very slow)
 
-        pose = self.get_pose(frame)
+        pose = self.get_pose(frame, **kwargs)
 
         self.is_initialized = True
 
         return pose
 
 
-    def get_pose(self, frame=None):
+    def get_pose(self, frame=None, **kwargs):
         '''
         Get the pose of an image
 
@@ -352,7 +372,8 @@ class DLCLive(object):
             else:
                 self.pose = argmax_pose_predict(scmap, locref, self.cfg['stride'])
         else:
-            self.pose = pose_output[0]
+            pose = np.array(pose_output[0])
+            self.pose = pose[:, [1,0,2]]
 
         # display image if display=True before correcting pose for cropping/resizing
 
@@ -375,7 +396,7 @@ class DLCLive(object):
         # process the pose
 
         if self.processor:
-            self.pose = self.processor.process(self.pose)
+            self.pose = self.processor.process(self.pose, **kwargs)
 
         return self.pose
 
@@ -387,3 +408,5 @@ class DLCLive(object):
         self.sess.close()
         self.sess = None
         self.is_initialized = False
+        if self.display is not None:
+            self.display.destroy()

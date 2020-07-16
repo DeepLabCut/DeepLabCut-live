@@ -20,15 +20,14 @@ def read_graph(file):
 
     Returns
     --------
-    graph_def :class:`tensorflow.GraphDef`
+    graph_def :class:`tensorflow.tf.compat.v1.GraphDef`
         The graph definition of the DeepLabCut model found at the object's path
     '''
 
-    graph = tf.Graph()
-    graph_def = tf.GraphDef()
-    graph_def.ParseFromString(tf.gfile.GFile(file, 'rb').read())
-
-    return graph_def
+    with tf.io.gfile.GFile(file, 'rb') as f:
+        graph_def = tf.compat.v1.GraphDef()
+        graph_def.ParseFromString(f.read())
+        return graph_def
 
 
 def finalize_graph(graph_def):
@@ -37,12 +36,12 @@ def finalize_graph(graph_def):
 
     Parameters
     -----------
-    graph_def :class:`tensorflow.GraphDef`
+    graph_def :class:`tensorflow.compat.v1.GraphDef`
         The graph of the DeepLabCut model, read using the :func:`read_graph` method
 
     Returns
     --------
-    graph :class:`tensorflow.Graph`
+    graph :class:`tensorflow.compat.v1.GraphDef`
         The finalized graph of the DeepLabCut model
     inputs :class:`tensorflow.Tensor`
         Input tensor(s) for the model
@@ -50,11 +49,10 @@ def finalize_graph(graph_def):
 
     graph = tf.Graph()
     with graph.as_default():
-        inputs = tf.placeholder(tf.float32, shape=[1, None, None, 3])
-        tf.import_graph_def(graph_def, {'Placeholder' : inputs}, name='Placeholder')
+        tf.import_graph_def(graph_def, name="DLC")
     graph.finalize()
 
-    return graph, inputs
+    return graph
 
 
 def get_output_nodes(graph):
@@ -97,11 +95,17 @@ def get_output_tensors(graph):
     '''
 
     output_nodes = get_output_nodes(graph)
-    output_tensor = [out+':0' for out in output_nodes]
+    output_tensor = [out+":0" for out in output_nodes]
     return output_tensor
 
 
-def extract_graph(graph):
+def get_input_tensor(graph):
+
+    input_tensor = str(graph.get_operations()[0].name) + ":0"
+    return input_tensor
+
+
+def extract_graph(graph, tf_config=None):
     '''
     Initializes a tensorflow session with the specified graph and extracts the model's inputs and outputs
 
@@ -109,6 +113,7 @@ def extract_graph(graph):
     -----------
     graph :class:`tensorflow.Graph`
         a tensorflow graph containing the desired model
+    tf_config :class:`tensorflow.ConfigProto`
 
     Returns
     --------
@@ -118,8 +123,10 @@ def extract_graph(graph):
         the output tensor(s) for the model
     '''
 
+    input_tensor = get_input_tensor(graph)
     output_tensor = get_output_tensors(graph)
-    sess = tf.Session(graph=graph)
+    sess = tf.compat.v1.Session(graph=graph, config=tf_config)
+    inputs = graph.get_tensor_by_name(input_tensor)
     outputs = [graph.get_tensor_by_name(out) for out in output_tensor]
 
-    return sess, outputs
+    return sess, inputs, outputs
