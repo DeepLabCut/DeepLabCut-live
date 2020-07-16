@@ -241,7 +241,7 @@ class DLCLive(object):
         if frame is None and self.model_type == 'tflite':
             raise DLCLiveError("No image was passed to initialize inference. An image must be passed to the init_inference method")
 
-        if frame:
+        if frame is not None:
             if frame.ndim == 2:
                 self.convert2rgb = True
             frame = self.process_frame(frame)
@@ -313,7 +313,7 @@ class DLCLive(object):
 
         ### get pose of first frame (first inference is often very slow)
 
-        if frame:
+        if frame is not None:
             pose = self.get_pose(frame, **kwargs)
         else:
             pose = None
