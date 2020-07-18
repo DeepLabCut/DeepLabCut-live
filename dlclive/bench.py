@@ -265,12 +265,18 @@ def save_benchmark(sys_info: dict,
             model_type = None
 
     fn_ind = 0
-    base_name = "benchmark_{}_{}_{}_{}.pickle".format(host_name, dev[0], fn_ind,iter)
+    base_name = "benchmark_{}_{}_{}_{}.pickle".format(sys_info['host_name'],
+                                                      sys_info['device'][0],
+                                                      fn_ind,
+                                                      iter)
     while os.path.isfile(os.path.normpath(out_dir + '/' + base_name)):
         fn_ind += 1
-        base_name = "benchmark_{}_{}_{}_{}.pickle".format(host_name, dev[0], fn_ind,iter)
+        base_name = "benchmark_{}_{}_{}_{}.pickle".format(sys_info['host_name'],
+                                                          sys_info['device'][0],
+                                                          fn_ind,
+                                                          iter)
 
-    fn = os.path.normpath(out_dir)
+    # fn = os.path.normpath(out_dir)
 
     data = {'model': model,
             'model_type': model_type,
