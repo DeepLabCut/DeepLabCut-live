@@ -17,7 +17,6 @@ import pickle
 import colorcet as cc
 from PIL import ImageColor
 import ruamel
-import pandas as pd
 
 try:
     from pip._internal.operations import freeze
@@ -32,6 +31,7 @@ import cv2
 from dlclive import DLCLive
 from dlclive import VERSION
 from dlclive import __file__ as dlcfile
+from dlclive.utils import decode_fourcc
 
 
 def get_system_info() -> dict:
@@ -50,14 +50,13 @@ def get_system_info() -> dict:
         * ``dlclive_version`` (str): dlclive version from :data:`dlclive.VERSION`
     """
 
-
-    ### get os
+    # get os
 
     op_sys = platform.platform()
-    host_name = platform.node().replace(' ', '')
+    host_name = platform.node().replace(" ", "")
 
     # A string giving the absolute path of the executable binary for the Python interpreter, on systems where this makes sense.
-    if platform.system() == 'Windows':
+    if platform.system() == "Windows":
         host_python = sys.executable.split(os.path.sep)[-2]
     else:
         host_python = sys.executable.split(os.path.sep)[-3]
@@ -66,8 +65,10 @@ def get_system_info() -> dict:
     dlc_basedir = os.path.dirname(os.path.dirname(dlcfile))
     git_hash = None
     try:
-        git_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=dlc_basedir)
-        git_hash = git_hash.decode('utf-8').rstrip('\n')
+        git_hash = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=dlc_basedir
+        )
+        git_hash = git_hash.decode("utf-8").rstrip("\n")
     except subprocess.CalledProcessError:
         # not installed from git repo, eg. pypi
         # fine, pass quietly
@@ -78,45 +79,55 @@ def get_system_info() -> dict:
     if tf.test.is_gpu_available():
         gpu_name = tf.test.gpu_device_name()
         from tensorflow.python.client import device_lib
-        dev_desc = [d.physical_device_desc for d in device_lib.list_local_devices() if d.name == gpu_name]
-        dev = [d.split(",")[1].split(':')[1].strip() for d in dev_desc]
+
+        dev_desc = [
+            d.physical_device_desc
+            for d in device_lib.list_local_devices()
+            if d.name == gpu_name
+        ]
+        dev = [d.split(",")[1].split(":")[1].strip() for d in dev_desc]
         dev_type = "GPU"
     else:
         from cpuinfo import get_cpu_info
-        dev = [get_cpu_info()['brand']]
+
+        dev = [get_cpu_info()["brand"]]
         dev_type = "CPU"
 
     return {
-        'host_name': host_name,
-        'op_sys'   : op_sys,
-        'python': host_python,
-        'device_type': dev_type,
-        'device': dev,
-        'freeze': list(freeze.freeze()), # pip freeze to get versions of all packages
-        'python_version': sys.version,
-        'git_hash': git_hash,
-        'dlclive_version': VERSION
+        "host_name": host_name,
+        "op_sys": op_sys,
+        "python": host_python,
+        "device_type": dev_type,
+        "device": dev,
+        # pip freeze to get versions of all packages
+        "freeze": list(freeze.freeze()),
+        "python_version": sys.version,
+        "git_hash": git_hash,
+        "dlclive_version": VERSION,
     }
 
-def benchmark(model_path,
-            video_path,
-            tf_config=None,
-            resize=None,
-            pixels=None,
-            n_frames=1000,
-            print_rate=False,
-            display=False,
-            pcutoff=0.0,
-            display_radius=3,
-            cmap='bmy',
-            save_poses=False,
-            save_video=False,
-            output=None) -> typing.Tuple[np.ndarray, int, bool]:
+
+def benchmark(
+    model_path,
+    video_path,
+    tf_config=None,
+    resize=None,
+    pixels=None,
+    n_frames=1000,
+    print_rate=False,
+    display=False,
+    pcutoff=0.0,
+    display_radius=3,
+    cmap="bmy",
+    save_poses=False,
+    save_video=False,
+    output=None,
+) -> typing.Tuple[np.ndarray, tuple, bool, dict]:
     """ Analyze DeepLabCut-live exported model on a video:
     Calculate inference time, 
     display keypoints, or 
     get poses/create a labeled video
-    
+
     Parameters
     ----------
     model_path : str
@@ -152,8 +163,13 @@ def benchmark(model_path,
     -------
     :class:`numpy.ndarray`
         vector of inference times
-    float
-        number of pixels in each image
+    tuple
+        (image width, image height)
+    bool
+        tensorflow inference flag
+    dict
+        metadata for video
+    
 
     Example
     -------
@@ -174,49 +190,80 @@ def benchmark(model_path,
 
     cap = cv2.VideoCapture(video_path)
     ret, frame = cap.read()
-    n_frames = n_frames if n_frames < cap.get(cv2.CAP_PROP_FRAME_COUNT)-1 else cap.get(cv2.CAP_PROP_FRAME_COUNT)-1
+    n_frames = (
+        n_frames
+        if (n_frames > 0) and (n_frames < cap.get(cv2.CAP_PROP_FRAME_COUNT) - 1)
+        else (cap.get(cv2.CAP_PROP_FRAME_COUNT) - 1)
+    )
     n_frames = int(n_frames)
     im_size = (cap.get(cv2.CAP_PROP_FRAME_WIDTH), cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
 
     ### get resize factor
 
     if pixels is not None:
         resize = np.sqrt(pixels / (im_size[0] * im_size[1]))
     if resize is not None:
-        im_size = (int(im_size[0]*resize), int(im_size[1]*resize))
-
-    ### initialize live object
-
-    live = DLCLive(model_path, tf_config=tf_config, resize=resize, display=display, pcutoff=pcutoff, display_radius=display_radius, display_cmap=cmap)
-    live.init_inference(frame)
-    TFGPUinference = True if len(live.outputs) == 1 else False
+        im_size = (int(im_size[0] * resize), int(im_size[1] * resize))
 
     ### create video writer
 
     if save_video:
         colors = None
-        out_dir = output if output is not None else os.path.dirname(os.path.realpath(video_path))
+        out_dir = (
+            output
+            if output is not None
+            else os.path.dirname(os.path.realpath(video_path))
+        )
         out_vid_base = os.path.basename(video_path)
-        out_vid_file = os.path.normpath(f"{out_dir}/{os.path.splitext(video_path)[0]}_DLCLIVE_LABELED.avi")
-        fourcc = cv2.VideoWriter_fourcc(*'DIVX')
+        out_vid_file = os.path.normpath(
+            f"{out_dir}/{os.path.splitext(out_vid_base)[0]}_DLCLIVE_LABELED.avi"
+        )
+        fourcc = cv2.VideoWriter_fourcc(*"DIVX")
         fps = cap.get(cv2.CAP_PROP_FPS)
         vwriter = cv2.VideoWriter(out_vid_file, fourcc, fps, im_size)
 
-    ### perform inference
+    ### check for pandas installation if using save_poses flag
 
-    iterator = range(n_frames) if (print_rate) or (display) else tqdm(range(n_frames))
+    if save_poses:
+        try:
+            import pandas as pd 
+            use_pandas = True
+        except:
+            use_pandas = False
+            warnings.warn("Could not find installation of pandas; saving poses as a numpy array with the dimensions (n_frames, n_keypoints, [x, y, likelihood]).")
+
+
+    ### initialize DLCLive and perform inference
+
     inf_times = np.zeros(n_frames)
     poses = []
 
+    live = DLCLive(
+        model_path,
+        tf_config=tf_config,
+        resize=resize,
+        display=display,
+        pcutoff=pcutoff,
+        display_radius=display_radius,
+        display_cmap=cmap,
+    )
+
+    poses.append(live.init_inference(frame))
+    TFGPUinference = True if len(live.outputs) == 1 else False
+
+    iterator = range(n_frames) if (print_rate) or (display) else tqdm(range(n_frames))
     for i in iterator:
 
         ret, frame = cap.read()
 
         if not ret:
-            warnings.warn("Did not complete {:d} frames. There probably were not enough frames in the video {}.".format(n_frames, video_path))
+            warnings.warn(
+                "Did not complete {:d} frames. There probably were not enough frames in the video {}.".format(
+                    n_frames, video_path
+                )
+            )
             break
-        
+
         start_pose = time.time()
         poses.append(live.get_pose(frame))
         inf_times[i] = time.time() - start_pose
@@ -225,24 +272,71 @@ def benchmark(model_path,
 
             if colors is None:
                 all_colors = getattr(cc, cmap)
-                colors = [ImageColor.getcolor(c, "RGB")[::-1] for c in all_colors[::int(len(all_colors)/poses[-1].shape[0])]]
+                colors = [
+                    ImageColor.getcolor(c, "RGB")[::-1]
+                    for c in all_colors[:: int(len(all_colors) / poses[-1].shape[0])]
+                ]
 
             this_pose = poses[-1]
             for j in range(this_pose.shape[0]):
                 if this_pose[j, 2] > pcutoff:
                     x = int(this_pose[j, 0])
                     y = int(this_pose[j, 1])
-                    frame = cv2.circle(frame, (x, y), display_radius, colors[j], thickness=-1)
-            
+                    frame = cv2.circle(
+                        frame, (x, y), display_radius, colors[j], thickness=-1
+                    )
+
             if resize is not None:
                 frame = cv2.resize(frame, im_size)
             vwriter.write(frame)
-        
+
         if print_rate:
             print("pose rate = {:d}".format(int(1 / inf_times[i])))
 
     if print_rate:
-        print("mean pose rate = {:d}".format(int(np.mean(1/inf_times))))
+        print("mean pose rate = {:d}".format(int(np.mean(1 / inf_times))))
+
+    ### gather video and test parameterization
+
+    # dont want to fail here so gracefully failing on exception --
+    # eg. some packages of cv2 don't have CAP_PROP_CODEC_PIXEL_FORMAT
+    try:
+        fourcc = decode_fourcc(cap.get(cv2.CAP_PROP_FOURCC))
+    except:
+        fourcc = ""
+
+    try:
+        fps = round(cap.get(cv2.CAP_PROP_FPS))
+    except:
+        fps = None
+
+    try:
+        pix_fmt = decode_fourcc(cap.get(cv2.CAP_PROP_CODEC_PIXEL_FORMAT))
+    except:
+        pix_fmt = ""
+
+    try:
+        frame_count = round(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    except:
+        frame_count = None
+
+    try:
+        orig_im_size = (
+            round(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
+            round(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+        )
+    except:
+        orig_im_size = None
+
+    meta = {
+        "video_path": video_path,
+        "video_codec": fourcc,
+        "video_pixel_format": pix_fmt,
+        "video_fps": fps,
+        "video_total_frames": frame_count,
+        "original_frame_size": orig_im_size,
+        "dlclive_params": live.parameterization,
+    }
 
     ### close video and tensorflow session
 
@@ -256,45 +350,64 @@ def benchmark(model_path,
 
         cfg_path = os.path.normpath(f"{model_path}/pose_cfg.yaml")
         ruamel_file = ruamel.yaml.YAML()
-        dlc_cfg = ruamel_file.load(open(cfg_path, 'r'))        
-        bodyparts = dlc_cfg['all_joints_names']
+        dlc_cfg = ruamel_file.load(open(cfg_path, "r"))
+        bodyparts = dlc_cfg["all_joints_names"]
         poses = np.array(poses)
-        poses = poses.reshape((poses.shape[0], poses.shape[1]*poses.shape[2]))
-        pdindex = pd.MultiIndex.from_product([bodyparts, ['x', 'y', 'likelihood']], names=['bodyparts', 'coords'])
-        pose_df = pd.DataFrame(poses, columns=pdindex)
 
-        out_dir = output if output is not None else os.path.dirname(os.path.realpath(video_path))
-        out_vid_base = os.path.basename(video_path)
-        out_dlc_file = os.path.normpath(f"{out_dir}/{os.path.splitext(video_path)[0]}_DLCLIVE_POSES.h5")
-        pose_df.to_hdf(out_dlc_file, key='df_with_missing', mode='w')
+        if use_pandas:
 
-    return inf_times, im_size[0]*im_size[1], TFGPUinference
+            poses = poses.reshape((poses.shape[0], poses.shape[1] * poses.shape[2]))
+            pdindex = pd.MultiIndex.from_product(
+                [bodyparts, ["x", "y", "likelihood"]], names=["bodyparts", "coords"]
+            )
+            pose_df = pd.DataFrame(poses, columns=pdindex)
+
+            out_dir = (
+                output
+                if output is not None
+                else os.path.dirname(os.path.realpath(video_path))
+            )
+            out_vid_base = os.path.basename(video_path)
+            out_dlc_file = os.path.normpath(
+                f"{out_dir}/{os.path.splitext(out_vid_base)[0]}_DLCLIVE_POSES.h5"
+            )
+            pose_df.to_hdf(out_dlc_file, key="df_with_missing", mode="w")
+        
+        else:
+
+            out_vid_base = os.path.basename(video_path)
+            out_dlc_file = os.path.normpath(
+                f"{out_dir}/{os.path.splitext(out_vid_base)[0]}_DLCLIVE_POSES.npy"
+            )
+            np.save(out_dlc_file, poses)
 
 
-def save_inf_times(sys_info,
-                   inf_times,
-                   pixels,
-                   TFGPUinference,
-                   model=None,
-                   output=None):
+    return inf_times, im_size, TFGPUinference, meta
+
+
+def save_inf_times(
+    sys_info, inf_times, im_size, TFGPUinference, model=None, meta=None, output=None
+):
     """ Save inference time data collected using :function:`benchmark` with system information to a pickle file.
     This is primarily used through :function:`benchmark_videos`
-    
+
     Parameters
     ----------
     sys_info : tuple
         system information generated by :func:`get_system_info`
     inf_times : :class:`numpy.ndarray`
         array of inference times generated by :func:`benchmark`
-    pixels : float or :class:`numpy.ndarray`
-        number of pixels for each benchmark run. If an array, each index corresponds to a row in inf_times
+    im_size : tuple or :class:`numpy.ndarray`
+        image size (width, height) for each benchmark run. If an array, each row corresponds to a row in inf_times
     TFGPUinference: bool
         flag if using tensorflow inference or numpy inference DLC model
     model: str, optional
         name of model
+    meta : dict, optional
+        metadata returned by :func:`benchmark`
     output : str, optional
         path to directory to save data. If None, uses pwd, by default None
-    
+
     Returns
     -------
     bool
@@ -304,47 +417,57 @@ def save_inf_times(sys_info,
     output = output if output is not None else os.getcwd()
     model_type = None
     if model is not None:
-        if 'resnet' in model:
-            model_type = 'resnet'
-        elif 'mobilenet' in model:
-            model_type = 'mobilenet'
+        if "resnet" in model:
+            model_type = "resnet"
+        elif "mobilenet" in model:
+            model_type = "mobilenet"
         else:
             model_type = None
 
     fn_ind = 0
-    base_name = f"benchmark_{sys_info['host_name']}_{sys_info['device'][0]}_{fn_ind}.pickle"
-    while os.path.isfile(os.path.normpath(output + '/' + base_name)):
+    base_name = (
+        f"benchmark_{sys_info['host_name']}_{sys_info['device_type']}_{fn_ind}.pickle"
+    )
+    out_file = os.path.normpath(f"{output}/{base_name}")
+    while os.path.isfile(out_file):
         fn_ind += 1
-        base_name = f"benchmark_{sys_info['host_name']}_{sys_info['device'][0]}_{fn_ind}.pickle"
+        base_name = f"benchmark_{sys_info['host_name']}_{sys_info['device_type']}_{fn_ind}.pickle"
+        out_file = os.path.normpath(f"{output}/{base_name}")
 
-    data = {'model' : model,
-            'model_type' : model_type,
-            'TFGPUinference' : TFGPUinference,
-            'pixels' : pixels,
-            'inference_times' : inf_times}
+    data = {
+        "model": model,
+        "model_type": model_type,
+        "TFGPUinference": TFGPUinference,
+        "im_size": im_size,
+        "inference_times": inf_times,
+    }
 
     data.update(sys_info)
+    if meta:
+        data.update(meta)
 
     os.makedirs(os.path.normpath(output), exist_ok=True)
-    pickle.dump(data, open(os.path.normpath(f"{output}/{base_name}"), 'wb'))
+    pickle.dump(data, open(out_file, "wb"))
 
     return True
 
 
-def benchmark_videos(model_path,
-                   video_path,
-                   output=None,
-                   n_frames=1000,
-                   tf_config=None,
-                   resize=None,
-                   pixels=None,
-                   print_rate=False,
-                   display=False,
-                   pcutoff=0.5,
-                   display_radius=3,
-                   cmap='bmy',
-                   save_poses=False,
-                   save_video=False):
+def benchmark_videos(
+    model_path,
+    video_path,
+    output=None,
+    n_frames=1000,
+    tf_config=None,
+    resize=None,
+    pixels=None,
+    print_rate=False,
+    display=False,
+    pcutoff=0.5,
+    display_radius=3,
+    cmap="bmy",
+    save_poses=False,
+    save_video=False,
+):
     """Analyze videos using DeepLabCut-live exported models. 
     Analyze multiple videos and/or multiple options for the size of the video 
     by specifying a resizing factor or the number of pixels to use in the image (keeping aspect ratio constant).
@@ -352,7 +475,7 @@ def benchmark_videos(model_path,
     display keypoints to visually check the accuracy, 
     or save poses to an hdf5 file as in :function:`deeplabcut.benchmark_videos` and 
     create a labeled video as in :function:`deeplabcut.create_labeled_video`.
-    
+
     Parameters
     ----------
     model_path : str
@@ -400,11 +523,11 @@ def benchmark_videos(model_path,
     dlclive.benchmark_videos('/my/exported/model', 'my_video.avi', save_poses=True, save_video=True)
     """
 
-    ### convert video_paths to list
+    # convert video_paths to list
 
     video_path = video_path if type(video_path) is list else [video_path]
 
-    ### fix resize
+    # fix resize
 
     if pixels:
         pixels = pixels if type(pixels) is list else [pixels]
@@ -416,39 +539,55 @@ def benchmark_videos(model_path,
         resize = [None]
         pixels = [None]
 
-    ### loop over videos
+    # loop over videos
 
     for v in video_path:
 
-        ### initialize full inference times
+        # initialize full inference times
 
-        inf_times = np.zeros((len(resize), n_frames))
-        pixels_out = np.zeros(len(resize))
+        inf_times = []
+        im_size_out = []
 
         for i in range(len(resize)):
 
             print(f"\nRun {i+1} / {len(resize)}\n")
 
-            inf_times[i], pixels_out[i], TFGPUinference = benchmark(model_path,
-                                                                    v,
-                                                                    tf_config=tf_config,
-                                                                    resize=resize[i],
-                                                                    pixels=pixels[i],
-                                                                    n_frames=n_frames,
-                                                                    print_rate=print_rate,
-                                                                    display=display,
-                                                                    pcutoff=pcutoff,
-                                                                    display_radius=display_radius,
-                                                                    cmap=cmap,
-                                                                    save_poses=save_poses,
-                                                                    save_video=save_video,
-                                                                    output=output)
+            this_inf_times, this_im_size, TFGPUinference, meta = benchmark(
+                model_path,
+                v,
+                tf_config=tf_config,
+                resize=resize[i],
+                pixels=pixels[i],
+                n_frames=n_frames,
+                print_rate=print_rate,
+                display=display,
+                pcutoff=pcutoff,
+                display_radius=display_radius,
+                cmap=cmap,
+                save_poses=save_poses,
+                save_video=save_video,
+                output=output,
+            )
 
-        ### save results
+            inf_times.append(this_inf_times)
+            im_size_out.append(this_im_size)
+
+        inf_times = np.array(inf_times)
+        im_size_out = np.array(im_size_out)
+
+        # save results
 
         if output is not None:
             sys_info = get_system_info()
-            save_inf_times(sys_info, inf_times, pixels_out, TFGPUinference, model=os.path.basename(model_path), output=output)
+            save_inf_times(
+                sys_info,
+                inf_times,
+                im_size_out,
+                TFGPUinference,
+                model=os.path.basename(model_path),
+                meta=meta,
+                output=output,
+            )
 
 
 def main():
@@ -458,34 +597,36 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('model_path', type=str)
-    parser.add_argument('video_path', type=str, nargs='+')
-    parser.add_argument('-o', '--output', type=str, default=None)
-    parser.add_argument('-n', '--n-frames', type=int, default=1000)
-    parser.add_argument('-r', '--resize', type=float, nargs='+')
-    parser.add_argument('-p', '--pixels', type=float, nargs='+')
-    parser.add_argument('-v', '--print-rate', default=False, action='store_true')
-    parser.add_argument('-d', '--display', default=False, action='store_true')
-    parser.add_argument('-l', '--pcutoff', default=0.5, type=float)
-    parser.add_argument('-s', '--display-radius', default=3, type=int)
-    parser.add_argument('-c', '--cmap', type=str, default='bmy')
-    parser.add_argument('--save-poses', action='store_true')
-    parser.add_argument('--save-video', action='store_true')
+    parser.add_argument("model_path", type=str)
+    parser.add_argument("video_path", type=str, nargs="+")
+    parser.add_argument("-o", "--output", type=str, default=None)
+    parser.add_argument("-n", "--n-frames", type=int, default=1000)
+    parser.add_argument("-r", "--resize", type=float, nargs="+")
+    parser.add_argument("-p", "--pixels", type=float, nargs="+")
+    parser.add_argument("-v", "--print-rate", default=False, action="store_true")
+    parser.add_argument("-d", "--display", default=False, action="store_true")
+    parser.add_argument("-l", "--pcutoff", default=0.5, type=float)
+    parser.add_argument("-s", "--display-radius", default=3, type=int)
+    parser.add_argument("-c", "--cmap", type=str, default="bmy")
+    parser.add_argument("--save-poses", action="store_true")
+    parser.add_argument("--save-video", action="store_true")
     args = parser.parse_args()
 
-    benchmark_videos(args.model_path,
-                   args.video_path,
-                   output=args.output,
-                   resize=args.resize,
-                   pixels=args.pixels,
-                   n_frames=args.n_frames,
-                   print_rate=args.print_rate,
-                   display=args.display,
-                   pcutoff=args.pcutoff,
-                   display_radius=args.display_radius,
-                   cmap=args.cmap,
-                   save_poses=args.save_poses,
-                   save_video=args.save_video)
+    benchmark_videos(
+        args.model_path,
+        args.video_path,
+        output=args.output,
+        resize=args.resize,
+        pixels=args.pixels,
+        n_frames=args.n_frames,
+        print_rate=args.print_rate,
+        display=args.display,
+        pcutoff=args.pcutoff,
+        display_radius=args.display_radius,
+        cmap=args.cmap,
+        save_poses=args.save_poses,
+        save_video=args.save_video,
+    )
 
 
 if __name__ == "__main__":
