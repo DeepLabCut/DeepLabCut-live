@@ -31,8 +31,7 @@ class TeensyLaser(Processor):
 
         self.ser.close()
 
-
-    def stim_on(self):
+    def turn_stim_on(self):
 
         # command to activate PWM signal to laser is the letter 'O' followed by three 16 bit integers -- pulse frequency, pulse width, and max stim duration
         if not self.stim_on:
@@ -41,7 +40,7 @@ class TeensyLaser(Processor):
             self.stim_on_time.append(time.time())
 
 
-    def stim_off(self):
+    def turn_stim_off(self):
 
         # command to turn off PWM signal to laser is the letter 'X'
         if self.stim_on:
@@ -55,9 +54,9 @@ class TeensyLaser(Processor):
         # define criteria to stimulate (e.g. if first point is in a corner of the video)
         box = [[0,100],[0,100]]
         if (pose[0][0] > box[0][0]) and (pose[0][0] < box[0][1]) and (pose[0][1] > box[1][0]) and (pose[0][1] < box[1][1]):
-            self.stim_on()
+            self.turn_stim_on()
         else:
-            self.stim_off()
+            self.turn_stim_off()
 
         return pose
 
