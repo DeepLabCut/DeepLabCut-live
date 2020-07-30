@@ -6,7 +6,7 @@ import glob
 from dlclive import benchmark_model_by_size
 
 # Update the datafolder to where the data is:
-datafolder=PUTFOLDER_TO_data!
+datafolder='/yourpath/TOdata/here' #PUTFOLDER_TO_data!
 n_frames = 1000 #change to 10000 for testing on a GPU!
 pixels = [2500, 10000, 40000, 160000, 320000, 640000]
 
