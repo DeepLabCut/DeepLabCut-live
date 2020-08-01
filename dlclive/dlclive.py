@@ -11,6 +11,7 @@ import glob
 import warnings
 import numpy as np
 import tensorflow as tf
+from easydict import EasyDict
 
 try:
     TFVER = [int(v) for v in tf.__version__.split(".")]
@@ -20,6 +21,11 @@ try:
         from tensorflow.python.compiler.tensorrt import trt_convert as trt
 except Exception:
     pass
+
+from deeplabcut.pose_estimation_tensorflow.nnet.predict import (
+    setup_pose_prediction,
+    setup_GPUpose_prediction,
+)
 
 from dlclive.graph import (
     read_graph,
@@ -112,10 +118,12 @@ class DLCLive(object):
         pcutoff=0.5,
         display_radius=3,
         display_cmap="bmy",
+        use_snapshot=False,
     ):
 
         self.path = model_path
         self.cfg = None
+        self.use_snapshot = use_snapshot
         self.model_type = model_type
         self.tf_config = tf_config
         self.precision = precision
@@ -257,7 +265,7 @@ class DLCLive(object):
 
         # process frame
 
-        if frame is None and (self.model_type == 'tflite'):
+        if frame is None and (self.model_type == "tflite"):
             raise DLCLiveError(
                 "No image was passed to initialize inference. An image must be passed to the init_inference method"
             )
@@ -270,11 +278,20 @@ class DLCLive(object):
 
         if self.model_type == "base":
 
-            graph_def = read_graph(model_file)
-            graph = finalize_graph(graph_def)
-            self.sess, self.inputs, self.outputs = extract_graph(
-                graph, tf_config=self.tf_config
-            )
+            if not self.use_snapshot:
+
+                graph_def = read_graph(model_file)
+                graph = finalize_graph(graph_def)
+                self.sess, self.inputs, self.outputs = extract_graph(
+                    graph, tf_config=self.tf_config
+                )
+            else:
+
+                print("USING SNAPSHOT!!!")
+                self.cfg["init_weights"] = os.path.splitext(model_file)[0]
+                (self.sess, self.inputs, self.outputs,) = setup_GPUpose_prediction(
+                    EasyDict(self.cfg)
+                )
 
         elif self.model_type == "tflite":
 

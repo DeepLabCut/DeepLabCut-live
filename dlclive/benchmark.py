@@ -122,6 +122,7 @@ def benchmark(
     save_poses=False,
     save_video=False,
     output=None,
+    use_snapshot=False,
 ) -> typing.Tuple[np.ndarray, tuple, bool, dict]:
     """ Analyze DeepLabCut-live exported model on a video:
     Calculate inference time, 
@@ -246,6 +247,7 @@ def benchmark(
         pcutoff=pcutoff,
         display_radius=display_radius,
         display_cmap=cmap,
+        use_snapshot=use_snapshot,
     )
 
     poses.append(live.init_inference(frame))
@@ -386,7 +388,7 @@ def benchmark(
 
 
 def save_inf_times(
-    sys_info, inf_times, im_size, TFGPUinference, model=None, meta=None, output=None
+    sys_info, inf_times, im_size, TFGPUinference, model=None, meta=None, output=None, use_snapshot=False
 ):
     """ Save inference time data collected using :function:`benchmark` with system information to a pickle file.
     This is primarily used through :function:`benchmark_videos`
@@ -446,6 +448,8 @@ def save_inf_times(
     if meta:
         data.update(meta)
 
+    data['use_snapshot'] = use_snapshot
+
     os.makedirs(os.path.normpath(output), exist_ok=True)
     pickle.dump(data, open(out_file, "wb"))
 
@@ -467,6 +471,7 @@ def benchmark_videos(
     cmap="bmy",
     save_poses=False,
     save_video=False,
+    use_snapshot=False,
 ):
     """Analyze videos using DeepLabCut-live exported models. 
     Analyze multiple videos and/or multiple options for the size of the video 
@@ -567,6 +572,7 @@ def benchmark_videos(
                 save_poses=save_poses,
                 save_video=save_video,
                 output=output,
+                use_snapshot=use_snapshot,
             )
 
             inf_times.append(this_inf_times)
@@ -587,6 +593,7 @@ def benchmark_videos(
                 model=os.path.basename(model_path),
                 meta=meta,
                 output=output,
+                use_snapshot=use_snapshot,
             )
 
 
@@ -610,7 +617,10 @@ def main():
     parser.add_argument("-c", "--cmap", type=str, default="bmy")
     parser.add_argument("--save-poses", action="store_true")
     parser.add_argument("--save-video", action="store_true")
+    parser.add_argument("--use-snapshot", action="store_true")
     args = parser.parse_args()
+
+    print(args.use_snapshot)
 
     benchmark_videos(
         args.model_path,
@@ -626,6 +636,7 @@ def main():
         cmap=args.cmap,
         save_poses=args.save_poses,
         save_video=args.save_video,
+        use_snapshot=args.use_snapshot,
     )
 
 
