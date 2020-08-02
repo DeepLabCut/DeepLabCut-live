@@ -196,6 +196,7 @@ def decode_fourcc(cc):
         cc (float, int): fourcc code from opencv
     Returns:
          str: Character format of fourcc code
+
     Examples:
         >>> vid = cv2.VideoCapture('/some/video/path.avi')
         >>> decode_fourcc(vid.get(cv2.CAP_PROP_FOURCC))

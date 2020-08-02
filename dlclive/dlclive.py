@@ -262,9 +262,10 @@ class DLCLive(object):
                 "No image was passed to initialize inference. An image must be passed to the init_inference method"
             )
 
-        if frame.ndim == 2:
-            self.convert2rgb = True
-        frame = self.process_frame(frame)
+        if frame is not None:
+            if frame.ndim == 2:
+                self.convert2rgb = True
+            frame = self.process_frame(frame)
 
         # load model
 

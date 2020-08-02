@@ -31,6 +31,7 @@ import cv2
 from dlclive import DLCLive
 from dlclive import VERSION
 from dlclive import __file__ as dlcfile
+
 from dlclive.utils import decode_fourcc
 
 
@@ -169,7 +170,6 @@ def benchmark(
         tensorflow inference flag
     dict
         metadata for video
-    
 
     Example
     -------
@@ -197,7 +197,7 @@ def benchmark(
     )
     n_frames = int(n_frames)
     im_size = (cap.get(cv2.CAP_PROP_FRAME_WIDTH), cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
+    
     ### get resize factor
 
     if pixels is not None:
@@ -391,6 +391,7 @@ def save_inf_times(
     """ Save inference time data collected using :function:`benchmark` with system information to a pickle file.
     This is primarily used through :function:`benchmark_videos`
 
+
     Parameters
     ----------
     sys_info : tuple
@@ -450,7 +451,6 @@ def save_inf_times(
     pickle.dump(data, open(out_file, "wb"))
 
     return True
-
 
 def benchmark_videos(
     model_path,
@@ -589,7 +589,6 @@ def benchmark_videos(
                 output=output,
             )
 
-
 def main():
     """Provides a command line interface :function:`benchmark_videos`
     """
@@ -627,7 +626,6 @@ def main():
         save_poses=args.save_poses,
         save_video=args.save_video,
     )
-
 
 if __name__ == "__main__":
     main()
