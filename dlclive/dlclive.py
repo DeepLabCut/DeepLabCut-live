@@ -79,6 +79,7 @@ class DLCLive(object):
     display_raidus : int, optional
         radius for keypoint display in pixels, default=3
     '''
+    
     PARAMETERS = (
         'path', 'cfg', 'model_type', 'precision', 'cropping',
         'dynamic', 'resize', 'processor'

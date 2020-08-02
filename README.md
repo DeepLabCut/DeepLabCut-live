@@ -73,21 +73,21 @@ dlclive.benchmark_videos('/path/to/exported/model', ['/path/to/video1', '/path/t
 ```
 ##### command line
 ```
-dlc-live-analyze /path/to/exported/model /path/to/video1 /path/to/video2 -o /path/to/output -r 1.0 0.75 0.5
+dlc-live-benchmark /path/to/exported/model /path/to/video1 /path/to/video2 -o /path/to/output -r 1.0 0.75 0.5
 ```
 
 2. Display keypoints to visually inspect the accuracy of exported models on different image sizes (note, this is slow and only for testing purposes):
 
 ##### python
 ```python
-dlclive.benchmark_videos('/path/to/exported/model', '/path/to/video', resize=[0.5], display=True, pcutoff=0.5, display_radius=4, cmap='bmy')
+dlclive.benchmark_videos('/path/to/exported/model', '/path/to/video', resize=0.5, display=True, pcutoff=0.5, display_radius=4, cmap='bmy')
 ```
 ##### command line
 ```
-dlc-live-analyze /path/to/exported/model /path/to/video -r 0.5 --display --pcutoff 0.5 --display-radius 4 --cmap bmy
+dlc-live-benchmark /path/to/exported/model /path/to/video -r 0.5 --display --pcutoff 0.5 --display-radius 4 --cmap bmy
 ```
 
-3. Analyze and create a labeled video using the exported model and desired resize parameters. This option functions similar to `deeplabcut.analyze_videos` and `deeplabcut.create_labeled_video` (note, this is slow and only for testing purposes).
+3. Analyze and create a labeled video using the exported model and desired resize parameters. This option functions similar to `deeplabcut.benchmark_videos` and `deeplabcut.create_labeled_video` (note, this is slow and only for testing purposes).
 
 ##### python
 ```python
@@ -95,7 +95,7 @@ dlclive.benchmark_videos('/path/to/exported/model', '/path/to/video', resize=[1.
 ```
 ##### command line
 ```
-dlc-live-analyze /path/to/exported/model /path/to/video -r 0.5 --pcutoff 0.5 --display-radius 4 --cmap bmy --save_poses --save_video
+dlc-live-benchmark /path/to/exported/model /path/to/video -r 0.5 --pcutoff 0.5 --display-radius 4 --cmap bmy --save-poses --save-video
 ```
   
 ### Citation:

@@ -10,6 +10,7 @@ import platform
 import os
 import time
 import sys
+import warnings
 import argparse
 import pickle
 import subprocess
@@ -99,7 +100,6 @@ def get_system_info() -> dict:
         'dlclive_version': VERSION
     }
 
-
 def run_benchmark(model_path, video_path, tf_config=None,
                   resize=None, pixels=None, n_frames=10000,
                   print_rate=False, display=False, pcutoff=0.0,
@@ -160,7 +160,7 @@ def run_benchmark(model_path, video_path, tf_config=None,
         if not ret:
             warnings.warn("Did not complete {:d} frames. There probably were not enough frames in the video {}.".format(n_frames, video_path))
             break
-
+        
         start_pose = time.time()
         live.get_pose(frame)
         inf_times[i] = time.time() - start_pose
@@ -335,10 +335,6 @@ def benchmark_model_by_size(model_path, video_path, output=None, n_frames=10000,
         pixels = [None]
 
     ### initialize full inference times
-
-    #inf_times = np.zeros((len(resize), n_frames))
-    #pixels_out = np.zeros(len(resize))
-    print(resize)
 
     # get system info once, shouldn't change between runs
     sys_info = get_system_info()

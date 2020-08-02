@@ -42,5 +42,5 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ),
     entry_points = {'console_scripts' : ['dlc-live-bench=dlclive.bench:main',
-                                         'dlc-live-analyze=dlclive.analyze:main']}
+                                         'dlc-live-benchmark=dlclive.benchmark:main']}
 )
