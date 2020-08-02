@@ -31,6 +31,7 @@ from dlclive import DLCLive
 from dlclive import VERSION
 from dlclive import __file__ as dlcfile
 
+from dlclive.utils import decode_fourcc
 
 def get_system_info() -> dict:
     """ Return summary info for system running benchmark
@@ -100,7 +101,10 @@ def get_system_info() -> dict:
         'dlclive_version': VERSION
     }
 
-def run_benchmark(model_path, video_path, tf_config=None, resize=None, pixels=None, n_frames=10000, print_rate=False, display=False, pcutoff=0.0, display_radius=3) -> typing.Tuple[np.ndarray, int, bool]:
+def run_benchmark(model_path, video_path, tf_config=None,
+                  resize=None, pixels=None, n_frames=10000,
+                  print_rate=False, display=False, pcutoff=0.0,
+                  display_radius=3) -> typing.Tuple[np.ndarray, int, bool, dict]:
     """ Benchmark on inference times for a given DLC model and video
 
     Parameters
@@ -136,6 +140,8 @@ def run_benchmark(model_path, video_path, tf_config=None, resize=None, pixels=No
 
     if pixels is not None:
         resize = np.sqrt(pixels / (im_size[0] * im_size[1]))
+    else:
+        resize = resize if resize is not None else 1
 
     ### initialize live object
 
@@ -168,11 +174,49 @@ def run_benchmark(model_path, video_path, tf_config=None, resize=None, pixels=No
 
     ### close video and tensorflow session
 
+    # gather video and test parameterization
+
+    # dont want to fail here so gracefully failing on exception --
+    # eg. some packages of cv2 don't have CAP_PROP_CODEC_PIXEL_FORMAT
+    try:
+        fourcc = decode_fourcc(cap.get(cv2.CAP_PROP_FOURCC))
+    except:
+        fourcc = ""
+
+    try:
+        fps = round(cap.get(cv2.CAP_PROP_FPS))
+    except:
+        fps = None
+
+    try:
+        pix_fmt = decode_fourcc(cap.get(cv2.CAP_PROP_CODEC_PIXEL_FORMAT))
+    except:
+        pix_fmt = ""
+
+    try:
+        frame_count = round(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    except:
+        frame_count = None
+
+
+
+    meta = {
+        'video_path': video_path,
+        'video_codec': fourcc,
+        'video_pixel_format': pix_fmt,
+        'video_fps': fps,
+        'video_total_frames': frame_count,
+        'resize': resize,
+        'original_frame_size': im_size,
+        'resized_frame_size': (im_size[0]*resize, im_size[1]*resize),
+        'pixels': pixels,
+        'dlclive_params': live.parameterization
+    }
+
     cap.release()
     live.close()
 
-    resize = resize if resize is not None else 1
-    return inf_times, resize*im_size[0] * resize*im_size[1], TFGPUinference
+    return inf_times, resize*im_size[0] * resize*im_size[1], TFGPUinference, meta
 
 def get_savebenchmarkfn(sys_info ,i, fn_ind, out_dir=None):
     ''' get filename to save data (definitions see save_benchmark)'''
@@ -181,7 +225,14 @@ def get_savebenchmarkfn(sys_info ,i, fn_ind, out_dir=None):
     datafilename = out_dir + '/' + base_name
     return datafilename
 
-def save_benchmark(sys_info, inf_times, pixels, i, fn_ind, TFGPUinference, model=None, out_dir=None,datafilename=None):
+def save_benchmark(sys_info: dict,
+                   inf_times: np.ndarray,
+                   pixels: typing.Union[np.ndarray, float],
+                   iter: int,
+                   TFGPUinference: bool = None,
+                   model: str = None,
+                   out_dir: str = None,
+                   meta: dict=None):
     """ Save benchmarking data with system information to a pickle file
 
     Parameters
@@ -200,7 +251,8 @@ def save_benchmark(sys_info, inf_times, pixels, i, fn_ind, TFGPUinference, model
         name of model
     out_dir : str, optional
         path to directory to save data. If None, uses pwd, by default None
-
+    meta: dict, optional
+        metadata returned form run_benchmark
 
     Returns
     -------
@@ -208,9 +260,7 @@ def save_benchmark(sys_info, inf_times, pixels, i, fn_ind, TFGPUinference, model
         flag indicating successful save
     """
 
-    if datafilename is None:
-        #out_dir = out_dir if out_dir is not None else os.getcwd()
-        datafilename=get_savebenchmarkfn(sys_info ,iter, fn_ind, out_dir=out_dir)
+    out_dir = out_dir if out_dir is not None else os.getcwd()
 
     model_type = None
     if model is not None:
@@ -221,14 +271,32 @@ def save_benchmark(sys_info, inf_times, pixels, i, fn_ind, TFGPUinference, model
         else:
             model_type = None
 
-    data = {'model' : model,
-            'model_type' : model_type,
-            'TFGPUinference' : TFGPUinference,
-            'pixels' : pixels,
-            'inference_times' : inf_times}
+    fn_ind = 0
+    base_name = "benchmark_{}_{}_{}_{}.pickle".format(sys_info['host_name'],
+                                                      sys_info['device'][0],
+                                                      fn_ind,
+                                                      iter)
+    while os.path.isfile(os.path.normpath(out_dir + '/' + base_name)):
+        fn_ind += 1
+        base_name = "benchmark_{}_{}_{}_{}.pickle".format(sys_info['host_name'],
+                                                          sys_info['device'][0],
+                                                          fn_ind,
+                                                          iter)
+
+    data = {'model': model,
+            'model_type': model_type,
+            'TFGPUinference': TFGPUinference,
+            'pixels': pixels,
+            'inference_times': inf_times}
 
     data.update(sys_info)
 
+    if meta:
+        data.update(meta)
+
+    data.update(sys_info)
+
+    datafilename = os.path.normpath(f"{out_dir}/{base_name}")
     pickle.dump(data, open(os.path.normpath(datafilename), 'wb'))
 
     return True
@@ -283,24 +351,27 @@ def benchmark_model_by_size(model_path, video_path, output=None, n_frames=10000,
 
     for i in range(len(resize)):
 
-        sys_info = get_system_info()
-        datafilename=get_savebenchmarkfn(sys_info ,i, fn_ind, out_dir=out_dir)
+        print("\nRun {:d} / {:d}\n".format(i+1, len(resize)))
 
-        #Check if a subset was already been completed?
-        if os.path.isfile(os.path.normpath(datafilename)):
-            print("\nAlready ran {:d} / {:d}\n".format(i+1, len(resize)))
-        else:
-            print("\nRun {:d} / {:d}\n".format(i+1, len(resize)))
-            inf_times, pixels_out, TFGPUinference = run_benchmark(model_path,
-                                                                        video_path,
-                                                                        resize=resize[i],
-                                                                        pixels=pixels[i],
-                                                                        n_frames=n_frames,
-                                                                        print_rate=print_rate)
+        inf_times, pixels_out, TFGPUinference, benchmark_meta = run_benchmark(
+            model_path,
+            video_path,
+            tf_config=tf_config,
+            resize=resize[i],
+            pixels=pixels[i],
+            n_frames=n_frames,
+            print_rate=print_rate,
+            display=display,
+            pcutoff=pcutoff,
+            display_radius=display_radius)
 
-            ### saving results intermediately
-            save_benchmark(sys_info, inf_times, pixels_out, i, fn_ind, TFGPUinference, model=os.path.basename(model_path), datafilename=datafilename)
+        #TODO: check if a part has already been complted?
 
+        ### saving results intermediately
+        save_benchmark(sys_info, inf_times, pixels_out, i, TFGPUinference,
+                       model=os.path.basename(model_path),
+                       out_dir = output,
+                       meta=benchmark_meta)
 
 def main():
 

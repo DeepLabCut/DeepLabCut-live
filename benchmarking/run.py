@@ -1,3 +1,10 @@
+"""
+DeepLabCut Toolbox (deeplabcut.org)
+© A. & M. Mathis Labs
+
+Licensed under GNU Lesser General Public License v3.0
+"""
+
 # Example script for running benchmark tests in Kane et al, 2020.
 
 import os
@@ -6,7 +13,8 @@ import glob
 from dlclive import benchmark_model_by_size
 
 # Update the datafolder to where the data is:
-datafolder=PUTFOLDER_TO_data!
+datafolder='/your/path/to/data/here'
+
 n_frames = 1000 #change to 10000 for testing on a GPU!
 pixels = [2500, 10000, 40000, 160000, 320000, 640000]
 

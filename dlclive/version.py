@@ -1,12 +1,11 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-DeepLabCut Toolbox (deeplabcut.org)
+DeepLabCut Live Toolbox (deeplabcut.org)
 © A. & M. Mathis Labs
+admin@deeplabcut.org
 
 Licensed under GNU Lesser General Public License v3.0
 """
 
 
-__version__ = '0.0.b2'
+__version__ = '0.0.1'
 VERSION = __version__
