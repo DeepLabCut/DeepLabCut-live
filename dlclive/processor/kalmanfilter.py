@@ -1,6 +1,7 @@
 """
-DeepLabCut-live Toolbox (deeplabcut.org)
-Please see AUTHORS for contributors.
+DeepLabCut Toolbox (deeplabcut.org)
+© A. & M. Mathis Labs
+
 Licensed under GNU Lesser General Public License v3.0
 """
 

@@ -1,3 +1,10 @@
+"""
+DeepLabCut Toolbox (deeplabcut.org)
+© A. & M. Mathis Labs
+
+Licensed under GNU Lesser General Public License v3.0
+"""
+
 # Example script for running benchmark tests in Kane et al, 2020.
 
 import os
