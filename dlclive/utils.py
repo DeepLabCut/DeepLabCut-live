@@ -22,18 +22,19 @@ try:
 except Exception:
     from PIL import Image
     OPEN_CV = False
-    warnings.warn("OpenCV is not installed. Using pillow for image processing, which is slower.", DLCLiveWarning)
+    warnings.warn(
+        "OpenCV is not installed. Using pillow for image processing, which is slower.", DLCLiveWarning)
 
 
 def convert_to_ubyte(frame):
     """ Converts an image to unsigned 8-bit integer numpy array. 
         If scikit-image is installed, uses skimage.img_as_ubyte, otherwise, uses a similar custom function.
-    
+
     Parameters
     ----------
     image : :class:`numpy.ndarray`
         an image as a numpy array
-    
+
     Returns
     -------
     :class:`numpy.ndarray`
@@ -48,7 +49,7 @@ def convert_to_ubyte(frame):
 
 def resize_frame(frame, resize=None):
     """ Resizes an image. Uses OpenCV if installed, otherwise, uses pillow
-    
+
     Parameters
     ----------
     image : :class:`numpy.ndarray`
@@ -73,6 +74,7 @@ def resize_frame(frame, resize=None):
 
         return frame
 
+
 def img_to_rgb(frame):
     """ Convert an image to RGB. Uses OpenCV is installed, otherwise uses pillow.
 
@@ -92,7 +94,8 @@ def img_to_rgb(frame):
 
     else:
 
-        warnings.warn(f"Image has {frame.ndim} dimensions. Must be 2 or 3 dimensions to convert to RGB", DLCLiveWarning)
+        warnings.warn(
+            f"Image has {frame.ndim} dimensions. Must be 2 or 3 dimensions to convert to RGB", DLCLiveWarning)
         return frame
 
 
@@ -139,12 +142,12 @@ def bgr_to_rgb(frame):
 def _img_as_ubyte_np(frame):
     """ Converts an image as a numpy array to unsinged 8-bit integer.
         As in scikit-image img_as_ubyte, converts negative pixels to 0 and converts range to [0, 255]
-    
+
     Parameters
     ----------
     image : :class:`numpy.ndarray`
         an image as a numpy array
-    
+
     Returns
     -------
     :class:`numpy.ndarray`
@@ -170,7 +173,7 @@ def _img_as_ubyte_np(frame):
         frame = np.clip(frame, 0, 255)
         return frame.astype(np.uint8)
 
-    # if integer    
+    # if integer
     elif np.issubdtype(im_type, np.integer):
 
         im_type_info = np.iinfo(im_type)
@@ -180,19 +183,17 @@ def _img_as_ubyte_np(frame):
 
     else:
 
-        raise TypeError("image of type {} could not be converted to ubyte".format(im_type))
-            
+        raise TypeError(
+            "image of type {} could not be converted to ubyte".format(im_type))
+
+
 def decode_fourcc(cc):
     """
     Convert float fourcc code from opencv to characters.
-
     If decode fails, returns empty string.
-
     https://stackoverflow.com/a/49138893
-
     Arguments:
         cc (float, int): fourcc code from opencv
-
     Returns:
          str: Character format of fourcc code
 
