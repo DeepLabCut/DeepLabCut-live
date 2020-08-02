@@ -15,7 +15,8 @@ To perform processing on poses (such as predicting the future pose of an animal 
 
 - The `process` method takes in a pose, performs some processing, and returns processed pose.
 - The `save` method saves any valuable data created by or used by the processor
-For examples, please see the [processor directory](processor)
+
+For more details and examples, see documentation [here](dlclive/processor/README.md).
 
 ###### Note :: alone, this object does not record video or capture images from a camera. This must be done separately, i.e. see our [DeepLabCut-live GUI](https://github.com/gkane26/DeepLabCut-live-GUI).
 
