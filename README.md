@@ -5,7 +5,7 @@
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/deeplabcut-live?color=purple)
 ![Python package](https://github.com/DeepLabCut/DeepLabCut-live/workflows/Python%20package/badge.svg)
 
-This package contains a DeepLabCut inference pipeline for real-time applications that has minimal (software) dependencies. Thus, it is as easy to install as possible (in particular, on atypical systems like NVIDIA Jetson boards).
+This package contains a [DeepLabCut](http://www.mousemotorlab.org/deeplabcut) inference pipeline for real-time applications that has minimal (software) dependencies. Thus, it is as easy to install as possible (in particular, on atypical systems like [NVIDIA Jetson boards](https://developer.nvidia.com/buy-jetson)).
 
 **Performance:** If you would like to see estimates on how your model might perform given a video size, neural network type, and hardware, please see: https://deeplabcut.github.io/DLC-inferencespeed-benchmark/ And, consider submitting your results too! https://github.com/DeepLabCut/DLC-inferencespeed-benchmark
 
@@ -66,7 +66,8 @@ dlc_live.get_pose(<your image>)
 
 ### Benchmarking/Analyzing Exported DeepLabCut Models
 
-DeepLabCut-live offers some analysis tools that allow users to peform the following operations on videos, from python or from the command line: 
+DeepLabCut-live offers some analysis tools that allow users to peform the following operations on videos, from python or from the command line:
+
 1. Test inference speed across a range of image sizes, downsizing images by specifying the `resize` or `pixels` parameter. Using the `pixels` parameter will resize images to the desired number of `pixels`, without changing the aspect ratio. Results will be saved (along with system info) to a pickle file if you specify an output directory.
 ##### python
 ```python
@@ -98,15 +99,32 @@ dlclive.benchmark_videos('/path/to/exported/model', '/path/to/video', resize=[1.
 ```
 dlc-live-benchmark /path/to/exported/model /path/to/video -r 0.5 --pcutoff 0.5 --display-radius 4 --cmap bmy --save-poses --save-video
 ```
-  
+
 ### Citation:
 
-If you find our code helpful, please consider citing:
+If you utilize our tool, please cite:
+
 ```
 @Article{Kane2020dlclive,
   author    = {Kane, Gary and Lopes, Gonçalo and Sanders, Jonny and Mathis, Alexander and Mathis, Mackenzie},
-  title     = {Real-time DeepLabCut for closed-loop feedback based on posture},
+  title     = {Real-time, low-latency closed-loop feedback using markerless posture tracking},
   journal   = {BioRxiv},
   year      = {2020},
 }
 ```
+
+## License:
+
+This project is licensed under the GNU Lesser General Public License v3.0. Note that the software is provided "as is", without warranty of any kind, express or implied. If you use the code or data, please cite us!
+
+## Community Support, Developers, & Help:
+
+This is an actively developed package and we welcome community development and involvement.
+
+- We are a community partner on the [![Image.sc forum](https://img.shields.io/badge/dynamic/json.svg?label=forum&amp;url=https%3A%2F%2Fforum.image.sc%2Ftags%2Fdeeplabcut.json&amp;query=%24.topic_list.tags.0.topic_count&amp;colorB=brightgreen&amp;&amp;suffix=%20topics&amp;logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAABPklEQVR42m3SyyqFURTA8Y2BER0TDyExZ+aSPIKUlPIITFzKeQWXwhBlQrmFgUzMMFLKZeguBu5y+//17dP3nc5vuPdee6299gohUYYaDGOyyACq4JmQVoFujOMR77hNfOAGM+hBOQqB9TjHD36xhAa04RCuuXeKOvwHVWIKL9jCK2bRiV284QgL8MwEjAneeo9VNOEaBhzALGtoRy02cIcWhE34jj5YxgW+E5Z4iTPkMYpPLCNY3hdOYEfNbKYdmNngZ1jyEzw7h7AIb3fRTQ95OAZ6yQpGYHMMtOTgouktYwxuXsHgWLLl+4x++Kx1FJrjLTagA77bTPvYgw1rRqY56e+w7GNYsqX6JfPwi7aR+Y5SA+BXtKIRfkfJAYgj14tpOF6+I46c4/cAM3UhM3JxyKsxiOIhH0IO6SH/A1Kb1WBeUjbkAAAAAElFTkSuQmCC)](https://forum.image.sc/tags/deeplabcut). Please post help and support questions on the forum with the tag DeepLabCut. Check out their mission statement [Scientific Community Image Forum: A discussion forum for scientific image software](https://journals.plos.org/plosbiology/article?id=10.1371/journal.pbio.3000340).
+
+- If you encounter a previously unreported bug/code issue, please post here (we encourage you to search issues first): https://github.com/DeepLabCut/DeepLabCut-live/issues
+
+- For quick discussions here: [![Gitter](https://badges.gitter.im/DeepLabCut/community.svg)](https://gitter.im/DeepLabCut/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+
+- If you want to contribute to the code, please read our guide [here!](https://github.com/DeepLabCut/DeepLabCut/blob/master/CONTRIBUTING.md), which is provided at the main repository of DeepLabCut.
