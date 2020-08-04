@@ -35,7 +35,7 @@ else:
 
 setuptools.setup(
     name="deeplabcut-live",
-    version="0.0",
+    version="0.0.1",
     author="A. & M. Mathis Labs",
     author_email="admin@deeplabcut.org",
     description="Class to load exported DeepLabCut networks and perform pose estimation on single frames (from a camera feed)",

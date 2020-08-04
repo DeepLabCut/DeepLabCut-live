@@ -20,4 +20,8 @@ pip install deeplabcut-live
 dlc-live-test
 ```
 
+Note, you can test your installation by running:
+
+`python /check_install/check_install.py`
+
 If installed properly, this script will i) create a temporary folder ii) download the full_dog model from the [DeepLabCut Model Zoo](http://www.mousemotorlab.org/dlc-modelzoo), iii) download a short video clip of a dog, and iv) run inference while displaying keypoints. v) remove the temporary folder.
