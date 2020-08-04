@@ -25,19 +25,11 @@ install_requires = [
     "tqdm",
 ]
 
-if find_spec("cv2") is None:
-    install_requires.append("opencv-python")
-if find_spec("tensorflow") is None:
-    warnings.warn(
-        "tensorflow is not yet installed. Installing tensorflow CPU version. if you wish to use the GPU version, please run: pip install tensorflow-gpu==1.13.1"
-    )
-    install_requires.append("tensorflow==1.13.1")
 if "tegra" in platform.platform():
-    if find_spec("pandas") is None:
-        warnings.warn(
-            "Not installing pandas or pytables (these can take forever on NVIDIA Jetson boards). Please install these packages if you want to use the benchmark_videos function to save poses from a video."
-        )
+    warnings.warn("Not installing the following packages:\nopencv-python\ntensorflow\npandas\ntables\nPlease follow instructions on github to install opencv and tensorflow. If you want to use the benchmark_videos function to save poses from a video, then please install pandas and tables (pip install pandas tables)")
 else:
+    install_requires.append("opencv-python")
+    install_requires.append("tensorflow==1.13.1")
     install_requires.append("pandas")
     install_requires.append("tables")
 
