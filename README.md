@@ -114,7 +114,7 @@ dlc-live-benchmark /path/to/exported/model /path/to/video -r 0.5 --pcutoff 0.5 -
 
 ### Citation:
 
-If you utilize our tool, please cite:
+If you utilize our tool, please cite our [paper](https://www.biorxiv.org/content/10.1101/2020.08.04.236422v1):
 
 ```
 @Article{Kane2020dlclive,
@@ -133,7 +133,7 @@ This project is licensed under the GNU Lesser General Public License v3.0. Note 
 
 This is an actively developed package and we welcome community development and involvement.
 
-- If you want to contribute to the code, please read our guide [here!](https://github.com/DeepLabCut/DeepLabCut/blob/master/CONTRIBUTING.md), which is provided at the main repository of DeepLabCut.
+- If you want to contribute to the code, please read our guide [here](https://github.com/DeepLabCut/DeepLabCut/blob/master/CONTRIBUTING.md), which is provided at the main repository of DeepLabCut.
 
 - We are a community partner on the [![Image.sc forum](https://img.shields.io/badge/dynamic/json.svg?label=forum&amp;url=https%3A%2F%2Fforum.image.sc%2Ftags%2Fdeeplabcut.json&amp;query=%24.topic_list.tags.0.topic_count&amp;colorB=brightgreen&amp;&amp;suffix=%20topics&amp;logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAABPklEQVR42m3SyyqFURTA8Y2BER0TDyExZ+aSPIKUlPIITFzKeQWXwhBlQrmFgUzMMFLKZeguBu5y+//17dP3nc5vuPdee6299gohUYYaDGOyyACq4JmQVoFujOMR77hNfOAGM+hBOQqB9TjHD36xhAa04RCuuXeKOvwHVWIKL9jCK2bRiV284QgL8MwEjAneeo9VNOEaBhzALGtoRy02cIcWhE34jj5YxgW+E5Z4iTPkMYpPLCNY3hdOYEfNbKYdmNngZ1jyEzw7h7AIb3fRTQ95OAZ6yQpGYHMMtOTgouktYwxuXsHgWLLl+4x++Kx1FJrjLTagA77bTPvYgw1rRqY56e+w7GNYsqX6JfPwi7aR+Y5SA+BXtKIRfkfJAYgj14tpOF6+I46c4/cAM3UhM3JxyKsxiOIhH0IO6SH/A1Kb1WBeUjbkAAAAAElFTkSuQmCC)](https://forum.image.sc/tags/deeplabcut). Please post help and support questions on the forum with the tag DeepLabCut. Check out their mission statement [Scientific Community Image Forum: A discussion forum for scientific image software](https://journals.plos.org/plosbiology/article?id=10.1371/journal.pbio.3000340).
 
