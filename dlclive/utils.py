@@ -12,18 +12,23 @@ from dlclive.exceptions import DLCLiveWarning
 
 try:
     import skimage
+
     SK_IM = True
 except Exception:
     SK_IM = False
 
 try:
     import cv2
+
     OPEN_CV = True
 except Exception:
     from PIL import Image
+
     OPEN_CV = False
     warnings.warn(
-        "OpenCV is not installed. Using pillow for image processing, which is slower.", DLCLiveWarning)
+        "OpenCV is not installed. Using pillow for image processing, which is slower.",
+        DLCLiveWarning,
+    )
 
 
 def convert_to_ubyte(frame):
@@ -95,7 +100,9 @@ def img_to_rgb(frame):
     else:
 
         warnings.warn(
-            f"Image has {frame.ndim} dimensions. Must be 2 or 3 dimensions to convert to RGB", DLCLiveWarning)
+            f"Image has {frame.ndim} dimensions. Must be 2 or 3 dimensions to convert to RGB",
+            DLCLiveWarning,
+        )
         return frame
 
 
@@ -115,7 +122,7 @@ def gray_to_rgb(frame):
     else:
 
         img = Image.fromarray(frame)
-        img = img.convert('RGB')
+        img = img.convert("RGB")
         return np.asarray(img)
 
 
@@ -135,7 +142,7 @@ def bgr_to_rgb(frame):
     else:
 
         img = Image.fromarray(frame)
-        img = img.convert('RGB')
+        img = img.convert("RGB")
         return np.asarray(img)
 
 
@@ -177,14 +184,15 @@ def _img_as_ubyte_np(frame):
     elif np.issubdtype(im_type, np.integer):
 
         im_type_info = np.iinfo(im_type)
-        frame *= 255/im_type_info.max
+        frame *= 255 / im_type_info.max
         frame[frame < 0] = 0
         return frame.astype(np.uint8)
 
     else:
 
         raise TypeError(
-            "image of type {} could not be converted to ubyte".format(im_type))
+            "image of type {} could not be converted to ubyte".format(im_type)
+        )
 
 
 def decode_fourcc(cc):

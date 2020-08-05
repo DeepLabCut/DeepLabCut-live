@@ -27,7 +27,7 @@ def main():
 
     # download dog video clip from github
     print("\nDownloading dog video clip...\n")
-    #video_url = "https://github.com/DeepLabCut/DeepLabCut-live/raw/master/check_install/dog_clip.avi"
+    # video_url = "https://github.com/DeepLabCut/DeepLabCut-live/raw/master/check_install/dog_clip.avi"
     video_url = '"https://docs.google.com/uc?export=download&id=1W_5AOl1SewXR2q5QC1K5Chm71I9LAmld"'
     os.system(f"curl -L {video_url} -o dog_clip.avi")
 

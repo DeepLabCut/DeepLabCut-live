@@ -141,4 +141,3 @@ class IzzyJumpKF(KalmanFilterPredictor, IzzyJump):
     def save(self, filename):
 
         return IzzyJump.save(self, filename)
-

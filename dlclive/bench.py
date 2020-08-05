@@ -33,6 +33,7 @@ from dlclive import __file__ as dlcfile
 
 from dlclive.utils import decode_fourcc
 
+
 def get_system_info() -> dict:
     """ Return summary info for system running benchmark
 
@@ -51,14 +52,13 @@ def get_system_info() -> dict:
         * ``dlclive_version`` (str): dlclive version from :data:`dlclive.VERSION`
     """
 
-
     ### get os
 
     op_sys = platform.platform()
-    host_name = platform.node().replace(' ', '')
+    host_name = platform.node().replace(" ", "")
 
     # A string giving the absolute path of the executable binary for the Python interpreter, on systems where this makes sense.
-    if platform.system() == 'Windows':
+    if platform.system() == "Windows":
         host_python = sys.executable.split(os.path.sep)[-2]
     else:
         host_python = sys.executable.split(os.path.sep)[-3]
@@ -67,8 +67,10 @@ def get_system_info() -> dict:
     dlc_basedir = os.path.dirname(os.path.dirname(dlcfile))
     git_hash = None
     try:
-        git_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=dlc_basedir)
-        git_hash = git_hash.decode('utf-8').rstrip('\n')
+        git_hash = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=dlc_basedir
+        )
+        git_hash = git_hash.decode("utf-8").rstrip("\n")
     except subprocess.CalledProcessError:
         # not installed from git repo, eg. pypi
         # fine, pass quietly
@@ -80,31 +82,46 @@ def get_system_info() -> dict:
     if tf.test.is_gpu_available():
         gpu_name = tf.test.gpu_device_name()
         from tensorflow.python.client import device_lib
-        dev_desc = [d.physical_device_desc for d in device_lib.list_local_devices() if d.name == gpu_name]
-        dev = [d.split(",")[1].split(':')[1].strip() for d in dev_desc]
+
+        dev_desc = [
+            d.physical_device_desc
+            for d in device_lib.list_local_devices()
+            if d.name == gpu_name
+        ]
+        dev = [d.split(",")[1].split(":")[1].strip() for d in dev_desc]
         dev_type = "GPU"
     else:
         from cpuinfo import get_cpu_info
-        dev = get_cpu_info() #[get_cpu_info()['brand']]
+
+        dev = get_cpu_info()  # [get_cpu_info()['brand']]
         dev_type = "CPU"
 
     # return a dictionary rather than a tuple for inspectability's sake
     return {
-        'host_name': host_name,
-        'op_sys'   : op_sys,
-        'python': host_python,
-        'device_type': dev_type,
-        'device': dev,
-        'freeze': list(freeze.freeze()), # pip freeze to get versions of all packages
-        'python_version': sys.version,
-        'git_hash': git_hash,
-        'dlclive_version': VERSION
+        "host_name": host_name,
+        "op_sys": op_sys,
+        "python": host_python,
+        "device_type": dev_type,
+        "device": dev,
+        "freeze": list(freeze.freeze()),  # pip freeze to get versions of all packages
+        "python_version": sys.version,
+        "git_hash": git_hash,
+        "dlclive_version": VERSION,
     }
 
-def run_benchmark(model_path, video_path, tf_config=None,
-                  resize=None, pixels=None, n_frames=10000,
-                  print_rate=False, display=False, pcutoff=0.0,
-                  display_radius=3) -> typing.Tuple[np.ndarray, int, bool, dict]:
+
+def run_benchmark(
+    model_path,
+    video_path,
+    tf_config=None,
+    resize=None,
+    pixels=None,
+    n_frames=10000,
+    print_rate=False,
+    display=False,
+    pcutoff=0.0,
+    display_radius=3,
+) -> typing.Tuple[np.ndarray, int, bool, dict]:
     """ Benchmark on inference times for a given DLC model and video
 
     Parameters
@@ -145,7 +162,14 @@ def run_benchmark(model_path, video_path, tf_config=None,
 
     ### initialize live object
 
-    live = DLCLive(model_path, tf_config=tf_config, resize=resize, display=display, pcutoff=pcutoff, display_radius=display_radius)
+    live = DLCLive(
+        model_path,
+        tf_config=tf_config,
+        resize=resize,
+        display=display,
+        pcutoff=pcutoff,
+        display_radius=display_radius,
+    )
     live.init_inference(frame)
     TFGPUinference = True if len(live.outputs) == 1 else False
 
@@ -159,9 +183,13 @@ def run_benchmark(model_path, video_path, tf_config=None,
         ret, frame = cap.read()
 
         if not ret:
-            warnings.warn("Did not complete {:d} frames. There probably were not enough frames in the video {}.".format(n_frames, video_path))
+            warnings.warn(
+                "Did not complete {:d} frames. There probably were not enough frames in the video {}.".format(
+                    n_frames, video_path
+                )
+            )
             break
-        
+
         start_pose = time.time()
         live.get_pose(frame)
         inf_times[i] = time.time() - start_pose
@@ -170,7 +198,7 @@ def run_benchmark(model_path, video_path, tf_config=None,
             print("pose rate = {:d}".format(int(1 / inf_times[i])))
 
     if print_rate:
-        print("mean pose rate = {:d}".format(int(np.mean(1/inf_times))))
+        print("mean pose rate = {:d}".format(int(np.mean(1 / inf_times))))
 
     ### close video and tensorflow session
 
@@ -198,41 +226,45 @@ def run_benchmark(model_path, video_path, tf_config=None,
     except:
         frame_count = None
 
-
-
     meta = {
-        'video_path': video_path,
-        'video_codec': fourcc,
-        'video_pixel_format': pix_fmt,
-        'video_fps': fps,
-        'video_total_frames': frame_count,
-        'resize': resize,
-        'original_frame_size': im_size,
-        'resized_frame_size': (im_size[0]*resize, im_size[1]*resize),
-        'pixels': pixels,
-        'dlclive_params': live.parameterization
+        "video_path": video_path,
+        "video_codec": fourcc,
+        "video_pixel_format": pix_fmt,
+        "video_fps": fps,
+        "video_total_frames": frame_count,
+        "resize": resize,
+        "original_frame_size": im_size,
+        "resized_frame_size": (im_size[0] * resize, im_size[1] * resize),
+        "pixels": pixels,
+        "dlclive_params": live.parameterization,
     }
 
     cap.release()
     live.close()
 
-    return inf_times, resize*im_size[0] * resize*im_size[1], TFGPUinference, meta
+    return inf_times, resize * im_size[0] * resize * im_size[1], TFGPUinference, meta
 
-def get_savebenchmarkfn(sys_info ,i, fn_ind, out_dir=None):
-    ''' get filename to save data (definitions see save_benchmark)'''
+
+def get_savebenchmarkfn(sys_info, i, fn_ind, out_dir=None):
+    """ get filename to save data (definitions see save_benchmark)"""
     out_dir = out_dir if out_dir is not None else os.getcwd()
-    base_name = "benchmark_{}_{}_{}_{}.pickle".format(sys_info['host_name'], sys_info['device_type'], fn_ind, i)
-    datafilename = out_dir + '/' + base_name
+    base_name = "benchmark_{}_{}_{}_{}.pickle".format(
+        sys_info["host_name"], sys_info["device_type"], fn_ind, i
+    )
+    datafilename = out_dir + "/" + base_name
     return datafilename
 
-def save_benchmark(sys_info: dict,
-                   inf_times: np.ndarray,
-                   pixels: typing.Union[np.ndarray, float],
-                   iter: int,
-                   TFGPUinference: bool = None,
-                   model: str = None,
-                   out_dir: str = None,
-                   meta: dict=None):
+
+def save_benchmark(
+    sys_info: dict,
+    inf_times: np.ndarray,
+    pixels: typing.Union[np.ndarray, float],
+    iter: int,
+    TFGPUinference: bool = None,
+    model: str = None,
+    out_dir: str = None,
+    meta: dict = None,
+):
     """ Save benchmarking data with system information to a pickle file
 
     Parameters
@@ -264,30 +296,30 @@ def save_benchmark(sys_info: dict,
 
     model_type = None
     if model is not None:
-        if 'resnet' in model:
-            model_type = 'resnet'
-        elif 'mobilenet' in model:
-            model_type = 'mobilenet'
+        if "resnet" in model:
+            model_type = "resnet"
+        elif "mobilenet" in model:
+            model_type = "mobilenet"
         else:
             model_type = None
 
     fn_ind = 0
-    base_name = "benchmark_{}_{}_{}_{}.pickle".format(sys_info['host_name'],
-                                                      sys_info['device'][0],
-                                                      fn_ind,
-                                                      iter)
-    while os.path.isfile(os.path.normpath(out_dir + '/' + base_name)):
+    base_name = "benchmark_{}_{}_{}_{}.pickle".format(
+        sys_info["host_name"], sys_info["device"][0], fn_ind, iter
+    )
+    while os.path.isfile(os.path.normpath(out_dir + "/" + base_name)):
         fn_ind += 1
-        base_name = "benchmark_{}_{}_{}_{}.pickle".format(sys_info['host_name'],
-                                                          sys_info['device'][0],
-                                                          fn_ind,
-                                                          iter)
+        base_name = "benchmark_{}_{}_{}_{}.pickle".format(
+            sys_info["host_name"], sys_info["device"][0], fn_ind, iter
+        )
 
-    data = {'model': model,
-            'model_type': model_type,
-            'TFGPUinference': TFGPUinference,
-            'pixels': pixels,
-            'inference_times': inf_times}
+    data = {
+        "model": model,
+        "model_type": model_type,
+        "TFGPUinference": TFGPUinference,
+        "pixels": pixels,
+        "inference_times": inf_times,
+    }
 
     data.update(sys_info)
 
@@ -297,16 +329,30 @@ def save_benchmark(sys_info: dict,
     data.update(sys_info)
 
     datafilename = os.path.normpath(f"{out_dir}/{base_name}")
-    pickle.dump(data, open(os.path.normpath(datafilename), 'wb'))
+    pickle.dump(data, open(os.path.normpath(datafilename), "wb"))
 
     return True
+
 
 def read_pickle(filename):
     """ Read the pickle file """
     with open(filename, "rb") as handle:
         return pickle.load(handle)
 
-def benchmark_model_by_size(model_path, video_path, output=None, n_frames=10000, tf_config=None, resize=None, pixels=None, print_rate=False, display=False, pcutoff=0.5, display_radius=3):
+
+def benchmark_model_by_size(
+    model_path,
+    video_path,
+    output=None,
+    n_frames=10000,
+    tf_config=None,
+    resize=None,
+    pixels=None,
+    print_rate=False,
+    display=False,
+    pcutoff=0.5,
+    display_radius=3,
+):
     """Benchmark DLC model by image size
 
     Parameters
@@ -351,7 +397,7 @@ def benchmark_model_by_size(model_path, video_path, output=None, n_frames=10000,
 
     for i in range(len(resize)):
 
-        print("\nRun {:d} / {:d}\n".format(i+1, len(resize)))
+        print("\nRun {:d} / {:d}\n".format(i + 1, len(resize)))
 
         inf_times, pixels_out, TFGPUinference, benchmark_meta = run_benchmark(
             model_path,
@@ -363,42 +409,51 @@ def benchmark_model_by_size(model_path, video_path, output=None, n_frames=10000,
             print_rate=print_rate,
             display=display,
             pcutoff=pcutoff,
-            display_radius=display_radius)
+            display_radius=display_radius,
+        )
 
-        #TODO: check if a part has already been complted?
+        # TODO: check if a part has already been complted?
 
         ### saving results intermediately
-        save_benchmark(sys_info, inf_times, pixels_out, i, TFGPUinference,
-                       model=os.path.basename(model_path),
-                       out_dir = output,
-                       meta=benchmark_meta)
+        save_benchmark(
+            sys_info,
+            inf_times,
+            pixels_out,
+            i,
+            TFGPUinference,
+            model=os.path.basename(model_path),
+            out_dir=output,
+            meta=benchmark_meta,
+        )
+
 
 def main():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('model_path', type=str)
-    parser.add_argument('video_path', type=str)
-    parser.add_argument('-o', '--output', type=str, default=os.getcwd())
-    parser.add_argument('-n', '--n-frames', type=int, default=10000)
-    parser.add_argument('-r', '--resize', type=float, nargs='+')
-    parser.add_argument('-p', '--pixels', type=float, nargs='+')
-    parser.add_argument('-v', '--print_rate', default=False, action='store_true')
-    parser.add_argument('-d', '--display', default=False, action='store_true')
-    parser.add_argument('-l', '--pcutoff', default=0.5, type=float)
-    parser.add_argument('-s', '--display-radius', default=3, type=int)
+    parser.add_argument("model_path", type=str)
+    parser.add_argument("video_path", type=str)
+    parser.add_argument("-o", "--output", type=str, default=os.getcwd())
+    parser.add_argument("-n", "--n-frames", type=int, default=10000)
+    parser.add_argument("-r", "--resize", type=float, nargs="+")
+    parser.add_argument("-p", "--pixels", type=float, nargs="+")
+    parser.add_argument("-v", "--print_rate", default=False, action="store_true")
+    parser.add_argument("-d", "--display", default=False, action="store_true")
+    parser.add_argument("-l", "--pcutoff", default=0.5, type=float)
+    parser.add_argument("-s", "--display-radius", default=3, type=int)
     args = parser.parse_args()
 
-
-    benchmark_model_by_size(args.model_path,
-                            args.video_path,
-                            output=args.output,
-                            resize=args.resize,
-                            pixels=args.pixels,
-                            n_frames=args.n_frames,
-                            print_rate=args.print_rate,
-                            display=args.display,
-                            pcutoff=args.pcutoff,
-                            display_radius=args.display_radius)
+    benchmark_model_by_size(
+        args.model_path,
+        args.video_path,
+        output=args.output,
+        resize=args.resize,
+        pixels=args.pixels,
+        n_frames=args.n_frames,
+        print_rate=args.print_rate,
+        display=args.display,
+        pcutoff=args.pcutoff,
+        display_radius=args.display_radius,
+    )
 
 
 if __name__ == "__main__":

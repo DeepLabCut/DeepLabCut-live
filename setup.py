@@ -26,7 +26,9 @@ install_requires = [
 ]
 
 if "tegra" in platform.platform():
-    warnings.warn("Not installing the following packages:\nopencv-python\ntensorflow\npandas\ntables\nPlease follow instructions on github to install opencv and tensorflow. If you want to use the benchmark_videos function to save poses from a video, then please install pandas and tables (pip install pandas tables)")
+    warnings.warn(
+        "Not installing the following packages:\nopencv-python\ntensorflow\npandas\ntables\nPlease follow instructions on github to install opencv and tensorflow. If you want to use the benchmark_videos function to save poses from a video, then please install pandas and tables (pip install pandas tables)"
+    )
 else:
     install_requires.append("opencv-python")
     install_requires.append("tensorflow==1.13.1")

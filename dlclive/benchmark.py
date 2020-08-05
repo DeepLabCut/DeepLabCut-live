@@ -197,7 +197,7 @@ def benchmark(
     )
     n_frames = int(n_frames)
     im_size = (cap.get(cv2.CAP_PROP_FRAME_WIDTH), cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    
+
     ### get resize factor
 
     if pixels is not None:
@@ -226,12 +226,14 @@ def benchmark(
 
     if save_poses:
         try:
-            import pandas as pd 
+            import pandas as pd
+
             use_pandas = True
         except:
             use_pandas = False
-            warnings.warn("Could not find installation of pandas; saving poses as a numpy array with the dimensions (n_frames, n_keypoints, [x, y, likelihood]).")
-
+            warnings.warn(
+                "Could not find installation of pandas; saving poses as a numpy array with the dimensions (n_frames, n_keypoints, [x, y, likelihood])."
+            )
 
     ### initialize DLCLive and perform inference
 
@@ -372,7 +374,7 @@ def benchmark(
                 f"{out_dir}/{os.path.splitext(out_vid_base)[0]}_DLCLIVE_POSES.h5"
             )
             pose_df.to_hdf(out_dlc_file, key="df_with_missing", mode="w")
-        
+
         else:
 
             out_vid_base = os.path.basename(video_path)
@@ -380,7 +382,6 @@ def benchmark(
                 f"{out_dir}/{os.path.splitext(out_vid_base)[0]}_DLCLIVE_POSES.npy"
             )
             np.save(out_dlc_file, poses)
-
 
     return inf_times, im_size, TFGPUinference, meta
 
@@ -451,6 +452,7 @@ def save_inf_times(
     pickle.dump(data, open(out_file, "wb"))
 
     return True
+
 
 def benchmark_videos(
     model_path,
@@ -589,6 +591,7 @@ def benchmark_videos(
                 output=output,
             )
 
+
 def main():
     """Provides a command line interface :function:`benchmark_videos`
     """
@@ -626,6 +629,7 @@ def main():
         save_poses=args.save_poses,
         save_video=args.save_video,
     )
+
 
 if __name__ == "__main__":
     main()

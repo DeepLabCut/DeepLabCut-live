@@ -10,7 +10,7 @@ import tensorflow as tf
 
 
 def read_graph(file):
-    '''
+    """
     Loads the graph from a protobuf file
 
     Parameters
@@ -22,16 +22,16 @@ def read_graph(file):
     --------
     graph_def :class:`tensorflow.tf.compat.v1.GraphDef`
         The graph definition of the DeepLabCut model found at the object's path
-    '''
+    """
 
-    with tf.io.gfile.GFile(file, 'rb') as f:
+    with tf.io.gfile.GFile(file, "rb") as f:
         graph_def = tf.compat.v1.GraphDef()
         graph_def.ParseFromString(f.read())
         return graph_def
 
 
 def finalize_graph(graph_def):
-    '''
+    """
     Finalize the graph and get inputs to model
 
     Parameters
@@ -45,7 +45,7 @@ def finalize_graph(graph_def):
         The finalized graph of the DeepLabCut model
     inputs :class:`tensorflow.Tensor`
         Input tensor(s) for the model
-    '''
+    """
 
     graph = tf.Graph()
     with graph.as_default():
@@ -56,7 +56,7 @@ def finalize_graph(graph_def):
 
 
 def get_output_nodes(graph):
-    '''
+    """
     Get the output node names from a graph
 
     Parameters
@@ -68,10 +68,10 @@ def get_output_nodes(graph):
     --------
     output : list
         the output node names as a list of strings
-    '''
+    """
 
     op_names = [str(op.name) for op in graph.get_operations()]
-    if 'concat_1' in op_names[-1]:
+    if "concat_1" in op_names[-1]:
         output = [op_names[-1]]
     else:
         output = [op_names[-1], op_names[-2]]
@@ -80,7 +80,7 @@ def get_output_nodes(graph):
 
 
 def get_output_tensors(graph):
-    '''
+    """
     Get the names of the output tensors from a graph
 
     Parameters
@@ -92,10 +92,10 @@ def get_output_tensors(graph):
     --------
     output : list
         the output tensor names as a list of strings
-    '''
+    """
 
     output_nodes = get_output_nodes(graph)
-    output_tensor = [out+":0" for out in output_nodes]
+    output_tensor = [out + ":0" for out in output_nodes]
     return output_tensor
 
 
@@ -106,7 +106,7 @@ def get_input_tensor(graph):
 
 
 def extract_graph(graph, tf_config=None):
-    '''
+    """
     Initializes a tensorflow session with the specified graph and extracts the model's inputs and outputs
 
     Parameters
@@ -121,7 +121,7 @@ def extract_graph(graph, tf_config=None):
         a tensorflow session with the specified graph definition
     outputs :class:`tensorflow.Tensor`
         the output tensor(s) for the model
-    '''
+    """
 
     input_tensor = get_input_tensor(graph)
     output_tensor = get_output_tensors(graph)

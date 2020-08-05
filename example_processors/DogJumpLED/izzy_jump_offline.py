@@ -121,4 +121,3 @@ class IzzyJumpKFOffline(KalmanFilterPredictor, IzzyJumpOffline):
     def save(self, filename):
 
         return IzzyJumpOffline.save(self, filename)
-

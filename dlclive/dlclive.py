@@ -257,7 +257,7 @@ class DLCLive(object):
 
         # process frame
 
-        if frame is None and (self.model_type == 'tflite'):
+        if frame is None and (self.model_type == "tflite"):
             raise DLCLiveError(
                 "No image was passed to initialize inference. An image must be passed to the init_inference method"
             )
