@@ -25,16 +25,10 @@ def main():
     model_url = "http://deeplabcut.rowland.harvard.edu/models/DLC_Dog_resnet_50_iteration-0_shuffle-0.tar.gz"
     os.system(f"curl {model_url} | tar xvz")
 
-    # download dog video clip from github
-    print("\nDownloading dog video clip...\n")
-    # video_url = "https://github.com/DeepLabCut/DeepLabCut-live/raw/master/check_install/dog_clip.avi"
-    video_url = '"https://docs.google.com/uc?export=download&id=1W_5AOl1SewXR2q5QC1K5Chm71I9LAmld"'
-    os.system(f"curl -L {video_url} -o dog_clip.avi")
-
     # run benchmark videos
     print("\n Running inference...\n")
     model_dir = "DLC_Dog_resnet_50_iteration-0_shuffle-0"
-    video_file = "dog_clip.avi"
+    video_file = os.path.normpath(f"{os.path.dirname(__file__)}/dog_clip.avi")
     benchmark_videos(model_dir, video_file, display=True, resize=0.5, pcutoff=0.25)
 
     # deleting temporary files
