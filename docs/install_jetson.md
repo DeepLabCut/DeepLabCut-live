@@ -59,7 +59,7 @@ pip3 install numpy==1.16.1 \
 Next, install tensorflow 1.x. This command will depend on the version of Jetpack you are using. If you are uncertain, please refer to [NVIDIA's instructions](https://docs.nvidia.com/deeplearning/frameworks/install-tf-jetson-platform/index.html#install). To install tensorflow 1.x on the latest version of NVIDIA Jetpack (version 4.4 as of 8/2/2020), please the command below. _This step will also take 15-30 mins_.
 
 ```
-pip3 install --pre --extra-index-url https://developer.download.nvidia.com/compute/redist/jp/v44 ‘tensorflow<2’
+pip3 install --pre --extra-index-url https://developer.download.nvidia.com/compute/redist/jp/v44 'tensorflow<2'
 ```
 
 Lastly, copy the opencv-python bindings into your virtual environment:
