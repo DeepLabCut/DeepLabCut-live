@@ -26,7 +26,8 @@ sudo apt-get install libhdf5-serial-dev \
                      gfortran \
                      python3-pip \
                      python3-venv \
-                     python3-tk
+                     python3-tk \
+                     curl
 ```
 
 #### Create a virtual environment
