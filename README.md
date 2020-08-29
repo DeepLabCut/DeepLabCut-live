@@ -34,9 +34,9 @@ Please see our instruction manual to install on a [Windows or Linux machine](doc
 
 - available on pypi as: `pip install deeplabcut-live`
 
-Note, you can test your installation by running:
+Note, you can then test your installation by running:
 
-`python /check_install/check_install.py`
+`dlc-live-test`
 
 If installed properly, this script will i) create a temporary folder ii) download the full_dog model from the [DeepLabCut Model Zoo](http://www.mousemotorlab.org/dlc-modelzoo), iii) download a short video clip of a dog, and iv) run inference while displaying keypoints. v) remove the temporary folder.
 
@@ -112,7 +112,7 @@ dlclive.benchmark_videos('/path/to/exported/model', '/path/to/video', resize=[1.
 dlc-live-benchmark /path/to/exported/model /path/to/video -r 0.5 --pcutoff 0.5 --display-radius 4 --cmap bmy --save-poses --save-video
 ```
 
-### Citation:
+### Reference:
 
 If you utilize our tool, please cite our [paper](https://www.biorxiv.org/content/10.1101/2020.08.04.236422v1):
 
