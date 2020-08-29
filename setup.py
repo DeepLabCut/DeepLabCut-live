@@ -47,7 +47,7 @@ setuptools.setup(
     python_requires=">=3.5, <3.8",
     install_requires=install_requires,
     packages=setuptools.find_packages(),
-    package_data={'dlclive': ['check_install/*']},
+    package_data={"dlclive": ["check_install/*"]},
     include_package_data=True,
     classifiers=(
         "Programming Language :: Python :: 3",
