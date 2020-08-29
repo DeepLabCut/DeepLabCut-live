@@ -37,7 +37,7 @@ else:
 
 setuptools.setup(
     name="deeplabcut-live",
-    version="0.0.1",
+    version="0.0.2",
     author="A. & M. Mathis Labs",
     author_email="admin@deeplabcut.org",
     description="Class to load exported DeepLabCut networks and perform pose estimation on single frames (from a camera feed)",
@@ -47,6 +47,7 @@ setuptools.setup(
     python_requires=">=3.5, <3.8",
     install_requires=install_requires,
     packages=setuptools.find_packages(),
+    package_data={'dlclive': ['check_install/*']},
     include_package_data=True,
     classifiers=(
         "Programming Language :: Python :: 3",
@@ -55,7 +56,7 @@ setuptools.setup(
     ),
     entry_points={
         "console_scripts": [
-            "dlc-live-test=check_install.check_install:main",
+            "dlc-live-test=dlclive.check_install.check_install:main",
             "dlc-live-bench=dlclive.bench:main",
             "dlc-live-benchmark=dlclive.benchmark:main",
         ]
