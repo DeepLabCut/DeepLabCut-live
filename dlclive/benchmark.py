@@ -114,6 +114,7 @@ def benchmark(
     tf_config=None,
     resize=None,
     pixels=None,
+    dynamic=(False, 0.5, 10),
     n_frames=1000,
     print_rate=False,
     display=False,
@@ -141,6 +142,12 @@ def benchmark(
         resize factor. Can only use one of resize or pixels. If both are provided, will use pixels. by default None
     pixels : int, optional
         downsize image to this number of pixels, maintaining aspect ratio. Can only use one of resize or pixels. If both are provided, will use pixels. by default None
+    dynamic: triple containing (state, detectiontreshold, margin)
+        If the state is true, then dynamic cropping will be performed. That means that if an object is detected (i.e. any body part > detectiontreshold),
+        then object boundaries are computed according to the smallest/largest x position and smallest/largest y position of all body parts. This  window is
+        expanded by the margin and from then on only the posture within this crop is analyzed (until the object is lost, i.e. <detectiontreshold). The
+        current position is utilized for updating the crop window for the next frame (this is why the margin is important and should be set large
+        enough given the movement of the animal)
     n_frames : int, optional
         number of frames to run inference on, by default 1000
     print_rate : bool, optional
@@ -244,6 +251,7 @@ def benchmark(
         model_path,
         tf_config=tf_config,
         resize=resize,
+        dynamic=dynamic,
         display=display,
         pcutoff=pcutoff,
         display_radius=display_radius,
@@ -462,6 +470,7 @@ def benchmark_videos(
     tf_config=None,
     resize=None,
     pixels=None,
+    dynamic=(False, 0.5, 10),
     print_rate=False,
     display=False,
     pcutoff=0.5,
@@ -492,6 +501,12 @@ def benchmark_videos(
         resize factor. Can only use one of resize or pixels. If both are provided, will use pixels. by default None
     pixels : int, optional
         downsize image to this number of pixels, maintaining aspect ratio. Can only use one of resize or pixels. If both are provided, will use pixels. by default None
+    dynamic: triple containing (state, detectiontreshold, margin)
+        If the state is true, then dynamic cropping will be performed. That means that if an object is detected (i.e. any body part > detectiontreshold),
+        then object boundaries are computed according to the smallest/largest x position and smallest/largest y position of all body parts. This  window is
+        expanded by the margin and from then on only the posture within this crop is analyzed (until the object is lost, i.e. <detectiontreshold). The
+        current position is utilized for updating the crop window for the next frame (this is why the margin is important and should be set large
+        enough given the movement of the animal)
     n_frames : int, optional
         number of frames to run inference on, by default 1000
     print_rate : bool, optional
@@ -560,6 +575,7 @@ def benchmark_videos(
                 tf_config=tf_config,
                 resize=resize[i],
                 pixels=pixels[i],
+                dynamic=dynamic,
                 n_frames=n_frames,
                 print_rate=print_rate,
                 display=display,
@@ -610,9 +626,19 @@ def main():
     parser.add_argument("-l", "--pcutoff", default=0.5, type=float)
     parser.add_argument("-s", "--display-radius", default=3, type=int)
     parser.add_argument("-c", "--cmap", type=str, default="bmy")
+    parser.add_argument("--dynamic", nargs="+", type=float, default=[])
     parser.add_argument("--save-poses", action="store_true")
     parser.add_argument("--save-video", action="store_true")
     args = parser.parse_args()
+
+    if not args.dynamic:
+        args.dynamic = (False, 0.5, 10)
+    elif len(args.dynamic) < 3:
+        raise Exception(
+            "Dynamic cropping not properly specified. Must provide three values: 0 or 1 as boolean flag, pcutoff, and margin"
+        )
+    else:
+        args.dynamic = (bool(args.dynamic[0]), args.dynamic[1], args.dynamic[2])
 
     benchmark_videos(
         args.model_path,
@@ -620,6 +646,7 @@ def main():
         output=args.output,
         resize=args.resize,
         pixels=args.pixels,
+        dynamic=args.dynamic,
         n_frames=args.n_frames,
         print_rate=args.print_rate,
         display=args.display,
