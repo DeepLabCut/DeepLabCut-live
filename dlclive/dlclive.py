@@ -6,7 +6,7 @@ Licensed under GNU Lesser General Public License v3.0
 """
 
 import os
-import ruamel.yaml
+import ruamel_yaml
 import glob
 import warnings
 import numpy as np
@@ -164,7 +164,7 @@ class DLCLive(object):
                 f"The pose configuration file for the exported model at {cfg_path} was not found. Please check the path to the exported model directory"
             )
 
-        ruamel_file = ruamel.yaml.YAML()
+        ruamel_file = ruamel_yaml.YAML()
         self.cfg = ruamel_file.load(open(cfg_path, "r"))
 
     @property
