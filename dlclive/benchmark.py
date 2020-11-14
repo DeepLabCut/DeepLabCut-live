@@ -16,7 +16,7 @@ import typing
 import pickle
 import colorcet as cc
 from PIL import ImageColor
-import ruamel
+import ruamel_yaml
 
 try:
     from pip._internal.operations import freeze
@@ -351,7 +351,7 @@ def benchmark(
     if save_poses:
 
         cfg_path = os.path.normpath(f"{model_path}/pose_cfg.yaml")
-        ruamel_file = ruamel.yaml.YAML()
+        ruamel_file = ruamel_yaml.YAML()
         dlc_cfg = ruamel_file.load(open(cfg_path, "r"))
         bodyparts = dlc_cfg["all_joints_names"]
         poses = np.array(poses)
