@@ -78,6 +78,22 @@ def argmax_pose_predict(scmap, offmat, stride):
         pose.append(np.hstack((pos_f8[::-1], [scmap[maxloc][joint_idx]])))
     return np.array(pose)
 
+def get_top_values(scmap, n_top=5):
+    batchsize, ny, nx, num_joints = scmap.shape
+    scmap_flat = scmap.reshape(batchsize, nx * ny, num_joints)
+    if n_top == 1:
+        scmap_top = np.argmax(scmap_flat, axis=1)[None]
+    else:
+        scmap_top = np.argpartition(scmap_flat, -n_top, axis=1)[:, -n_top:]
+        for ix in range(batchsize):
+            vals = scmap_flat[ix, scmap_top[ix], np.arange(num_joints)]
+            arg = np.argsort(-vals, axis=0)
+            scmap_top[ix] = scmap_top[ix, arg, np.arange(num_joints)]
+        scmap_top = scmap_top.swapaxes(0, 1)
+
+    Y, X = np.unravel_index(scmap_top, (ny, nx))
+    return Y, X
+
 
 def multi_pose_predict(scmap, locref, stride, num_outputs):
     Y, X = get_top_values(scmap[None], num_outputs)
