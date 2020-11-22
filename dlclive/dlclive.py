@@ -212,10 +212,10 @@ class DLCLive(object):
                     x = self.pose[detected, 0]
                     y = self.pose[detected, 1]
 
-                    x1 = max([0, int(np.amin(x)) - self.dynamic[2]])
-                    x2 = min([frame.shape[1], int(np.amax(x)) + self.dynamic[2]])
-                    y1 = max([0, int(np.amin(y)) - self.dynamic[2]])
-                    y2 = min([frame.shape[0], int(np.amax(y)) + self.dynamic[2]])
+                    x1 = int(max([0, int(np.amin(x)) - self.dynamic[2]]))
+                    x2 = int(min([frame.shape[1], int(np.amax(x)) + self.dynamic[2]]))
+                    y1 = int(max([0, int(np.amin(y)) - self.dynamic[2]]))
+                    y2 = int(min([frame.shape[0], int(np.amax(y)) + self.dynamic[2]]))
                     self.dynamic_cropping = [x1, x2, y1, y2]
 
                     frame = frame[y1:y2, x1:x2]
