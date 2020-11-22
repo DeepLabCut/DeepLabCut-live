@@ -35,6 +35,45 @@ from dlclive import __file__ as dlcfile
 from dlclive.utils import decode_fourcc
 
 
+def download_benchmarking_data(
+    target_dir=".",
+    url="http://deeplabcut.rowland.harvard.edu/datasets/dlclivebenchmark.tar.gz",
+):
+    """
+    Downloads a DeepLabCut-Live benchmarking Data (videos & DLC models).
+    """
+    import urllib.request
+    import tarfile
+    from tqdm import tqdm
+
+    def show_progress(count, block_size, total_size):
+        pbar.update(block_size)
+
+    def tarfilenamecutting(tarf):
+        """' auxfun to extract folder path
+        ie. /xyz-trainsetxyshufflez/
+        """
+        for memberid, member in enumerate(tarf.getmembers()):
+            if memberid == 0:
+                parent = str(member.path)
+                l = len(parent) + 1
+            if member.path.startswith(parent):
+                member.path = member.path[l:]
+                yield member
+
+    response = urllib.request.urlopen(url)
+    print(
+        "Downloading the benchmarking data from the DeepLabCut server @Harvard -> Go Crimson!!! {}....".format(
+            url
+        )
+    )
+    total_size = int(response.getheader("Content-Length"))
+    pbar = tqdm(unit="B", total=total_size, position=0)
+    filename, _ = urllib.request.urlretrieve(url, reporthook=show_progress)
+    with tarfile.open(filename, mode="r:gz") as tar:
+        tar.extractall(target_dir, members=tarfilenamecutting(tar))
+
+
 def get_system_info() -> dict:
     """ Return summary info for system running benchmark
     Returns
@@ -127,8 +166,8 @@ def benchmark(
     output=None,
 ) -> typing.Tuple[np.ndarray, tuple, bool, dict]:
     """ Analyze DeepLabCut-live exported model on a video:
-    Calculate inference time, 
-    display keypoints, or 
+    Calculate inference time,
+    display keypoints, or
     get poses/create a labeled video
 
     Parameters
@@ -448,12 +487,22 @@ def save_inf_times(
         base_name = f"benchmark_{sys_info['host_name']}_{sys_info['device_type']}_{fn_ind}.pickle"
         out_file = os.path.normpath(f"{output}/{base_name}")
 
+    # summary stats (mean inference time & standard error of mean)
+    stats = zip(
+        np.mean(inf_times, 1),
+        np.std(inf_times, 1) * 1.0 / np.sqrt(np.shape(inf_times)[1]),
+    )
+
+    #for stat in stats:
+    #    print("Stats:", stat)
+
     data = {
         "model": model,
         "model_type": model_type,
         "TFGPUinference": TFGPUinference,
         "im_size": im_size,
         "inference_times": inf_times,
+        "stats": stats,
     }
 
     data.update(sys_info)
@@ -484,12 +533,12 @@ def benchmark_videos(
     save_poses=False,
     save_video=False,
 ):
-    """Analyze videos using DeepLabCut-live exported models. 
-    Analyze multiple videos and/or multiple options for the size of the video 
+    """Analyze videos using DeepLabCut-live exported models.
+    Analyze multiple videos and/or multiple options for the size of the video
     by specifying a resizing factor or the number of pixels to use in the image (keeping aspect ratio constant).
-    Options to record inference times (to examine inference speed), 
-    display keypoints to visually check the accuracy, 
-    or save poses to an hdf5 file as in :function:`deeplabcut.benchmark_videos` and 
+    Options to record inference times (to examine inference speed),
+    display keypoints to visually check the accuracy,
+    or save poses to an hdf5 file as in :function:`deeplabcut.benchmark_videos` and
     create a labeled video as in :function:`deeplabcut.create_labeled_video`.
 
     Parameters
@@ -634,14 +683,16 @@ def main():
     parser.add_argument("-l", "--pcutoff", default=0.5, type=float)
     parser.add_argument("-s", "--display-radius", default=3, type=int)
     parser.add_argument("-c", "--cmap", type=str, default="bmy")
-    parser.add_argument("--cropping", nargs='+', type=int, default=None)
+    parser.add_argument("--cropping", nargs="+", type=int, default=None)
     parser.add_argument("--dynamic", nargs="+", type=float, default=[])
     parser.add_argument("--save-poses", action="store_true")
     parser.add_argument("--save-video", action="store_true")
     args = parser.parse_args()
 
     if (args.cropping) and (len(args.cropping) < 4):
-        raise Exception("Cropping not properly specificed. Must provide 4 values: x1, x2, y1, y2")
+        raise Exception(
+            "Cropping not properly specificed. Must provide 4 values: x1, x2, y1, y2"
+        )
 
     if not args.dynamic:
         args.dynamic = (False, 0.5, 10)
