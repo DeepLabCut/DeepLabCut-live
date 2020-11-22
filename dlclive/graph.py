@@ -7,6 +7,11 @@ Licensed under GNU Lesser General Public License v3.0
 
 
 import tensorflow as tf
+vers = (tf.__version__).split('.')
+if int(vers[0])==2 or int(vers[0])==1 and int(vers[1])>12:
+    tf=tf.compat.v1
+else:
+    tf=tf
 
 
 def read_graph(file):
@@ -25,7 +30,7 @@ def read_graph(file):
     """
 
     with tf.io.gfile.GFile(file, "rb") as f:
-        graph_def = tf.compat.v1.GraphDef()
+        graph_def = tf.GraphDef()
         graph_def.ParseFromString(f.read())
         return graph_def
 
@@ -125,7 +130,7 @@ def extract_graph(graph, tf_config=None):
 
     input_tensor = get_input_tensor(graph)
     output_tensor = get_output_tensors(graph)
-    sess = tf.compat.v1.Session(graph=graph, config=tf_config)
+    sess = tf.Session(graph=graph, config=tf_config)
     inputs = graph.get_tensor_by_name(input_tensor)
     outputs = [graph.get_tensor_by_name(out) for out in output_tensor]
 
