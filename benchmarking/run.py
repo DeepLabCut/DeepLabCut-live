@@ -10,7 +10,7 @@ Licensed under GNU Lesser General Public License v3.0
 import os
 import glob
 
-from dlclive import benchmark_model_by_size
+from dlclive import benchmark_videos
 
 # Update the datafolder to where the data is:
 datafolder = "/your/path/to/data/here"
@@ -29,19 +29,19 @@ out_dir = os.path.normpath(this_dir + "/results")
 
 for ind_m, m in enumerate(dog_models):
     print("\n\nMODEL {:d} / 8".format(ind_m))
-    benchmark_model_by_size(
-        m, dog_video, ind_m, out_dir=out_dir, n_frames=n_frames, pixels=pixels
+    benchmark_videos(
+        m, dog_video, ind_m, output=out_dir, n_frames=n_frames, pixels=pixels
     )
 
 offset = ind_m + 1
 
 for ind_m, m in enumerate(mouse_models):
     print("\n\nMODEL {:d} / 8".format(ind_m))
-    benchmark_model_by_size(
+    benchmark_videos(
         m,
         mouse_video,
         ind_m + offset,
-        out_dir=out_dir,
+        output=out_dir,
         n_frames=n_frames,
         pixels=pixels,
     )

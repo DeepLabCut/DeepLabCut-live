@@ -57,7 +57,6 @@ setuptools.setup(
     entry_points={
         "console_scripts": [
             "dlc-live-test=dlclive.check_install.check_install:main",
-            "dlc-live-bench=dlclive.bench:main",
             "dlc-live-benchmark=dlclive.benchmark:main",
         ]
     },
