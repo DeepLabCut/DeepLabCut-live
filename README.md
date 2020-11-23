@@ -14,7 +14,9 @@
 
 This package contains a [DeepLabCut](http://www.mousemotorlab.org/deeplabcut) inference pipeline for real-time applications that has minimal (software) dependencies. Thus, it is as easy to install as possible (in particular, on atypical systems like [NVIDIA Jetson boards](https://developer.nvidia.com/buy-jetson)).
 
-**Performance:** If you would like to see estimates on how your model might perform given a video size, neural network type, and hardware, please see: https://deeplabcut.github.io/DLC-inferencespeed-benchmark/ And, consider submitting your results too! https://github.com/DeepLabCut/DLC-inferencespeed-benchmark
+**Performance:** If you would like to see estimates on how your model should perform given different video sizes, neural network type, and hardware, please see: https://deeplabcut.github.io/DLC-inferencespeed-benchmark/
+
+If you have different hardware, please consider submitting your results too! https://github.com/DeepLabCut/DLC-inferencespeed-benchmark
 
 **What this SDK provides:** This package provides a `DLCLive` class which enables pose estimation online to provide feedback. This object loads and prepares a DeepLabCut network for inference, and will return the predicted pose for single images.
 
