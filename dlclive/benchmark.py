@@ -691,7 +691,7 @@ def main():
 
     if (args.cropping) and (len(args.cropping) < 4):
         raise Exception(
-            "Cropping not properly specificed. Must provide 4 values: x1, x2, y1, y2"
+            "Cropping not properly specified. Must provide 4 values: x1, x2, y1, y2"
         )
 
     if not args.dynamic:
