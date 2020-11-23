@@ -131,7 +131,7 @@ If you utilize our tool, please cite our [paper](https://www.biorxiv.org/content
 
 ## License:
 
-This project is licensed under the GNU Lesser General Public License v3.0. Note that the software is provided "as is", without warranty of any kind, express or implied. If you use the code or data, please cite us!
+This project is licensed under the GNU General Public License v3.0. Note that the software is provided "as is", without warranty of any kind, express or implied. If you use the code or data, we ask that you please cite us!
 
 ## Community Support, Developers, & Help:
 
