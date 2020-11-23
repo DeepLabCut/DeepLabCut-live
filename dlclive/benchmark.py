@@ -35,6 +35,45 @@ from dlclive import __file__ as dlcfile
 from dlclive.utils import decode_fourcc
 
 
+def download_benchmarking_data(
+    target_dir=".",
+    url="http://deeplabcut.rowland.harvard.edu/datasets/dlclivebenchmark.tar.gz",
+):
+    """
+    Downloads a DeepLabCut-Live benchmarking Data (videos & DLC models).
+    """
+    import urllib.request
+    import tarfile
+    from tqdm import tqdm
+
+    def show_progress(count, block_size, total_size):
+        pbar.update(block_size)
+
+    def tarfilenamecutting(tarf):
+        """' auxfun to extract folder path
+        ie. /xyz-trainsetxyshufflez/
+        """
+        for memberid, member in enumerate(tarf.getmembers()):
+            if memberid == 0:
+                parent = str(member.path)
+                l = len(parent) + 1
+            if member.path.startswith(parent):
+                member.path = member.path[l:]
+                yield member
+
+    response = urllib.request.urlopen(url)
+    print(
+        "Downloading the benchmarking data from the DeepLabCut server @Harvard -> Go Crimson!!! {}....".format(
+            url
+        )
+    )
+    total_size = int(response.getheader("Content-Length"))
+    pbar = tqdm(unit="B", total=total_size, position=0)
+    filename, _ = urllib.request.urlretrieve(url, reporthook=show_progress)
+    with tarfile.open(filename, mode="r:gz") as tar:
+        tar.extractall(target_dir, members=tarfilenamecutting(tar))
+
+
 def get_system_info() -> dict:
     """ Return summary info for system running benchmark
     Returns
@@ -114,6 +153,8 @@ def benchmark(
     tf_config=None,
     resize=None,
     pixels=None,
+    cropping=None,
+    dynamic=(False, 0.5, 10),
     n_frames=1000,
     print_rate=False,
     display=False,
@@ -125,8 +166,8 @@ def benchmark(
     output=None,
 ) -> typing.Tuple[np.ndarray, tuple, bool, dict]:
     """ Analyze DeepLabCut-live exported model on a video:
-    Calculate inference time, 
-    display keypoints, or 
+    Calculate inference time,
+    display keypoints, or
     get poses/create a labeled video
 
     Parameters
@@ -141,6 +182,14 @@ def benchmark(
         resize factor. Can only use one of resize or pixels. If both are provided, will use pixels. by default None
     pixels : int, optional
         downsize image to this number of pixels, maintaining aspect ratio. Can only use one of resize or pixels. If both are provided, will use pixels. by default None
+    cropping : list of int
+        cropping parameters in pixel number: [x1, x2, y1, y2]
+    dynamic: triple containing (state, detectiontreshold, margin)
+        If the state is true, then dynamic cropping will be performed. That means that if an object is detected (i.e. any body part > detectiontreshold),
+        then object boundaries are computed according to the smallest/largest x position and smallest/largest y position of all body parts. This  window is
+        expanded by the margin and from then on only the posture within this crop is analyzed (until the object is lost, i.e. <detectiontreshold). The
+        current position is utilized for updating the crop window for the next frame (this is why the margin is important and should be set large
+        enough given the movement of the animal)
     n_frames : int, optional
         number of frames to run inference on, by default 1000
     print_rate : bool, optional
@@ -244,6 +293,8 @@ def benchmark(
         model_path,
         tf_config=tf_config,
         resize=resize,
+        cropping=cropping,
+        dynamic=dynamic,
         display=display,
         pcutoff=pcutoff,
         display_radius=display_radius,
@@ -436,12 +487,22 @@ def save_inf_times(
         base_name = f"benchmark_{sys_info['host_name']}_{sys_info['device_type']}_{fn_ind}.pickle"
         out_file = os.path.normpath(f"{output}/{base_name}")
 
+    # summary stats (mean inference time & standard error of mean)
+    stats = zip(
+        np.mean(inf_times, 1),
+        np.std(inf_times, 1) * 1.0 / np.sqrt(np.shape(inf_times)[1]),
+    )
+
+    #for stat in stats:
+    #    print("Stats:", stat)
+
     data = {
         "model": model,
         "model_type": model_type,
         "TFGPUinference": TFGPUinference,
         "im_size": im_size,
         "inference_times": inf_times,
+        "stats": stats,
     }
 
     data.update(sys_info)
@@ -462,6 +523,8 @@ def benchmark_videos(
     tf_config=None,
     resize=None,
     pixels=None,
+    cropping=None,
+    dynamic=(False, 0.5, 10),
     print_rate=False,
     display=False,
     pcutoff=0.5,
@@ -470,12 +533,12 @@ def benchmark_videos(
     save_poses=False,
     save_video=False,
 ):
-    """Analyze videos using DeepLabCut-live exported models. 
-    Analyze multiple videos and/or multiple options for the size of the video 
+    """Analyze videos using DeepLabCut-live exported models.
+    Analyze multiple videos and/or multiple options for the size of the video
     by specifying a resizing factor or the number of pixels to use in the image (keeping aspect ratio constant).
-    Options to record inference times (to examine inference speed), 
-    display keypoints to visually check the accuracy, 
-    or save poses to an hdf5 file as in :function:`deeplabcut.benchmark_videos` and 
+    Options to record inference times (to examine inference speed),
+    display keypoints to visually check the accuracy,
+    or save poses to an hdf5 file as in :function:`deeplabcut.benchmark_videos` and
     create a labeled video as in :function:`deeplabcut.create_labeled_video`.
 
     Parameters
@@ -492,6 +555,14 @@ def benchmark_videos(
         resize factor. Can only use one of resize or pixels. If both are provided, will use pixels. by default None
     pixels : int, optional
         downsize image to this number of pixels, maintaining aspect ratio. Can only use one of resize or pixels. If both are provided, will use pixels. by default None
+    cropping : list of int
+        cropping parameters in pixel number: [x1, x2, y1, y2]
+    dynamic: triple containing (state, detectiontreshold, margin)
+        If the state is true, then dynamic cropping will be performed. That means that if an object is detected (i.e. any body part > detectiontreshold),
+        then object boundaries are computed according to the smallest/largest x position and smallest/largest y position of all body parts. This  window is
+        expanded by the margin and from then on only the posture within this crop is analyzed (until the object is lost, i.e. <detectiontreshold). The
+        current position is utilized for updating the crop window for the next frame (this is why the margin is important and should be set large
+        enough given the movement of the animal)
     n_frames : int, optional
         number of frames to run inference on, by default 1000
     print_rate : bool, optional
@@ -560,6 +631,8 @@ def benchmark_videos(
                 tf_config=tf_config,
                 resize=resize[i],
                 pixels=pixels[i],
+                cropping=cropping,
+                dynamic=dynamic,
                 n_frames=n_frames,
                 print_rate=print_rate,
                 display=display,
@@ -610,9 +683,25 @@ def main():
     parser.add_argument("-l", "--pcutoff", default=0.5, type=float)
     parser.add_argument("-s", "--display-radius", default=3, type=int)
     parser.add_argument("-c", "--cmap", type=str, default="bmy")
+    parser.add_argument("--cropping", nargs="+", type=int, default=None)
+    parser.add_argument("--dynamic", nargs="+", type=float, default=[])
     parser.add_argument("--save-poses", action="store_true")
     parser.add_argument("--save-video", action="store_true")
     args = parser.parse_args()
+
+    if (args.cropping) and (len(args.cropping) < 4):
+        raise Exception(
+            "Cropping not properly specified. Must provide 4 values: x1, x2, y1, y2"
+        )
+
+    if not args.dynamic:
+        args.dynamic = (False, 0.5, 10)
+    elif len(args.dynamic) < 3:
+        raise Exception(
+            "Dynamic cropping not properly specified. Must provide three values: 0 or 1 as boolean flag, pcutoff, and margin"
+        )
+    else:
+        args.dynamic = (bool(args.dynamic[0]), args.dynamic[1], args.dynamic[2])
 
     benchmark_videos(
         args.model_path,
@@ -620,6 +709,8 @@ def main():
         output=args.output,
         resize=args.resize,
         pixels=args.pixels,
+        cropping=args.cropping,
+        dynamic=args.dynamic,
         n_frames=args.n_frames,
         print_rate=args.print_rate,
         display=args.display,

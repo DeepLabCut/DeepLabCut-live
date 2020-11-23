@@ -1,5 +1,9 @@
 # DeepLabCut-live
 
+# Data related to benchmark!
+benchmarking/Data*
+benchmarking/results*
+
 *test*
 **DS_Store*
 *vscode*
