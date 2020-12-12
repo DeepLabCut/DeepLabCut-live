@@ -116,19 +116,6 @@ dlclive.benchmark_videos('/path/to/exported/model', '/path/to/video', resize=[1.
 dlc-live-benchmark /path/to/exported/model /path/to/video -r 0.5 --pcutoff 0.5 --display-radius 4 --cmap bmy --save-poses --save-video
 ```
 
-### Reference:
-
-If you utilize our tool, please cite our [paper](https://www.biorxiv.org/content/10.1101/2020.08.04.236422v1):
-
-```
-@Article{Kane2020dlclive,
-  author    = {Kane, Gary and Lopes, Gonçalo and Sanders, Jonny and Mathis, Alexander and Mathis, Mackenzie},
-  title     = {Real-time, low-latency closed-loop feedback using markerless posture tracking},
-  journal   = {BioRxiv},
-  year      = {2020},
-}
-```
-
 ## License:
 
 This project is licensed under the GNU General Public License v3.0. Note that the software is provided "as is", without warranty of any kind, express or implied. If you use the code or data, we ask that you please cite us!
@@ -145,6 +132,15 @@ This is an actively developed package and we welcome community development and i
 
 - For quick discussions here: [![Gitter](https://badges.gitter.im/DeepLabCut/community.svg)](https://gitter.im/DeepLabCut/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
-#### Reference:
+### Reference:
 
-If you use this code we kindly ask you to you please [cite Kane et al, eLife 2020](https://elifesciences.org/articles/61909). The preprint is available here: https://www.biorxiv.org/content/10.1101/2020.08.04.236422v2
+If you utilize our tool, please [cite Kane et al, eLife 2020](https://elifesciences.org/articles/61909). The preprint is available here: https://www.biorxiv.org/content/10.1101/2020.08.04.236422v2
+
+```
+@Article{Kane2020dlclive,
+  author    = {Kane, Gary and Lopes, Gonçalo and Sanders, Jonny and Mathis, Alexander and Mathis, Mackenzie},
+  title     = {Real-time, low-latency closed-loop feedback using markerless posture tracking},
+  journal   = {eLife},
+  year      = {2020},
+}
+```
