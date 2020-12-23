@@ -17,7 +17,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 install_requires = [
-    "numpy",
+    "numpy<1.19.0",
     "ruamel.yaml",
     "colorcet",
     "pillow",
@@ -31,7 +31,7 @@ if "tegra" in platform.platform():
     )
 else:
     install_requires.append("opencv-python")
-    install_requires.append("tensorflow==1.13.1")
+    install_requires.append("tensorflow")
     install_requires.append("pandas")
     install_requires.append("tables")
 
