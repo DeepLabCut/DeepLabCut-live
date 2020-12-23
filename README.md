@@ -18,7 +18,7 @@ This package contains a [DeepLabCut](http://www.mousemotorlab.org/deeplabcut) in
 
 If you have different hardware, please consider submitting your results too! https://github.com/DeepLabCut/DLC-inferencespeed-benchmark
 
-**What this SDK provides:** This package provides a `DLCLive` class which enables pose estimation online to provide feedback. This object loads and prepares a DeepLabCut network for inference, and will return the predicted pose for single images.
+**What this SDK provides:** This package provides a `DLCLive` class which enables pose estimation online to provide feedback. This object loads and prepares a DeepLabCut network for inference, and will return the predicted pose for single images. 
 
 To perform processing on poses (such as predicting the future pose of an animal given it's current pose, or to trigger external hardware like send TTL pulses to a laser for optogenetic stimulation), this object takes in a `Processor` object. Processor objects must contain two methods: process and save.
 
@@ -32,7 +32,7 @@ For more details and examples, see documentation [here](dlclive/processor/README
 
 ### Installation:
 
-Please see our instruction manual to install on a [Windows or Linux machine](docs/install_desktop.md) or on a [NVIDIA Jetson Development Board](docs/install_jetson.md)
+Please see our instruction manual to install on a [Windows or Linux machine](docs/install_desktop.md) or on a [NVIDIA Jetson Development Board](docs/install_jetson.md). Note, this code works with tensorflow (TF) 1 or TF 2 models, but TF requires that whatever version you exported your model with, you must import with the same version (i.e., export with TF1.13, then use TF1.13 with DlC-Live; export with TF2.3, then use TF2.3 with DLC-live).
 
 - available on pypi as: `pip install deeplabcut-live`
 
