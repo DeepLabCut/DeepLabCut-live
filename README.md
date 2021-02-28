@@ -2,7 +2,8 @@
 
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
 ![PyPI - Python Version](https://img.shields.io/pypi/v/deeplabcut-live)
-![PyPI - Downloads](https://img.shields.io/pypi/dm/deeplabcut-live?color=purple)
+[![Downloads](https://pepy.tech/badge/deeplabcut-live)](https://pepy.tech/project/deeplabcut-live)
+[![Downloads](https://pepy.tech/badge/deeplabcut-live/month)](https://pepy.tech/project/deeplabcut-live)
 ![Python package](https://github.com/DeepLabCut/DeepLabCut-live/workflows/Python%20package/badge.svg)
 [![GitHub stars](https://img.shields.io/github/stars/DeepLabCut/DeepLabCut-live.svg?style=social&label=Star)](https://github.com/DeepLabCut/DeepLabCut-live)
 [![GitHub forks](https://img.shields.io/github/forks/DeepLabCut/DeepLabCut-live.svg?style=social&label=Fork)](https://github.com/DeepLabCut/DeepLabCut-live)
@@ -28,6 +29,12 @@ To perform processing on poses (such as predicting the future pose of an animal 
 For more details and examples, see documentation [here](dlclive/processor/README.md).
 
 ###### Note :: alone, this object does not record video or capture images from a camera. This must be done separately, i.e. see our [DeepLabCut-live GUI](https://github.com/gkane26/DeepLabCut-live-GUI).
+
+### News! 
+
+- Feb 2021: DeepLabCut-Live! was featured in Nature Methods: ["Real-time behavioral analysis"](https://www.nature.com/articles/s41592-021-01072-z)
+- Jan 2021: full eLife paper is published: ["Real-time, low-latency closed-loop feedback using markerless posture tracking"](https://elifesciences.org/articles/61909)
+- Dec 2020: we talked to RTS Suisse Radio about DLC-Live!: ["Capture animal movements in real time"](https://www.rts.ch/play/radio/cqfd/audio/capturer-les-mouvements-des-animaux-en-temps-reel?id=11782529)
 
 
 ### Installation:
