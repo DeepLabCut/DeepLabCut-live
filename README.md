@@ -125,7 +125,7 @@ dlc-live-benchmark /path/to/exported/model /path/to/video -r 0.5 --pcutoff 0.5 -
 
 ## License:
 
-This project is licensed under the GNU General Public License v3.0. Note that the software is provided "as is", without warranty of any kind, express or implied. If you use the code or data, we ask that you please cite us!
+This project is licensed under the GNU AGPLv3. Note that the software is provided "as is", without warranty of any kind, express or implied. If you use the code or data, we ask that you please cite us! This software is available for licensing via the EPFL Technology Transfer Office (https://tto.epfl.ch/, info.tto@epfl.ch).
 
 ## Community Support, Developers, & Help:
 
@@ -151,3 +151,4 @@ If you utilize our tool, please [cite Kane et al, eLife 2020](https://elifescien
   year      = {2020},
 }
 ```
+
