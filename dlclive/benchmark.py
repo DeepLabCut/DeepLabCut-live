@@ -493,7 +493,7 @@ def save_inf_times(
         np.std(inf_times, 1) * 1.0 / np.sqrt(np.shape(inf_times)[1]),
     )
 
-    #for stat in stats:
+    # for stat in stats:
     #    print("Stats:", stat)
 
     data = {

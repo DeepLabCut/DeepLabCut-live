@@ -7,11 +7,12 @@ Licensed under GNU Lesser General Public License v3.0
 
 
 import tensorflow as tf
-vers = (tf.__version__).split('.')
-if int(vers[0])==2 or int(vers[0])==1 and int(vers[1])>12:
-    tf=tf.compat.v1
+
+vers = (tf.__version__).split(".")
+if int(vers[0]) == 2 or int(vers[0]) == 1 and int(vers[1]) > 12:
+    tf = tf.compat.v1
 else:
-    tf=tf
+    tf = tf
 
 
 def read_graph(file):

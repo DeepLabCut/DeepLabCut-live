@@ -37,7 +37,7 @@ else:
 
 setuptools.setup(
     name="deeplabcut-live",
-    version="0.0.3",
+    version="1.0",
     author="A. & M. Mathis Labs",
     author_email="admin@deeplabcut.org",
     description="Class to load exported DeepLabCut networks and perform pose estimation on single frames (from a camera feed)",
@@ -51,7 +51,7 @@ setuptools.setup(
     include_package_data=True,
     classifiers=(
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
+        "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
         "Operating System :: OS Independent",
     ),
     entry_points={
