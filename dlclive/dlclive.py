@@ -265,7 +265,6 @@ class DLCLive(object):
         if frame is not None:
             if frame.ndim == 2:
                 self.convert2rgb = True
-            frame = self.process_frame(frame)
 
         # load model
 
