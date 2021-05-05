@@ -265,7 +265,7 @@ class DLCLive(object):
         if frame is not None:
             if frame.ndim == 2:
                 self.convert2rgb = True
-            frame = self.process_frame(frame)
+            processed_frame = self.process_frame(frame)
 
         # load model
 
@@ -293,7 +293,7 @@ class DLCLive(object):
                 model_file,
                 ["Placeholder"],
                 output_nodes,
-                input_shapes={"Placeholder": [1, frame.shape[0], frame.shape[1], 3]},
+                input_shapes={"Placeholder": [1, processed_frame.shape[0], processed_frame.shape[1], 3]},
             )
             try:
                 tflite_model = converter.convert()
