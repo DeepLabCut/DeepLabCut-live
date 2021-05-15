@@ -85,7 +85,7 @@ class Display(object):
                         )
                         x1 = (
                             pose[i, 0] + self.radius
-                            if pose[i, 0] + self.radius < im_size[1]
+                            if pose[i, 0] + self.radius < im_size[0]
                             else im_size[1]
                         )
                         y0 = (
@@ -95,7 +95,7 @@ class Display(object):
                         )
                         y1 = (
                             pose[i, 1] + self.radius
-                            if pose[i, 1] + self.radius < im_size[0]
+                            if pose[i, 1] + self.radius < im_size[1]
                             else im_size[0]
                         )
                         coords = [x0, y0, x1, y1]
