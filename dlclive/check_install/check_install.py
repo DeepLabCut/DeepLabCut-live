@@ -22,14 +22,17 @@ def main():
     os.chdir(tmp_dir)
 
     # download dog test video from github:
+    print("\nDownloading dog test video from DeepLabCut-live repository...\n")
     url_link = "https://github.com/DeepLabCut/DeepLabCut-live/blob/master/check_install/dog_clip.avi?raw=True"
     urllib.request.urlretrieve(url_link, "dog_clip.avi")
     video_file = os.path.join(url_link, "dog_clip.avi")
 
     # download exported dog model from DeepLabCut Model Zoo
-    print("Downloading full_dog model from the DeepLabCut Model Zoo...")
+    print("\nDownloading full_dog model from the DeepLabCut Model Zoo...\n")
     model_url = "http://deeplabcut.rowland.harvard.edu/models/DLC_Dog_resnet_50_iteration-0_shuffle-0.tar.gz"
-    os.system(f"curl {model_url} | tar xvz")
+    url_basename = 'DLC_Dog_resnet_50_iteration-0_shuffle-0.tar.gz'
+    os.system(f'curl -O "{model_url}"')
+    os.system(f'tar xzf "{url_basename}"')
 
     # run benchmark videos
     print("\n Running inference...\n")
