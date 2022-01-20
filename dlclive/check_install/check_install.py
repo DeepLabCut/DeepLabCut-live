@@ -9,6 +9,8 @@ Licensed under GNU Lesser General Public License v3.0
 import os
 import sys
 import shutil
+import warnings
+
 from dlclive import benchmark_videos
 import urllib.request
 import argparse
@@ -75,7 +77,10 @@ def main(display:bool=None):
 
     # deleting temporary files
     print("\n Deleting temporary files...\n")
-    shutil.rmtree(tmp_dir)
+    try:
+        shutil.rmtree(tmp_dir)
+    except PermissionError:
+        warnings.warn(f'Could not delete temporary directory {str(tmp_dir)} due to a permissions error, but otherwise dlc-live seems to be working fine!')
 
     print("\nDone!\n")
 
