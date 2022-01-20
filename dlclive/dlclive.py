@@ -111,7 +111,7 @@ class DLCLive(object):
         dynamic:Tuple[bool, float, float]=(False, 0.5, 10),
         resize:Optional[float]=None,
         convert2rgb:bool=True,
-        processor:Optional[Processor]=None,
+        processor:Optional['Processor']=None,
         display:bool=False,
         pcutoff:float=0.5,
         display_radius:int=3,
