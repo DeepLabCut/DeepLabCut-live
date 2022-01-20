@@ -44,6 +44,6 @@ jobs:
         shell: bash
       - name: Install and test
         run: |
-          python -m pip install --upgrade pip wheel
-          python -m pip install .
-          dlc-live-test
+          python -m pip install --upgrade pip wheel poetry
+          python -m poetry install
+          python -m poetry run dlc-live-test --nodisplay

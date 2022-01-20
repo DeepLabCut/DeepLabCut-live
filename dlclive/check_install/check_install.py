@@ -10,9 +10,10 @@ import os
 import shutil
 from dlclive import benchmark_videos
 import urllib.request
+import argparse
 
 
-def main():
+def main(display:bool=True):
 
     # make temporary directory in $HOME
     print("\nCreating temporary directory...\n")
@@ -35,7 +36,7 @@ def main():
     print("\n Running inference...\n")
     model_dir = "DLC_Dog_resnet_50_iteration-0_shuffle-0"
     print(video_file)
-    benchmark_videos(model_dir, video_file, display=True, resize=0.5, pcutoff=0.25)
+    benchmark_videos(model_dir, video_file, display=display, resize=0.5, pcutoff=0.25)
 
     # deleting temporary files
     print("\n Deleting temporary files...\n")
@@ -45,4 +46,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Test DLC-Live installation by downloading and evaluating a demo DLC project!")
+    parser.add_argument('--nodisplay', action='store_false')
+    args = parser.parse_args()
+
+    main(display=args.nodisplay)
