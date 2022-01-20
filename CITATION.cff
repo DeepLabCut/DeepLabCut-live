@@ -1,0 +1,55 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: >-
+  Real-time, low-latency closed-loop feedback using
+  markerless posture tracking
+message: >-
+  If you utilize our tool, please [cite Kane et al,
+  eLife
+  2020](https://elifesciences.org/articles/61909).
+  The preprint is available here:
+  https://www.biorxiv.org/content/10.1101/2020.08.04.236422v2
+type: software
+authors:
+  - given-names: Gary
+    name-particle: A
+    family-names: Kane
+    affiliation: >-
+      The Rowland Institute at Harvard, Harvard
+      University, Cambridge, United States
+  - given-names: Gonçalo
+    family-names: Lopes
+    affiliation: 'NeuroGEARS Ltd, London, United Kingdom'
+  - given-names: Jonny
+    name-particle: L
+    family-names: Saunders
+    affiliation: >-
+      Institute of Neuroscience, Department of
+      Psychology, University of Oregon, Eugene,
+      United States
+  - given-names: Alexander
+    family-names: Mathis
+    affiliation: >-
+      The Rowland Institute at Harvard, Harvard
+      University, Cambridge, United States; Center
+      for Neuroprosthetics, Center for Intelligent
+      Systems, & Brain Mind Institute, School of Life
+      Sciences, Swiss Federal Institute of Technology
+      (EPFL), Lausanne, Switzerland
+  - given-names: Mackenzie
+    name-particle: W
+    family-names: Mathis
+    affiliation: >-
+      The Rowland Institute at Harvard, Harvard
+      University, Cambridge, United States; Center
+      for Neuroprosthetics, Center for Intelligent
+      Systems, & Brain Mind Institute, School of Life
+      Sciences, Swiss Federal Institute of Technology
+      (EPFL), Lausanne, Switzerland
+    email: mackenzie.mathis@epfl.ch
+date-released: 2020-08-05
+doi: "10.7554/eLife.61909"
+license: "AGPL-3.0-or-later"
+version:  "1.0.2"
