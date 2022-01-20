@@ -112,7 +112,7 @@ class DLCLive(object):
         resize:Optional[float]=None,
         convert2rgb:bool=True,
         processor:Optional['Processor']=None,
-        display:bool=False,
+        display:typing.Union[bool, Display]=False,
         pcutoff:float=0.5,
         display_radius:int=3,
         display_cmap:str="bmy",
@@ -129,11 +129,12 @@ class DLCLive(object):
         self.resize = resize
         self.processor = processor
         self.convert2rgb = convert2rgb
-        self.display = (
-            Display(pcutoff=pcutoff, radius=display_radius, cmap=display_cmap)
-            if display
-            else None
-        )  # type: Display
+        if isinstance(display, Display):
+            self.display = display
+        elif display:
+            self.display = Display(pcutoff=pcutoff, radius=display_radius, cmap=display_cmap)
+        else:
+            self.display = None
 
         self.sess = None
         self.inputs = None
