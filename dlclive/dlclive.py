@@ -11,6 +11,9 @@ import glob
 import warnings
 import numpy as np
 import tensorflow as tf
+import typing
+from pathlib import Path
+from typing import Optional, Tuple, List
 
 try:
     TFVER = [int(v) for v in tf.__version__.split(".")]
@@ -32,7 +35,8 @@ from dlclive.pose import extract_cnn_output, argmax_pose_predict, multi_pose_pre
 from dlclive.display import Display
 from dlclive import utils
 from dlclive.exceptions import DLCLiveError, DLCLiveWarning
-
+if typing.TYPE_CHECKING:
+    from dlclive.processor import Processor
 
 class DLCLive(object):
     """
@@ -99,23 +103,23 @@ class DLCLive(object):
 
     def __init__(
         self,
-        model_path,
-        model_type="base",
-        precision="FP32",
+        model_path:str,
+        model_type:str="base",
+        precision:str="FP32",
         tf_config=None,
-        cropping=None,
-        dynamic=(False, 0.5, 10),
-        resize=None,
-        convert2rgb=True,
-        processor=None,
-        display=False,
-        pcutoff=0.5,
-        display_radius=3,
-        display_cmap="bmy",
+        cropping:Optional[List[int]]=None,
+        dynamic:Tuple[bool, float, float]=(False, 0.5, 10),
+        resize:Optional[float]=None,
+        convert2rgb:bool=True,
+        processor:Optional['Processor']=None,
+        display:typing.Union[bool, Display]=False,
+        pcutoff:float=0.5,
+        display_radius:int=3,
+        display_cmap:str="bmy",
     ):
 
         self.path = model_path
-        self.cfg = None
+        self.cfg = None # type: typing.Optional[dict]
         self.model_type = model_type
         self.tf_config = tf_config
         self.precision = precision
@@ -125,11 +129,12 @@ class DLCLive(object):
         self.resize = resize
         self.processor = processor
         self.convert2rgb = convert2rgb
-        self.display = (
-            Display(pcutoff=pcutoff, radius=display_radius, cmap=display_cmap)
-            if display
-            else None
-        )
+        if isinstance(display, Display):
+            self.display = display
+        elif display:
+            self.display = Display(pcutoff=pcutoff, radius=display_radius, cmap=display_cmap)
+        else:
+            self.display = None
 
         self.sess = None
         self.inputs = None
@@ -141,7 +146,7 @@ class DLCLive(object):
         # checks
 
         if self.model_type == "tflite" and self.dynamic[0]:
-            self.dynamic[0] = False
+            self.dynamic = (False, *self.dynamic[1:])
             warnings.warn(
                 "Dynamic cropping is not supported for tensorflow lite inference. Dynamic cropping will not be used...",
                 DLCLiveWarning,
@@ -158,14 +163,14 @@ class DLCLive(object):
             error thrown if pose configuration file does nott exist
         """
 
-        cfg_path = os.path.normpath(self.path + "/pose_cfg.yaml")
-        if not os.path.isfile(cfg_path):
+        cfg_path = Path(self.path).resolve() / "pose_cfg.yaml"
+        if not cfg_path.exists():
             raise FileNotFoundError(
-                f"The pose configuration file for the exported model at {cfg_path} was not found. Please check the path to the exported model directory"
+                f"The pose configuration file for the exported model at {str(cfg_path)} was not found. Please check the path to the exported model directory"
             )
 
         ruamel_file = ruamel.yaml.YAML()
-        self.cfg = ruamel_file.load(open(cfg_path, "r"))
+        self.cfg = ruamel_file.load(open(str(cfg_path), "r"))
 
     @property
     def parameterization(self) -> dict:

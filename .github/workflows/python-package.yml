@@ -16,7 +16,7 @@ jobs:
     strategy:
       # You can use PyPy versions in python-version. For example, pypy2 and pypy3
       matrix:
-        python-version: [3.6, 3.7, 3.8]
+        python-version: [3.7, 3.8, 3.9]
 
     steps:
     - uses: actions/checkout@v2
@@ -29,4 +29,4 @@ jobs:
       run: python -c "import sys; print(sys.version)"
     #test installation of DLC-core dependencies:
     - name: Install dependencies
-      run: pip install -r requirements.txt
+      run: pip install .

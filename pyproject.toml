@@ -1,0 +1,41 @@
+[tool.poetry]
+name = "deeplabcut-live"
+version = "1.0.2"
+description = "Class to load exported DeepLabCut networks and perform pose estimation on single frames (from a camera feed)"
+authors = ["A. & M. Mathis Labs <admin@deeplabcut.org>"]
+license = "AGPL-3.0-or-later"
+readme = "README.md"
+homepage = "https://github.com/DeepLabCut/DeepLabCut-live"
+repository = "https://github.com/DeepLabCut/DeepLabCut-live"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+    "Operating System :: OS Independent"
+]
+packages = [
+    { include = "dlclive" }
+]
+include = ["dlclive/check_install/*"]
+
+[tool.poetry.scripts]
+dlc-live-test = "dlclive.check_install.check_install:main"
+dlc-live-benchmark = "dlclive.benchmark:main"
+
+[tool.poetry.dependencies]
+python = ">=3.7,<3.10"
+numpy = "~1.18"
+"ruamel.yaml" = "^0.17.20"
+colorcet = "^3.0.0"
+Pillow = "<9.0.0"
+py-cpuinfo = "5.0.0"
+tqdm = "^4.62.3"
+tensorflow = "^2.7.0"
+pandas = "^1.1"
+tables = "<3.7"
+opencv-python = "^4.2"
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
