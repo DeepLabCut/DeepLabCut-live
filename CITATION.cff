@@ -11,7 +11,7 @@ message: >-
   2020](https://elifesciences.org/articles/61909).
   The preprint is available here:
   https://www.biorxiv.org/content/10.1101/2020.08.04.236422v2
-type: software
+type: article
 authors:
   - given-names: Gary
     name-particle: A
