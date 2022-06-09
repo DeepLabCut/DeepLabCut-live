@@ -86,7 +86,7 @@ class DLCLive(object):
     display_lik : float, optional
         Likelihood threshold for display
 
-    display_raidus : int, optional
+    display_radius : int, optional
         radius for keypoint display in pixels, default=3
     """
 
