@@ -630,7 +630,8 @@ class MultiAnimalDLCLive(DLCLive):
             self.display.display_frame(frame, self.pose)
 
         if self.resize is not None:
-            self.pose[..., :2] *= 1 / self.resize
+            self.pose[0][..., :2] *= 1 / self.resize
+            self.pose[1][:, :2] *= 1 / self.resize
 
         if self.processor:
             self.pose = self.processor.process(self.pose, **kwargs)
