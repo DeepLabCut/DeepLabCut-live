@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "deeplabcut-live"
-version = "1.0.2"
+version = "1.1.0"
 description = "Class to load exported DeepLabCut networks and perform pose estimation on single frames (from a camera feed)"
 authors = ["A. & M. Mathis Labs <admin@deeplabcut.org>"]
 license = "AGPL-3.0-or-later"
@@ -37,6 +37,11 @@ tensorflow = "^2.7.0"
 pandas = "^1.3"
 tables = "^3.6"
 opencv-python-headless = "^4.5"
+deeplabcut = "^2.2.0"
+scipy = [
+    {version="^1.8.0", python=">=3.8,<3.11"},
+    {version="^1.7.0", python=">=3.7.1,<3.8"}
+]
 
 [tool.poetry.dev-dependencies]
 
