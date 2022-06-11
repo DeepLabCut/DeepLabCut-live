@@ -16,6 +16,11 @@ Add an additional entry in the `CHANGELOG.md` describing the changes made
 in the new version. When possible, make reference to specific commits or pull requests and 
 tag changes with labels like `[bugfix]` or `[feature]`
 
+## Write Docs
+
+Document any new functionality. Since we don't have formal docs, either write this in the `README.md` or add a new
+markdown file to `docs/` and link from README.
+
 ## Update Dependencies
 
 if any additional libraries were added or removed, add them to the `pyproject.toml` file, either with poetry
