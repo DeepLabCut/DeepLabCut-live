@@ -598,7 +598,11 @@ class MultiAnimalDLCLive(DLCLive):
             self.sess,
             self.inputs,
             self.outputs,
-        )[0]
+        )
+        if not data_dict:
+            return
+        else:
+            data_dict = data_dict[0]
 
         assemblies, unique = self.ass._assemble(data_dict, ind_frame=0)
         pose = np.full((self.n_animals, self.n_multibodyparts, 4), np.nan)
@@ -622,8 +626,10 @@ class MultiAnimalDLCLive(DLCLive):
                         mat[nrow, k] = v
                 inds = linear_sum_assignment(mat, maximize=True)
                 trackers = np.c_[inds][:, ::-1]
-            for i, j in trackers:
-                pose[i] = animals[j]
+            # Discard trackers of false positives
+            trackers = trackers[trackers[:, 0] < self.n_animals]
+            for pose_ind, animal_ind in trackers:
+                pose[pose_ind] = animals[animal_ind]
         self.pose = (pose, unique)
 
         if self.display is not None:
