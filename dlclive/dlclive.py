@@ -604,32 +604,33 @@ class MultiAnimalDLCLive(DLCLive):
         else:
             data_dict = data_dict[0]
 
-        assemblies, unique = self.ass._assemble(data_dict, ind_frame=0)
         pose = np.full((self.n_animals, self.n_multibodyparts, 4), np.nan)
-        if self.n_animals == 1:
-            pose[0] = assemblies[0].data
-        else:
-            animals = np.stack([a.data for a in assemblies])
-            if not self.ass.identity_only:
-                if self.track_method == "box":
-                    xy = trackingutils.calc_bboxes_from_keypoints(animals)
-                else:
-                    xy = animals[..., :2]
-                trackers = self.mot_tracker.track(xy)[:, -2:].astype(np.int)
+        assemblies, unique = self.ass._assemble(data_dict, ind_frame=0)
+        if assemblies:
+            if self.n_animals == 1:
+                pose[0] = assemblies[0].data
             else:
-                # Optimal identity assignment based on soft voting
-                mat = np.zeros(
-                    (len(assemblies), self.n_animals)
-                )
-                for nrow, assembly in enumerate(assemblies):
-                    for k, v in assembly.soft_identity.items():
-                        mat[nrow, k] = v
-                inds = linear_sum_assignment(mat, maximize=True)
-                trackers = np.c_[inds][:, ::-1]
-            # Discard trackers of false positives
-            trackers = trackers[trackers[:, 0] < self.n_animals]
-            for pose_ind, animal_ind in trackers:
-                pose[pose_ind] = animals[animal_ind]
+                animals = np.stack([a.data for a in assemblies])
+                if not self.ass.identity_only:
+                    if self.track_method == "box":
+                        xy = trackingutils.calc_bboxes_from_keypoints(animals)
+                    else:
+                        xy = animals[..., :2]
+                    trackers = self.mot_tracker.track(xy)[:, -2:].astype(np.int)
+                else:
+                    # Optimal identity assignment based on soft voting
+                    mat = np.zeros(
+                        (len(assemblies), self.n_animals)
+                    )
+                    for nrow, assembly in enumerate(assemblies):
+                        for k, v in assembly.soft_identity.items():
+                            mat[nrow, k] = v
+                    inds = linear_sum_assignment(mat, maximize=True)
+                    trackers = np.c_[inds][:, ::-1]
+                # Discard trackers of false positives
+                trackers = trackers[trackers[:, 0] < self.n_animals]
+                for pose_ind, animal_ind in trackers:
+                    pose[pose_ind] = animals[animal_ind]
         self.pose = (pose, unique)
 
         if self.display is not None:
