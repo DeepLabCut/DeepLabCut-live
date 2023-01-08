@@ -10,6 +10,10 @@ import os
 import sys
 import shutil
 import warnings
+from dlclibrary.dlcmodelzoo.modelzoo_download import (
+    download_huggingface_model,
+    MODELOPTIONS,
+)
 
 from dlclive import benchmark_videos
 import urllib.request
@@ -57,13 +61,15 @@ def main(display:bool=None):
         print('Tarball already downloaded, using cached version')
     else:
         print("Downloading full_dog model from the DeepLabCut Model Zoo...")
-        model_url = "http://deeplabcut.rowland.harvard.edu/models/DLC_Dog_resnet_50_iteration-0_shuffle-0.tar.gz"
-        urllib.request.urlretrieve(model_url, str(model_tarball), reporthook=urllib_pbar)
+        model = 'superanimal_quadruped'
+        download_huggingface_model(model,model_dir)
+        #model_url = "http://deeplabcut.rowland.harvard.edu/models/DLC_Dog_resnet_50_iteration-0_shuffle-0.tar.gz"
+        #urllib.request.urlretrieve(model_url, str(model_tarball), reporthook=urllib_pbar)
 
-    print('Untarring compressed model')
-    model_file = tarfile.open(str(model_tarball))
-    model_file.extractall(str(model_dir.parent))
-    model_file.close()
+    #print('Untarring compressed model')
+    #model_file = tarfile.open(str(model_tarball))
+   # model_file.extractall(str(model_dir.parent))
+    #model_file.close()
 
     # assert these things exist so we can give informative error messages
     assert Path(video_file).exists()
