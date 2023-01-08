@@ -605,7 +605,11 @@ class MultiAnimalDLCLive(DLCLive):
         if self.n_animals == 1:
             pose[0] = assemblies[0].data
         else:
-            animals = np.stack([a.data for a in assemblies])
+            if len(assemblies) == 0:
+                pose[:,:,2] = 0
+                animals = np.stack(pose)
+            else:
+                animals = np.stack([a.data for a in assemblies])
             if not self.ass.identity_only:
                 if self.track_method == "box":
                     xy = trackingutils.calc_bboxes_from_keypoints(animals)
