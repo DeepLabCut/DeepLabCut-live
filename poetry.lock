@@ -77,12 +77,24 @@ param = ">=1.7.0"
 pyct = ">=0.4.4"
 
 [package.extras]
-all = ["dlclibrary","bokeh", "flake8", "holoviews", "keyring", "matplotlib", "nbsite (>=0.6.1)", "nbsmoke (>=0.2.6)", "numpy", "param (>=1.7.0)", "pyct (>=0.4.4)", "pytest (>=2.8.5)", "pytest-cov", "pytest-mpl", "rfc3986", "setuptools (>=30.3.0)", "sphinx-holoviz-theme", "twine", "wheel"]
+all = ["bokeh", "flake8", "holoviews", "keyring", "matplotlib", "nbsite (>=0.6.1)", "nbsmoke (>=0.2.6)", "numpy", "param (>=1.7.0)", "pyct (>=0.4.4)", "pytest (>=2.8.5)", "pytest-cov", "pytest-mpl", "rfc3986", "setuptools (>=30.3.0)", "sphinx-holoviz-theme", "twine", "wheel"]
 build = ["param (>=1.7.0)", "pyct (>=0.4.4)", "setuptools (>=30.3.0)", "wheel"]
 doc = ["bokeh", "holoviews", "matplotlib", "nbsite (>=0.6.1)", "numpy", "sphinx-holoviz-theme"]
 examples = ["bokeh", "holoviews", "matplotlib", "numpy"]
 tests = ["flake8", "keyring", "nbsmoke (>=0.2.6)", "pytest (>=2.8.5)", "pytest-cov", "rfc3986", "twine"]
 tests_extra = ["flake8", "keyring", "nbsmoke (>=0.2.6)", "pytest (>=2.8.5)", "pytest-cov", "pytest-mpl", "rfc3986", "twine"]
+
+[[package]]
+name = "dlclibrary"
+version = "0.0.2"
+description = "Lightweight library supporting universal functions for the DeepLabCut ecosystem"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+huggingface-hub = "*"
+"ruamel.yaml" = ">=0.15.0"
 
 [[package]]
 name = "flatbuffers"
