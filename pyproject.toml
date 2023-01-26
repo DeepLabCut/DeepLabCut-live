@@ -37,7 +37,7 @@ tensorflow = "^2.7.0,<=2.10"
 pandas = "^1.3"
 tables = "^3.6"
 opencv-python-headless = "^4.5"
-dlclibrary = "^0.0.2"
+dlclibrary = ">=0.0.2"
 
 [tool.poetry.dev-dependencies]
 
