@@ -6,7 +6,6 @@ Licensed under GNU Lesser General Public License v3.0
 """
 
 
-import os
 import sys
 import shutil
 import warnings
@@ -15,7 +14,9 @@ from dlclive import benchmark_videos
 import urllib.request
 import argparse
 from pathlib import Path
-import tarfile
+from dlclibrary.dlcmodelzoo.modelzoo_download import (
+    download_huggingface_model,
+)
 
 
 def urllib_pbar(count, blockSize, totalSize):
@@ -24,6 +25,7 @@ def urllib_pbar(count, blockSize, totalSize):
     sys.stdout.write(outstr)
     sys.stdout.write("\b"*len(outstr))
     sys.stdout.flush()
+
 
 def main(display:bool=None):
     parser = argparse.ArgumentParser(
@@ -43,9 +45,7 @@ def main(display:bool=None):
     tmp_dir.mkdir(mode=0o775,exist_ok=True)
 
     video_file = str(tmp_dir / 'dog_clip.avi')
-    model_tarball = tmp_dir / 'DLC_Dog_resnet_50_iteration-0_shuffle-0.tar.gz'
-    model_dir = model_tarball.with_suffix('').with_suffix('') # remove two suffixes (tar.gz)
-
+    model_dir = tmp_dir / 'DLC_Dog_resnet_50_iteration-0_shuffle-0'
 
     # download dog test video from github:
     print(f"Downloading Video to {video_file}")
@@ -53,21 +53,15 @@ def main(display:bool=None):
     urllib.request.urlretrieve(url_link, video_file, reporthook=urllib_pbar)
 
     # download exported dog model from DeepLabCut Model Zoo
-    if Path(model_tarball).exists():
-        print('Tarball already downloaded, using cached version')
+    if Path(model_dir / 'snapshot-75000.pb').exists():
+        print('Model already downloaded, using cached version')
     else:
         print("Downloading full_dog model from the DeepLabCut Model Zoo...")
-        model_url = "http://deeplabcut.rowland.harvard.edu/models/DLC_Dog_resnet_50_iteration-0_shuffle-0.tar.gz"
-        urllib.request.urlretrieve(model_url, str(model_tarball), reporthook=urllib_pbar)
-
-    print('Untarring compressed model')
-    model_file = tarfile.open(str(model_tarball))
-    model_file.extractall(str(model_dir.parent))
-    model_file.close()
+        download_huggingface_model("full_dog", model_dir)
 
     # assert these things exist so we can give informative error messages
     assert Path(video_file).exists()
-    assert Path(model_dir).exists() and Path(model_dir).is_dir()
+    assert Path(model_dir / 'snapshot-75000.pb').exists()
 
     # run benchmark videos
     print("\n Running inference...\n")
