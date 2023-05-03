@@ -19,6 +19,10 @@ from dlclibrary.dlcmodelzoo.modelzoo_download import (
 )
 
 
+MODEL_NAME = "superanimal_quadruped"
+SNAPSHOT_NAME = "snapshot-700000.pb"
+
+
 def urllib_pbar(count, blockSize, totalSize):
     percent = int(count * blockSize * 100 / totalSize)
     outstr = f"{round(percent)}%"
@@ -27,19 +31,18 @@ def urllib_pbar(count, blockSize, totalSize):
     sys.stdout.flush()
 
 
-def main(display:bool=None):
+def main():
     parser = argparse.ArgumentParser(
         description="Test DLC-Live installation by downloading and evaluating a demo DLC project!")
     parser.add_argument('--nodisplay', action='store_false', help="Run the test without displaying tracking")
     args = parser.parse_args()
-
-    if display is None:
-        display = args.nodisplay
+    display = args.nodisplay
 
     if not display:
         print('Running without displaying video')
 
     # make temporary directory in $HOME
+    # TODO: why create this temp directory in $HOME?
     print("\nCreating temporary directory...\n")
     tmp_dir = Path().home() / 'dlc-live-tmp'
     tmp_dir.mkdir(mode=0o775,exist_ok=True)
@@ -48,25 +51,24 @@ def main(display:bool=None):
     model_dir = tmp_dir / 'DLC_Dog_resnet_50_iteration-0_shuffle-0'
 
     # download dog test video from github:
+    # TODO: Should check if the video's already there before downloading it (should have been cloned with the files)
     print(f"Downloading Video to {video_file}")
     url_link = "https://github.com/DeepLabCut/DeepLabCut-live/blob/master/check_install/dog_clip.avi?raw=True"
     urllib.request.urlretrieve(url_link, video_file, reporthook=urllib_pbar)
 
-    # download exported dog model from DeepLabCut Model Zoo
-    if Path(model_dir / 'snapshot-75000.pb').exists():
+    # download model from the DeepLabCut Model Zoo
+    if Path(model_dir / SNAPSHOT_NAME).exists():
         print('Model already downloaded, using cached version')
     else:
         print("Downloading full_dog model from the DeepLabCut Model Zoo...")
-        download_huggingface_model("full_dog", model_dir)
+        download_huggingface_model(MODEL_NAME, model_dir)
 
     # assert these things exist so we can give informative error messages
-    assert Path(video_file).exists()
-    assert Path(model_dir / 'snapshot-75000.pb').exists()
+    assert Path(video_file).exists(), f"Missing video file {video_file}"
+    assert Path(model_dir / SNAPSHOT_NAME).exists(), f"Missing model file {model_dir / SNAPSHOT_NAME}"
 
     # run benchmark videos
     print("\n Running inference...\n")
-    # model_dir = "DLC_Dog_resnet_50_iteration-0_shuffle-0"
-    # print(video_file)
     benchmark_videos(str(model_dir), video_file, display=display, resize=0.5, pcutoff=0.25)
 
     # deleting temporary files
@@ -80,9 +82,4 @@ def main(display:bool=None):
 
 
 if __name__ == "__main__":
-
-
-    display = args.nodisplay
-
-
-    main(display=args.nodisplay)
+    main()
