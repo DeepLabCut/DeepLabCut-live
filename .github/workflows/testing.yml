@@ -12,7 +12,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-11, windows-latest]
-        python-version: ["3.7", "3.8", "3.9", "3.10"] #3.9 only failing for tables on macos and windows; mwm 6302021
+        python-version: ["3.8", "3.9", "3.10"] #3.9 only failing for tables on macos and windows; mwm 6302021
         include:
           - os: ubuntu-latest
             path: ~/.cache/pip
@@ -42,6 +42,6 @@ jobs:
         shell: bash
       - name: Install and test
         run: |
-          python -m pip install --upgrade pip wheel poetry
-          python -m poetry install
-          python -m poetry run dlc-live-test --nodisplay
+          python -m pip install --upgrade pip
+          python -m pip install .
+          dlc-live-test --nodisplay
