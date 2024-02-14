@@ -12,7 +12,7 @@ import time
 import sys
 import warnings
 import subprocess
-import typing
+from typing import List, Optional, Tuple, Union
 import pickle
 import colorcet as cc
 from PIL import ImageColor
@@ -151,8 +151,8 @@ def benchmark(
     model_path,
     video_path,
     tf_config=None,
-    resize=None,
-    pixels=None,
+    resize: Optional[float] = None,
+    pixels: Optional[int] = None,
     cropping=None,
     dynamic=(False, 0.5, 10),
     n_frames=1000,
@@ -164,7 +164,7 @@ def benchmark(
     save_poses=False,
     save_video=False,
     output=None,
-) -> typing.Tuple[np.ndarray, tuple, bool, dict]:
+) -> Tuple[np.ndarray, tuple, bool, dict]:
     """ Analyze DeepLabCut-live exported model on a video:
     Calculate inference time,
     display keypoints, or
@@ -521,8 +521,8 @@ def benchmark_videos(
     output=None,
     n_frames=1000,
     tf_config=None,
-    resize=None,
-    pixels=None,
+    resize: Optional[Union[float, List[float]]] = None,
+    pixels: Optional[Union[int, List[int]]] = None,
     cropping=None,
     dynamic=(False, 0.5, 10),
     print_rate=False,
@@ -551,7 +551,7 @@ def benchmark_videos(
         path to directory to save results
     tf_config : :class:`tensorflow.ConfigProto`
         tensorflow session configuration
-    resize : int, optional
+    resize : float, optional
         resize factor. Can only use one of resize or pixels. If both are provided, will use pixels. by default None
     pixels : int, optional
         downsize image to this number of pixels, maintaining aspect ratio. Can only use one of resize or pixels. If both are provided, will use pixels. by default None
@@ -603,10 +603,10 @@ def benchmark_videos(
     # fix resize
 
     if pixels:
-        pixels = pixels if type(pixels) is list else [pixels]
+        pixels = [int(p) for p in pixels] if type(pixels) is list else [int(pixels)]
         resize = [None for p in pixels]
     elif resize:
-        resize = resize if type(resize) is list else [resize]
+        resize = [float(r) for r in resize] if type(resize) is list else [float(resize)]
         pixels = [None for r in resize]
     else:
         resize = [None]
