@@ -5,132 +5,93 @@ DeepLabCut Toolbox (deeplabcut.org)
 Licensed under GNU Lesser General Public License v3.0
 """
 
-import os
-import pickle
+import csv
 import platform
 import subprocess
 import sys
 import time
-import typing
 import warnings
+from pathlib import Path
 
 import colorcet as cc
-import ruamel
-from PIL import ImageColor
-
-try:
-    from pip._internal.operations import freeze
-except ImportError:
-    from pip.operations import freeze
-
 import cv2
 import numpy as np
-import tensorflow as tf
-from tqdm import tqdm
+import torch
+from PIL import ImageColor
+from pip._internal.operations import freeze
 
-from dlclive import VERSION, DLCLive
-from dlclive import __file__ as dlcfile
-from dlclive.utils import decode_fourcc
+try:
+    import pandas as pd
 
+    has_pandas = True
+except ModuleNotFoundError as err:
+    has_pandas = False
 
-def download_benchmarking_data(
-    target_dir=".",
-    url="http://deeplabcut.rowland.harvard.edu/datasets/dlclivebenchmark.tar.gz",
-):
-    """
-    Downloads a DeepLabCut-Live benchmarking Data (videos & DLC models).
-    """
-    import tarfile
-    import urllib.request
-
+try:
     from tqdm import tqdm
 
-    def show_progress(count, block_size, total_size):
-        pbar.update(block_size)
+    has_tqdm = True
+except ModuleNotFoundError as err:
+    has_tqdm = False
 
-    def tarfilenamecutting(tarf):
-        """' auxfun to extract folder path
-        ie. /xyz-trainsetxyshufflez/
-        """
-        for memberid, member in enumerate(tarf.getmembers()):
-            if memberid == 0:
-                parent = str(member.path)
-                l = len(parent) + 1
-            if member.path.startswith(parent):
-                member.path = member.path[l:]
-                yield member
 
-    response = urllib.request.urlopen(url)
-    print(
-        "Downloading the benchmarking data from the DeepLabCut server @Harvard -> Go Crimson!!! {}....".format(
-            url
-        )
-    )
-    total_size = int(response.getheader("Content-Length"))
-    pbar = tqdm(unit="B", total=total_size, position=0)
-    filename, _ = urllib.request.urlretrieve(url, reporthook=show_progress)
-    with tarfile.open(filename, mode="r:gz") as tar:
-        tar.extractall(target_dir, members=tarfilenamecutting(tar))
+from dlclive import DLCLive
+from dlclive.utils import decode_fourcc
+from dlclive.version import VERSION
 
 
 def get_system_info() -> dict:
-    """Return summary info for system running benchmark
+    """
+    Returns a summary of system information relevant to running benchmarking.
+
     Returns
     -------
     dict
-        Dictionary containing the following system information:
-        * ``host_name`` (str): name of machine
-        * ``op_sys`` (str): operating system
-        * ``python`` (str): path to python (which conda/virtual environment)
-        * ``device`` (tuple): (device type (``'GPU'`` or ``'CPU'```), device information)
-        * ``freeze`` (list): list of installed packages and versions
-        * ``python_version`` (str): python version
-        * ``git_hash`` (str, None): If installed from git repository, hash of HEAD commit
-        * ``dlclive_version`` (str): dlclive version from :data:`dlclive.VERSION`
+        A dictionary containing the following system information:
+        - host_name (str): Name of the machine.
+        - op_sys (str): Operating system.
+        - python (str): Path to the Python executable, indicating the conda/virtual
+            environment in use.
+        - device_type (str): Type of device used ('GPU' or 'CPU').
+        - device (list): List containing the name of the GPU or CPU brand.
+        - freeze (list): List of installed Python packages with their versions.
+        - python_version (str): Version of Python in use.
+        - git_hash (str or None): If installed from git repository, hash of HEAD commit.
+        - dlclive_version (str): Version of the DLCLive package.
     """
 
-    # get os
-
+    # Get OS and host name
     op_sys = platform.platform()
     host_name = platform.node().replace(" ", "")
 
-    # A string giving the absolute path of the executable binary for the Python interpreter, on systems where this makes sense.
+    # Get Python executable path
     if platform.system() == "Windows":
         host_python = sys.executable.split(os.path.sep)[-2]
     else:
         host_python = sys.executable.split(os.path.sep)[-3]
 
-    # try to get git hash if possible
-    dlc_basedir = os.path.dirname(os.path.dirname(dlcfile))
+    # Try to get git hash if possible
     git_hash = None
+    dlc_basedir = os.path.dirname(os.path.dirname(__file__))
     try:
-        git_hash = subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], cwd=dlc_basedir
+        git_hash = (
+            subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=dlc_basedir)
+            .decode("utf-8")
+            .strip()
         )
-        git_hash = git_hash.decode("utf-8").rstrip("\n")
     except subprocess.CalledProcessError:
-        # not installed from git repo, eg. pypi
-        # fine, pass quietly
+        # Not installed from git repo, e.g., pypi
         pass
 
-    # get device info (GPU or CPU)
-    dev = None
-    if tf.test.is_gpu_available():
-        gpu_name = tf.test.gpu_device_name()
-        from tensorflow.python.client import device_lib
-
-        dev_desc = [
-            d.physical_device_desc
-            for d in device_lib.list_local_devices()
-            if d.name == gpu_name
-        ]
-        dev = [d.split(",")[1].split(":")[1].strip() for d in dev_desc]
+    # Get device info (GPU or CPU)
+    if torch.cuda.is_available():
         dev_type = "GPU"
+        dev = [torch.cuda.get_device_name(torch.cuda.current_device())]
     else:
         from cpuinfo import get_cpu_info
 
-        dev = [get_cpu_info()["brand"]]
         dev_type = "CPU"
+        dev = [get_cpu_info()["brand_raw"]]
 
     return {
         "host_name": host_name,
@@ -138,7 +99,6 @@ def get_system_info() -> dict:
         "python": host_python,
         "device_type": dev_type,
         "device": dev,
-        # pip freeze to get versions of all packages
         "freeze": list(freeze.freeze()),
         "python_version": sys.version,
         "git_hash": git_hash,
@@ -147,66 +107,78 @@ def get_system_info() -> dict:
 
 
 def benchmark(
-    model_path,
-    video_path,
-    tf_config=None,
-    resize=None,
-    pixels=None,
-    cropping=None,
-    dynamic=(False, 0.5, 10),
-    n_frames=1000,
-    print_rate=False,
-    display=False,
-    pcutoff=0.0,
-    display_radius=3,
-    cmap="bmy",
-    save_poses=False,
-    save_video=False,
-    output=None,
-) -> typing.Tuple[np.ndarray, tuple, bool, dict]:
+    path: str | Path,
+    video_path: str | Path,
+    single_animal: bool = True,
+    resize: float | None = None,
+    pixels: int | None = None,
+    cropping: list[int] = None,
+    dynamic: tuple[bool, float, int] = (False, 0.5, 10),
+    n_frames: int = 1000,
+    print_rate: bool = False,
+    display: bool = False,
+    pcutoff: float = 0.0,
+    max_detections: int = 10,
+    display_radius: int = 3,
+    cmap: str = "bmy",
+    save_poses: bool = False,
+    save_video: bool = False,
+    output: str | Path | None = None,
+) -> tuple[np.ndarray, tuple, dict]:
     """Analyze DeepLabCut-live exported model on a video:
-    Calculate inference time,
-    display keypoints, or
-    get poses/create a labeled video
+
+    Calculate inference time, display keypoints, or get poses/create a labeled video.
 
     Parameters
     ----------
-    model_path : str
+    path : str
         path to exported DeepLabCut model
     video_path : str
         path to video file
-    tf_config : :class:`tensorflow.ConfigProto`
-        tensorflow session configuration
+    single_animal: bool
+        to make code behave like DLCLive for tensorflow models
     resize : int, optional
-        resize factor. Can only use one of resize or pixels. If both are provided, will use pixels. by default None
+        Resize factor. Can only use one of resize or pixels. If both are provided, will
+        use pixels. by default None
     pixels : int, optional
-        downsize image to this number of pixels, maintaining aspect ratio. Can only use one of resize or pixels. If both are provided, will use pixels. by default None
+        Downsize image to this number of pixels, maintaining aspect ratio. Can only use
+        one of resize or pixels. If both are provided, will use pixels. by default None
     cropping : list of int
         cropping parameters in pixel number: [x1, x2, y1, y2]
     dynamic: triple containing (state, detectiontreshold, margin)
-        If the state is true, then dynamic cropping will be performed. That means that if an object is detected (i.e. any body part > detectiontreshold),
-        then object boundaries are computed according to the smallest/largest x position and smallest/largest y position of all body parts. This  window is
-        expanded by the margin and from then on only the posture within this crop is analyzed (until the object is lost, i.e. <detectiontreshold). The
-        current position is utilized for updating the crop window for the next frame (this is why the margin is important and should be set large
-        enough given the movement of the animal)
+        If the state is true, then dynamic cropping will be performed. That means that
+        if an object is detected (i.e. any body part > detectiontreshold), then object
+        boundaries are computed according to the smallest/largest x position and
+        smallest/largest y position of all body parts. This  window is expanded by the
+        margin and from then on only the posture within this crop is analyzed (until the
+        object is lost, i.e. < detectiontreshold). The current position is utilized for
+        updating the crop window for the next frame (this is why the margin is important
+        and should be set large enough given the movement of the animal)
     n_frames : int, optional
         number of frames to run inference on, by default 1000
     print_rate : bool, optional
         flag to print inference rate frame by frame, by default False
     display : bool, optional
-        flag to display keypoints on images. Useful for checking the accuracy of exported models.
+        flag to display keypoints on images. Useful for checking the accuracy of
+        exported models.
     pcutoff : float, optional
         likelihood threshold to display keypoints
+    max_detections: int
+        for top-down models, the maximum number of individuals to detect in a frame
     display_radius : int, optional
         size (radius in pixels) of keypoint to display
     cmap : str, optional
-        a string indicating the :package:`colorcet` colormap, `options here <https://colorcet.holoviz.org/>`, by default "bmy"
+        a string indicating the :package:`colorcet` colormap, `options here
+        <https://colorcet.holoviz.org/>`, by default "bmy"
     save_poses : bool, optional
-        flag to save poses to an hdf5 file. If True, operates similar to :function:`DeepLabCut.benchmark_videos`, by default False
+        flag to save poses to an hdf5 file. If True, operates similar to
+        :function:`DeepLabCut.benchmark_videos`, by default False
     save_video : bool, optional
-        flag to save a labeled video. If True, operates similar to :function:`DeepLabCut.create_labeled_video`, by default False
+        flag to save a labeled video. If True, operates similar to
+        :function:`DeepLabCut.create_labeled_video`, by default False
     output : str, optional
-        path to directory to save pose and/or video file. If not specified, will use the directory of video_path, by default None
+        path to directory to save pose and/or video file. If not specified, will use
+        the directory of video_path, by default None
 
     Returns
     -------
@@ -214,8 +186,6 @@ def benchmark(
         vector of inference times
     tuple
         (image width, image height)
-    bool
-        tensorflow inference flag
     dict
         metadata for video
 
@@ -233,10 +203,19 @@ def benchmark(
     Analyze a video (save poses to hdf5) and create a labeled video, similar to :function:`DeepLabCut.benchmark_videos` and :function:`create_labeled_video`
     dlclive.benchmark('/my/exported/model', 'my_video.avi', save_poses=True, save_video=True)
     """
+    path = Path(path)
+    video_path = Path(video_path)
+    if not video_path.exists():
+        raise ValueError(f"Could not find video: {video_path}: check that it exists!")
 
-    ### load video
+    if output is None:
+        output = video_path.parent
+    else:
+        output = Path(output)
+        output.mkdir(exist_ok=True, parents=True)
 
-    cap = cv2.VideoCapture(video_path)
+    # load video
+    cap = cv2.VideoCapture(str(video_path))
     ret, frame = cap.read()
     n_frames = (
         n_frames
@@ -244,112 +223,107 @@ def benchmark(
         else (cap.get(cv2.CAP_PROP_FRAME_COUNT) - 1)
     )
     n_frames = int(n_frames)
-    im_size = (cap.get(cv2.CAP_PROP_FRAME_WIDTH), cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    im_size = (
+        int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
+        int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+    )
 
-    ### get resize factor
-
+    # get resize factor
     if pixels is not None:
         resize = np.sqrt(pixels / (im_size[0] * im_size[1]))
+
     if resize is not None:
         im_size = (int(im_size[0] * resize), int(im_size[1] * resize))
 
-    ### create video writer
-
+    # create video writer
     if save_video:
         colors = None
-        out_dir = (
-            output
-            if output is not None
-            else os.path.dirname(os.path.realpath(video_path))
-        )
-        out_vid_base = os.path.basename(video_path)
-        out_vid_file = os.path.normpath(
-            f"{out_dir}/{os.path.splitext(out_vid_base)[0]}_DLCLIVE_LABELED.avi"
-        )
+        out_vid_file = output / f"{video_path.stem}_DLCLIVE_LABELED.avi"
         fourcc = cv2.VideoWriter_fourcc(*"DIVX")
         fps = cap.get(cv2.CAP_PROP_FPS)
-        vwriter = cv2.VideoWriter(out_vid_file, fourcc, fps, im_size)
+        print(out_vid_file)
+        print(fourcc)
+        print(fps)
+        print(im_size)
+        vid_writer = cv2.VideoWriter(str(out_vid_file), fourcc, fps, im_size)
 
-    ### check for pandas installation if using save_poses flag
-
-    if save_poses:
-        try:
-            import pandas as pd
-
-            use_pandas = True
-        except:
-            use_pandas = False
-            warnings.warn(
-                "Could not find installation of pandas; saving poses as a numpy array with the dimensions (n_frames, n_keypoints, [x, y, likelihood])."
-            )
-
-    ### initialize DLCLive and perform inference
-
+    # initialize DLCLive and perform inference
     inf_times = np.zeros(n_frames)
     poses = []
 
     live = DLCLive(
-        model_path,
-        tf_config=tf_config,
+        model_path=path,
+        single_animal=single_animal,
         resize=resize,
         cropping=cropping,
         dynamic=dynamic,
         display=display,
+        max_detections=max_detections,
         pcutoff=pcutoff,
         display_radius=display_radius,
         display_cmap=cmap,
     )
 
     poses.append(live.init_inference(frame))
-    TFGPUinference = True if len(live.outputs) == 1 else False
 
-    iterator = range(n_frames) if (print_rate) or (display) else tqdm(range(n_frames))
+    iterator = range(n_frames)
+    if print_rate or display:
+        iterator = tqdm(iterator)
+
     for i in iterator:
-
         ret, frame = cap.read()
-
         if not ret:
             warnings.warn(
-                "Did not complete {:d} frames. There probably were not enough frames in the video {}.".format(
-                    n_frames, video_path
-                )
+                f"Did not complete {n_frames:d} frames. There probably were not enough "
+                f"frames in the video {video_path}."
             )
             break
 
         start_pose = time.time()
         poses.append(live.get_pose(frame))
         inf_times[i] = time.time() - start_pose
-
         if save_video:
+            this_pose = poses[-1]
+
+            if single_animal:
+                # expand individual dimension
+                this_pose = this_pose[None]
+
+            num_idv, num_bpt = this_pose.shape[:2]
+            num_colors = num_bpt
 
             if colors is None:
                 all_colors = getattr(cc, cmap)
                 colors = [
                     ImageColor.getcolor(c, "RGB")[::-1]
-                    for c in all_colors[:: int(len(all_colors) / poses[-1].shape[0])]
+                    for c in all_colors[:: int(len(all_colors) / num_colors)]
                 ]
 
-            this_pose = poses[-1]
-            for j in range(this_pose.shape[0]):
-                if this_pose[j, 2] > pcutoff:
-                    x = int(this_pose[j, 0])
-                    y = int(this_pose[j, 1])
-                    frame = cv2.circle(
-                        frame, (x, y), display_radius, colors[j], thickness=-1
-                    )
+            for j in range(num_idv):
+                for k in range(num_bpt):
+                    color_idx = k
+                    if this_pose[j, k, 2] > pcutoff:
+                        x = int(this_pose[j, k, 0])
+                        y = int(this_pose[j, k, 1])
+                        frame = cv2.circle(
+                            frame,
+                            (x, y),
+                            display_radius,
+                            colors[color_idx],
+                            thickness=-1,
+                        )
 
             if resize is not None:
                 frame = cv2.resize(frame, im_size)
-            vwriter.write(frame)
+            vid_writer.write(frame)
 
         if print_rate:
-            print("pose rate = {:d}".format(int(1 / inf_times[i])))
+            print(f"pose rate = {int(1 / inf_times[i]):d}")
 
     if print_rate:
-        print("mean pose rate = {:d}".format(int(np.mean(1 / inf_times))))
+        print(f"mean pose rate = {int(np.mean(1 / inf_times)):d}")
 
-    ### gather video and test parameterization
-
+    # gather video and test parameterization
     # dont want to fail here so gracefully failing on exception --
     # eg. some packages of cv2 don't have CAP_PROP_CODEC_PIXEL_FORMAT
     try:
@@ -359,17 +333,17 @@ def benchmark(
 
     try:
         fps = round(cap.get(cv2.CAP_PROP_FPS))
-    except:
+    except Exception:
         fps = None
 
     try:
         pix_fmt = decode_fourcc(cap.get(cv2.CAP_PROP_CODEC_PIXEL_FORMAT))
-    except:
+    except Exception:
         pix_fmt = ""
 
     try:
         frame_count = round(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    except:
+    except Exception:
         frame_count = None
 
     try:
@@ -377,7 +351,7 @@ def benchmark(
             round(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
             round(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
         )
-    except:
+    except Exception:
         orig_im_size = None
 
     meta = {
@@ -390,332 +364,411 @@ def benchmark(
         "dlclive_params": live.parameterization,
     }
 
-    ### close video and tensorflow session
-
+    # close video
     cap.release()
-    live.close()
-
     if save_video:
-        vwriter.release()
+        vid_writer.release()
 
     if save_poses:
+        bodyparts = live.cfg["metadata"]["bodyparts"]
+        max_idv = np.max([p.shape[0] for p in poses])
 
-        cfg_path = os.path.normpath(f"{model_path}/pose_cfg.yaml")
-        ruamel_file = ruamel.yaml.YAML()
-        dlc_cfg = ruamel_file.load(open(cfg_path, "r"))
-        bodyparts = dlc_cfg["all_joints_names"]
-        poses = np.array(poses)
+        poses_array = -np.ones((len(poses), max_idv, len(bodyparts), 3))
+        for i, p in enumerate(poses):
+            num_det = len(p)
+            poses_array[i, :num_det] = p
+        poses = poses_array
 
-        if use_pandas:
+        num_frames, num_idv, num_bpts = poses.shape[:3]
+        individuals = [f"individual-{i}" for i in range(num_idv)]
 
-            poses = poses.reshape((poses.shape[0], poses.shape[1] * poses.shape[2]))
-            pdindex = pd.MultiIndex.from_product(
-                [bodyparts, ["x", "y", "likelihood"]], names=["bodyparts", "coords"]
+        if has_pandas:
+            poses = poses.reshape((num_frames, num_idv * num_bpts * 3))
+            col_index = pd.MultiIndex.from_product(
+                [individuals, bodyparts, ["x", "y", "likelihood"]],
+                names=["individual", "bodyparts", "coords"],
             )
-            pose_df = pd.DataFrame(poses, columns=pdindex)
+            pose_df = pd.DataFrame(poses, columns=col_index)
 
-            out_dir = (
-                output
-                if output is not None
-                else os.path.dirname(os.path.realpath(video_path))
-            )
-            out_vid_base = os.path.basename(video_path)
-            out_dlc_file = os.path.normpath(
-                f"{out_dir}/{os.path.splitext(out_vid_base)[0]}_DLCLIVE_POSES.h5"
-            )
-            pose_df.to_hdf(out_dlc_file, key="df_with_missing", mode="w")
+            out_dlc_file = output / (video_path.stem + "_DLCLIVE_POSES.h5")
+            try:
+                pose_df.to_hdf(out_dlc_file, key="df_with_missing", mode="w")
+            except ImportError as err:
+                print(
+                    "Cannot export predictions to H5 file. Install ``pytables`` extra "
+                    f"to export to HDF: {err}"
+                )
+            out_csv = Path(out_dlc_file).with_suffix(".csv")
+            pose_df.to_csv(out_csv)
 
         else:
-
-            out_vid_base = os.path.basename(video_path)
-            out_dlc_file = os.path.normpath(
-                f"{out_dir}/{os.path.splitext(out_vid_base)[0]}_DLCLIVE_POSES.npy"
+            warnings.warn(
+                "Could not find installation of pandas; saving poses as a numpy array "
+                "with the dimensions (n_frames, n_keypoints, [x, y, likelihood])."
             )
-            np.save(out_dlc_file, poses)
+            np.save(str(output / (video_path.stem + "_DLCLIVE_POSES.npy")), poses)
 
-    return inf_times, im_size, TFGPUinference, meta
-
-
-def save_inf_times(
-    sys_info, inf_times, im_size, TFGPUinference, model=None, meta=None, output=None
-):
-    """Save inference time data collected using :function:`benchmark` with system information to a pickle file.
-    This is primarily used through :function:`benchmark_videos`
-
-
-    Parameters
-    ----------
-    sys_info : tuple
-        system information generated by :func:`get_system_info`
-    inf_times : :class:`numpy.ndarray`
-        array of inference times generated by :func:`benchmark`
-    im_size : tuple or :class:`numpy.ndarray`
-        image size (width, height) for each benchmark run. If an array, each row corresponds to a row in inf_times
-    TFGPUinference: bool
-        flag if using tensorflow inference or numpy inference DLC model
-    model: str, optional
-        name of model
-    meta : dict, optional
-        metadata returned by :func:`benchmark`
-    output : str, optional
-        path to directory to save data. If None, uses pwd, by default None
-
-    Returns
-    -------
-    bool
-        flag indicating successful save
-    """
-
-    output = output if output is not None else os.getcwd()
-    model_type = None
-    if model is not None:
-        if "resnet" in model:
-            model_type = "resnet"
-        elif "mobilenet" in model:
-            model_type = "mobilenet"
-        else:
-            model_type = None
-
-    fn_ind = 0
-    base_name = (
-        f"benchmark_{sys_info['host_name']}_{sys_info['device_type']}_{fn_ind}.pickle"
-    )
-    out_file = os.path.normpath(f"{output}/{base_name}")
-    while os.path.isfile(out_file):
-        fn_ind += 1
-        base_name = f"benchmark_{sys_info['host_name']}_{sys_info['device_type']}_{fn_ind}.pickle"
-        out_file = os.path.normpath(f"{output}/{base_name}")
-
-    # summary stats (mean inference time & standard error of mean)
-    stats = zip(
-        np.mean(inf_times, 1),
-        np.std(inf_times, 1) * 1.0 / np.sqrt(np.shape(inf_times)[1]),
-    )
-
-    # for stat in stats:
-    #    print("Stats:", stat)
-
-    data = {
-        "model": model,
-        "model_type": model_type,
-        "TFGPUinference": TFGPUinference,
-        "im_size": im_size,
-        "inference_times": inf_times,
-        "stats": stats,
-    }
-
-    data.update(sys_info)
-    if meta:
-        data.update(meta)
-
-    os.makedirs(os.path.normpath(output), exist_ok=True)
-    pickle.dump(data, open(out_file, "wb"))
-
-    return True
+    return inf_times, im_size, meta
 
 
 def benchmark_videos(
-    model_path,
-    video_path,
-    output=None,
-    n_frames=1000,
-    tf_config=None,
-    resize=None,
-    pixels=None,
-    cropping=None,
-    dynamic=(False, 0.5, 10),
-    print_rate=False,
-    display=False,
+    video_path: str,
+    model_path: str,
+    model_type: str,
+    device: str,
+    precision: str = "FP32",
+    display=True,
     pcutoff=0.5,
-    display_radius=3,
-    cmap="bmy",
+    display_radius=5,
+    resize=None,
+    cropping=None,  # Adding cropping to the function parameters
+    dynamic=(False, 0.5, 10),
     save_poses=False,
+    save_dir="model_predictions",
+    draw_keypoint_names=False,
+    cmap="bmy",
+    get_sys_info=True,
     save_video=False,
 ):
-    """Analyze videos using DeepLabCut-live exported models.
-    Analyze multiple videos and/or multiple options for the size of the video
-    by specifying a resizing factor or the number of pixels to use in the image (keeping aspect ratio constant).
-    Options to record inference times (to examine inference speed),
-    display keypoints to visually check the accuracy,
-    or save poses to an hdf5 file as in :function:`deeplabcut.benchmark_videos` and
-    create a labeled video as in :function:`deeplabcut.create_labeled_video`.
+    """
+    Analyzes a video to track keypoints using a DeepLabCut model, and optionally saves
+    the keypoint data and the labeled video.
 
     Parameters
     ----------
+    video_path : str
+        Path to the video file to be analyzed.
     model_path : str
-        path to exported DeepLabCut model
-    video_path : str or list
-        path to video file or list of paths to video files
-    output : str
-        path to directory to save results
-    tf_config : :class:`tensorflow.ConfigProto`
-        tensorflow session configuration
-    resize : int, optional
-        resize factor. Can only use one of resize or pixels. If both are provided, will use pixels. by default None
-    pixels : int, optional
-        downsize image to this number of pixels, maintaining aspect ratio. Can only use one of resize or pixels. If both are provided, will use pixels. by default None
-    cropping : list of int
-        cropping parameters in pixel number: [x1, x2, y1, y2]
-    dynamic: triple containing (state, detectiontreshold, margin)
-        If the state is true, then dynamic cropping will be performed. That means that if an object is detected (i.e. any body part > detectiontreshold),
-        then object boundaries are computed according to the smallest/largest x position and smallest/largest y position of all body parts. This  window is
-        expanded by the margin and from then on only the posture within this crop is analyzed (until the object is lost, i.e. <detectiontreshold). The
-        current position is utilized for updating the crop window for the next frame (this is why the margin is important and should be set large
-        enough given the movement of the animal)
-    n_frames : int, optional
-        number of frames to run inference on, by default 1000
-    print_rate : bool, optional
-        flat to print inference rate frame by frame, by default False
-    display : bool, optional
-        flag to display keypoints on images. Useful for checking the accuracy of exported models.
-    pcutoff : float, optional
-        likelihood threshold to display keypoints
-    display_radius : int, optional
-        size (radius in pixels) of keypoint to display
-    cmap : str, optional
-        a string indicating the :package:`colorcet` colormap, `options here <https://colorcet.holoviz.org/>`, by default "bmy"
-    save_poses : bool, optional
-        flag to save poses to an hdf5 file. If True, operates similar to :function:`DeepLabCut.benchmark_videos`, by default False
-    save_video : bool, optional
-        flag to save a labeled video. If True, operates similar to :function:`DeepLabCut.create_labeled_video`, by default False
+        Path to the DeepLabCut model.
+    model_type : str
+        Type of the model (e.g., 'onnx').
+    device : str
+        Device to run the model on ('cpu' or 'cuda').
+    precision : str, optional, default='FP32'
+        Precision type for the model ('FP32' or 'FP16').
+    display : bool, optional, default=True
+        Whether to display frame with labelled key points.
+    pcutoff : float, optional, default=0.5
+        Probability cutoff below which keypoints are not visualized.
+    display_radius : int, optional, default=5
+        Radius of circles drawn for keypoints on video frames.
+    resize : tuple of int (width, height) or None, optional
+        Resize dimensions for video frames. e.g. if resize = 0.5, the video will be
+        processed in half the original size. If None, no resizing is applied.
+    cropping : list of int or None, optional
+        Cropping parameters [x1, x2, y1, y2] in pixels. If None, no cropping is applied.
+    dynamic : tuple, optional, default=(False, 0.5, 10) (True/false), p cutoff, margin)
+        Parameters for dynamic cropping. If the state is true, then dynamic cropping
+        will be performed. That means that if an object is detected (i.e. any body part
+        > detectiontreshold), then object boundaries are computed according to the
+        smallest/largest x position and smallest/largest y position of all body parts.
+        This window is expanded by the margin and from then on only the posture within
+        this crop is analyzed (until the object is lost, i.e. <detection treshold). The
+        current position is used to update the crop window for the next frame
+        (this is why the margin is important and should be set large enough given the
+        movement of the animal).
+    save_poses : bool, optional, default=False
+        Whether to save the detected poses to CSV and HDF5 files.
+    save_dir : str, optional, default='model_predictions'
+        Directory to save output data and labeled video.
+    draw_keypoint_names : bool, optional, default=False
+        Whether to display keypoint names on video frames in the saved video.
+    cmap : str, optional, default='bmy'
+        Colormap from the colorcet library for keypoint visualization.
+    get_sys_info : bool, optional, default=True
+        Whether to print system information.
+    save_video : bool, optional, default=False
+        Whether to save the labeled video.
 
-    Example
+    Returns
     -------
-    Return a vector of inference times for 10000 frames on one video or two videos:
-    dlclive.benchmark_videos('/my/exported/model', 'my_video.avi', n_frames=10000)
-    dlclive.benchmark_videos('/my/exported/model', ['my_video1.avi', 'my_video2.avi'], n_frames=10000)
-
-    Return a vector of inference times, testing full size and resizing images to half the width and height for inference, for two videos
-    dlclive.benchmark_videos('/my/exported/model', ['my_video1.avi', 'my_video2.avi'], n_frames=10000, resize=[1.0, 0.5])
-
-    Display keypoints to check the accuracy of an exported model
-    dlclive.benchmark_videos('/my/exported/model', 'my_video.avi', display=True)
-
-    Analyze a video (save poses to hdf5) and create a labeled video, similar to :function:`DeepLabCut.benchmark_videos` and :function:`create_labeled_video`
-    dlclive.benchmark_videos('/my/exported/model', 'my_video.avi', save_poses=True, save_video=True)
+    tuple
+        A tuple containing:
+        - poses (list of dict): List of pose data for each frame.
+        - times (list of float): List of inference times for each frame.
     """
 
-    # convert video_paths to list
+    # Create the DLCLive object with cropping
+    dlc_live = DLCLive(
+        model_path=model_path,
+        model_type=model_type,
+        device=device,
+        display=display,
+        resize=resize,
+        cropping=cropping,  # Pass the cropping parameter
+        dynamic=dynamic,
+        precision=precision,
+    )
 
-    video_path = video_path if type(video_path) is list else [video_path]
+    # Ensure save directory exists
+    os.makedirs(name=save_dir, exist_ok=True)
 
-    # fix resize
+    # Get the current date and time as a string
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
 
-    if pixels:
-        pixels = pixels if type(pixels) is list else [pixels]
-        resize = [None for p in pixels]
-    elif resize:
-        resize = resize if type(resize) is list else [resize]
-        pixels = [None for r in resize]
-    else:
-        resize = [None]
-        pixels = [None]
+    # Load video
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        print(f"Error: Could not open video file {video_path}")
+        return
 
-    # loop over videos
+    # Start empty dict to save poses to for each frame
+    poses, times = [], []
+    # Create variable indicate current frame. Later in the code +1 is added to frame_index
+    frame_index = 0
 
-    for v in video_path:
+    # Retrieve bodypart names and number of keypoints
+    bodyparts = dlc_live.cfg["metadata"]["bodyparts"]
+    num_keypoints = len(bodyparts)
 
-        # initialize full inference times
+    if save_video:
+        # Set colors and convert to RGB
+        cmap_colors = getattr(cc, cmap)
+        colors = [
+            ImageColor.getrgb(color)
+            for color in cmap_colors[:: int(len(cmap_colors) / num_keypoints)]
+        ]
 
-        inf_times = []
-        im_size_out = []
+        # Define output video path
+        video_name = os.path.splitext(os.path.basename(video_path))[0]
+        output_video_path = os.path.join(
+            save_dir, f"{video_name}_DLCLIVE_LABELLED_{timestamp}.mp4"
+        )
 
-        for i in range(len(resize)):
+        # Get video writer setup
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-            print(f"\nRun {i+1} / {len(resize)}\n")
+        vwriter = cv2.VideoWriter(
+            filename=output_video_path,
+            fourcc=fourcc,
+            fps=fps,
+            frameSize=(frame_width, frame_height),
+        )
 
-            this_inf_times, this_im_size, TFGPUinference, meta = benchmark(
-                model_path,
-                v,
-                tf_config=tf_config,
-                resize=resize[i],
-                pixels=pixels[i],
-                cropping=cropping,
-                dynamic=dynamic,
-                n_frames=n_frames,
-                print_rate=print_rate,
-                display=display,
-                pcutoff=pcutoff,
-                display_radius=display_radius,
-                cmap=cmap,
-                save_poses=save_poses,
-                save_video=save_video,
-                output=output,
-            )
+    while True:
 
-            inf_times.append(this_inf_times)
-            im_size_out.append(this_im_size)
+        ret, frame = cap.read()
+        if not ret:
+            break
+        # if frame_index == 0:
+        #     pose = dlc_live.init_inference(frame)  # load DLC model
+        try:
+            # pose = dlc_live.get_pose(frame)
+            if frame_index == 0:
+                # TODO trying to fix issues with dynamic cropping jumping back and forth
+                #  between dyanmic cropped and original image
+                # dlc_live.dynamic = (False, dynamic[1], dynamic[2])
+                pose, inf_time = dlc_live.init_inference(frame)  # load DLC model
+            else:
+                # dlc_live.dynamic = dynamic
+                pose, inf_time = dlc_live.get_pose(frame)
+        except Exception as e:
+            print(f"Error analyzing frame {frame_index}: {e}")
+            continue
 
-        inf_times = np.array(inf_times)
-        im_size_out = np.array(im_size_out)
+        poses.append({"frame": frame_index, "pose": pose})
+        times.append(inf_time)
 
-        # save results
+        if save_video:
+            # Visualize keypoints
+            this_pose = pose["poses"][0][0]
+            for j in range(this_pose.shape[0]):
+                if this_pose[j, 2] > pcutoff:
+                    x, y = map(int, this_pose[j, :2])
+                    cv2.circle(
+                        frame,
+                        center=(x, y),
+                        radius=display_radius,
+                        color=colors[j],
+                        thickness=-1,
+                    )
 
-        if output is not None:
-            sys_info = get_system_info()
-            save_inf_times(
-                sys_info,
-                inf_times,
-                im_size_out,
-                TFGPUinference,
-                model=os.path.basename(model_path),
-                meta=meta,
-                output=output,
-            )
+                    if draw_keypoint_names:
+                        cv2.putText(
+                            frame,
+                            text=bodyparts[j],
+                            org=(x + 10, y),
+                            fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                            fontScale=0.5,
+                            color=colors[j],
+                            thickness=1,
+                            lineType=cv2.LINE_AA,
+                        )
+
+            vwriter.write(image=frame)
+        frame_index += 1
+
+    cap.release()
+    if save_video:
+        vwriter.release()
+
+    if get_sys_info:
+        print(get_system_info())
+
+    if save_poses:
+        save_poses_to_files(video_path, save_dir, bodyparts, poses, timestamp=timestamp)
+
+    return poses, times
+
+
+def save_poses_to_files(video_path, save_dir, bodyparts, poses, timestamp):
+    """
+    Saves the detected keypoint poses from the video to CSV and HDF5 files.
+
+    Parameters
+    ----------
+    video_path : str
+        Path to the analyzed video file.
+    save_dir : str
+        Directory where the pose data files will be saved.
+    bodyparts : list of str
+        List of body part names corresponding to the keypoints.
+    poses : list of dict
+        List of dictionaries containing frame numbers and corresponding pose data.
+
+    Returns
+    -------
+    None
+    """
+
+    base_filename = os.path.splitext(os.path.basename(video_path))[0]
+    csv_save_path = os.path.join(save_dir, f"{base_filename}_poses_{timestamp}.csv")
+    h5_save_path = os.path.join(save_dir, f"{base_filename}_poses_{timestamp}.h5")
+
+    # Save to CSV
+    with open(csv_save_path, mode="w", newline="") as file:
+        writer = csv.writer(file)
+        header = ["frame"] + [
+            f"{bp}_{axis}" for bp in bodyparts for axis in ["x", "y", "confidence"]
+        ]
+        writer.writerow(header)
+        for entry in poses:
+            frame_num = entry["frame"]
+            pose = entry["pose"]["poses"][0][0]
+            row = [frame_num] + [
+                item.item() if isinstance(item, torch.Tensor) else item
+                for kp in pose
+                for item in kp
+            ]
+            writer.writerow(row)
+
+
+
+
+import argparse
+import os
 
 
 def main():
-    """Provides a command line interface :function:`benchmark_videos`"""
+    """Provides a command line interface to benchmark_videos function."""
+    parser = argparse.ArgumentParser(
+        description="Analyze a video using a DeepLabCut model and visualize keypoints."
+    )
+    parser.add_argument("model_path", type=str, help="Path to the model.")
+    parser.add_argument("video_path", type=str, help="Path to the video file.")
+    parser.add_argument("model_type", type=str, help="Type of the model (e.g., 'DLC').")
+    parser.add_argument(
+        "device", type=str, help="Device to run the model on (e.g., 'cuda' or 'cpu')."
+    )
+    parser.add_argument(
+        "-p",
+        "--precision",
+        type=str,
+        default="FP32",
+        help="Model precision (e.g., 'FP32', 'FP16').",
+    )
+    parser.add_argument(
+        "-d", "--display", action="store_true", help="Display keypoints on the video."
+    )
+    parser.add_argument(
+        "-c",
+        "--pcutoff",
+        type=float,
+        default=0.5,
+        help="Probability cutoff for keypoints visualization.",
+    )
+    parser.add_argument(
+        "-dr",
+        "--display-radius",
+        type=int,
+        default=5,
+        help="Radius of keypoint circles in the display.",
+    )
+    parser.add_argument(
+        "-r",
+        "--resize",
+        type=int,
+        default=None,
+        help="Resize video frames to [width, height].",
+    )
+    parser.add_argument(
+        "-x",
+        "--cropping",
+        type=int,
+        nargs=4,
+        default=None,
+        help="Cropping parameters [x1, x2, y1, y2].",
+    )
+    parser.add_argument(
+        "-y",
+        "--dynamic",
+        type=float,
+        nargs=3,
+        default=[False, 0.5, 10],
+        help="Dynamic cropping [flag, pcutoff, margin].",
+    )
+    parser.add_argument(
+        "--save-poses", action="store_true", help="Save the keypoint poses to files."
+    )
+    parser.add_argument(
+        "--save-video",
+        action="store_true",
+        help="Save the output video with keypoints.",
+    )
+    parser.add_argument(
+        "--save-dir",
+        type=str,
+        default="model_predictions",
+        help="Directory to save output files.",
+    )
+    parser.add_argument(
+        "--draw-keypoint-names",
+        action="store_true",
+        help="Draw keypoint names on the video.",
+    )
+    parser.add_argument(
+        "--cmap", type=str, default="bmy", help="Colormap for keypoints visualization."
+    )
+    parser.add_argument(
+        "--no-sys-info",
+        action="store_false",
+        help="Do not print system info.",
+        dest="get_sys_info",
+    )
 
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("model_path", type=str)
-    parser.add_argument("video_path", type=str, nargs="+")
-    parser.add_argument("-o", "--output", type=str, default=None)
-    parser.add_argument("-n", "--n-frames", type=int, default=1000)
-    parser.add_argument("-r", "--resize", type=float, nargs="+")
-    parser.add_argument("-p", "--pixels", type=float, nargs="+")
-    parser.add_argument("-v", "--print-rate", default=False, action="store_true")
-    parser.add_argument("-d", "--display", default=False, action="store_true")
-    parser.add_argument("-l", "--pcutoff", default=0.5, type=float)
-    parser.add_argument("-s", "--display-radius", default=3, type=int)
-    parser.add_argument("-c", "--cmap", type=str, default="bmy")
-    parser.add_argument("--cropping", nargs="+", type=int, default=None)
-    parser.add_argument("--dynamic", nargs="+", type=float, default=[])
-    parser.add_argument("--save-poses", action="store_true")
-    parser.add_argument("--save-video", action="store_true")
     args = parser.parse_args()
 
-    if (args.cropping) and (len(args.cropping) < 4):
-        raise Exception(
-            "Cropping not properly specified. Must provide 4 values: x1, x2, y1, y2"
-        )
-
-    if not args.dynamic:
-        args.dynamic = (False, 0.5, 10)
-    elif len(args.dynamic) < 3:
-        raise Exception(
-            "Dynamic cropping not properly specified. Must provide three values: 0 or 1 as boolean flag, pcutoff, and margin"
-        )
-    else:
-        args.dynamic = (bool(args.dynamic[0]), args.dynamic[1], args.dynamic[2])
-
+    # Call the benchmark_videos function with the parsed arguments
     benchmark_videos(
-        args.model_path,
-        args.video_path,
-        output=args.output,
-        resize=args.resize,
-        pixels=args.pixels,
-        cropping=args.cropping,
-        dynamic=args.dynamic,
-        n_frames=args.n_frames,
-        print_rate=args.print_rate,
+        video_path=args.video_path,
+        model_path=args.model_path,
+        model_type=args.model_type,
+        device=args.device,
+        precision=args.precision,
         display=args.display,
         pcutoff=args.pcutoff,
         display_radius=args.display_radius,
-        cmap=args.cmap,
+        resize=tuple(args.resize) if args.resize else None,
+        cropping=args.cropping,
+        dynamic=tuple(args.dynamic),
         save_poses=args.save_poses,
+        save_dir=args.save_dir,
+        draw_keypoint_names=args.draw_keypoint_names,
+        cmap=args.cmap,
+        get_sys_info=args.get_sys_info,
         save_video=args.save_video,
     )
 

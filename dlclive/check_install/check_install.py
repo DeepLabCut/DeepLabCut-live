@@ -14,7 +14,7 @@ from pathlib import Path
 
 from dlclibrary.dlcmodelzoo.modelzoo_download import download_huggingface_model
 
-from dlclive import benchmark_videos
+from dlclive.benchmark_tf import benchmark_videos
 
 MODEL_NAME = "superanimal_quadruped"
 SNAPSHOT_NAME = "snapshot-700000.pb"

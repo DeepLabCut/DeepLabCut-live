@@ -4,79 +4,88 @@ DeepLabCut Toolbox (deeplabcut.org)
 
 Licensed under GNU Lesser General Public License v3.0
 """
+from __future__ import annotations
 
-import glob
-import os
-import time
-import typing
-import warnings
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Any
 
 import numpy as np
-import onnxruntime as ort
-import ruamel.yaml
-import torch
-from deeplabcut.pose_estimation_pytorch.models import PoseModel
 
-from dlclive import utils
+import dlclive.factory as factory
+import dlclive.utils as utils
+from dlclive.core.runner import BaseRunner
 from dlclive.display import Display
-from dlclive.exceptions import DLCLiveError, DLCLiveWarning
-from dlclive.predictor import HeatmapPredictor
+from dlclive.exceptions import DLCLiveError
+from dlclive.processor import Processor
 
-if typing.TYPE_CHECKING:
-    from dlclive.processor import Processor
 
-class DLCLive(object):
+class DLCLive:
     """
-    Object that loads a DLC network and performs inference on single images (e.g. images captured from a camera feed)
+    Class that loads a DLC network and performs inference on single images (e.g.
+    images captured from a camera feed)
 
     Parameters
     -----------
 
-    path : string
-        Full path to exported model directory
+    model_path: Path
+        Full path to exported model file
 
     model_type: string, optional
         which model to use: 'pytorch' or 'onnx' for exported snapshot
 
-    precision : string, optional
-        precision of model weights, only for model_type='onnx'. Can be 'FP32' (default) or 'FP16'
+    tf_config:
 
-    cropping : list of int
-        cropping parameters in pixel number: [x1, x2, y1, y2] #A: Maybe this is the dynamic cropping of each frame to speed of processing, so instead of analyzing the whole frame, it analyses only the part of the frame where the animal is
 
-    dynamic: triple containing (state, detectiontreshold, margin) #A: margin adds some space so the 'bbox' isn't too narrow around the animal'. First key points are predicted, then dynamic cropping is performed to 'single out' the animal, and then pose is estimated, we think.
-        If the state is true, then dynamic cropping will be performed. That means that if an object is detected (i.e. any body part > detectiontreshold),
-        then object boundaries are computed according to the smallest/largest x position and smallest/largest y position of all body parts. This  window is
-        expanded by the margin and from then on only the posture within this crop is analyzed (until the object is lost, i.e. <detectiontreshold). The
-        current position is utilized for updating the crop window for the next frame (this is why the margin is important and should be set large
-        enough given the movement of the animal).
+    precision: string, optional
+        precision of model weights, for model_type='onnx' or 'pytorch'. Can be 'FP32'
+        (default) or 'FP16'
 
-    resize : float, optional
+    cropping: list of int
+        cropping parameters in pixel number: [x1, x2, y1, y2] #A: Maybe this is the
+        dynamic cropping of each frame to speed of processing, so instead of analyzing
+        the whole frame, it analyzes only the part of the frame where the animal is
+
+    dynamic: triple containing (state, detectiontreshold, margin) #A: margin adds some
+        space so the 'bbox' isn't too narrow around the animal'. First key points are
+        predicted, then dynamic cropping is performed to 'single out' the animal, and
+        then pose is estimated, we think.
+        If the state is true, then dynamic cropping will be performed. That means that
+        if an object is detected (i.e. any body part > detectiontreshold), then object
+        boundaries are computed according to the smallest/largest x position and
+        smallest/largest y position of all body parts. This  window is expanded by the
+        margin and from then on only the posture within this crop is analyzed (until the
+        object is lost, i.e. <detectiontreshold). The current position is utilized for
+        updating the crop window for the next frame (this is why the margin is important
+        and should be set large enough given the movement of the animal).
+
+    resize: float, optional
         Factor to resize the image.
-        For example, resize=0.5 will downsize both the height and width of the image by a factor of 2.
+        For example, resize=0.5 will downsize both the height and width of the image by
+        a factor of 2.
 
-    processor: dlc pose processor object, optional #A: this is possibly the 'predictor' - or is it what enables use on jetson boards?
+    processor: dlc pose processor object, optional #A: this is possibly the 'predictor'
+        - or is it what enables use on jetson boards?
         User-defined processor object. Must contain two methods: process and save.
-        The 'process' method takes in a pose, performs some processing, and returns processed pose.
+        The 'process' method takes in a pose, performs some processing, and returns
+        processed pose.
         The 'save' method saves any valuable data created by or used by the processor
         Processors can be used for two main purposes:
-        i) to run a forward predicting model that will predict the future pose from past history of poses (history can be stored in the processor object, but is not stored in this DLCLive object)
-        ii) to trigger external hardware based on pose estimation (e.g. see 'TeensyLaser' processor)
+            i) to run a forward predicting model that will predict the future pose from
+            past history of poses (history can be stored in the processor object, but is
+            not stored in this DLCLive object)
+            ii) to trigger external hardware based on pose estimation (e.g. see
+            'TeensyLaser' processor)
 
-    convert2rgb : bool, optional
+    convert2rgb: bool, optional
         boolean flag to convert frames from BGR to RGB color scheme
 
-    display : bool, optional
+    display: bool, optional
         Display frames with DeepLabCut labels?
-        This is useful for testing model accuracy and cropping parameters, but it is very slow.
+        This is useful for testing model accuracy and cropping parameters, but it is
+        very slow.
 
-    display_lik : float, optional
-        Likelihood threshold for display
-
-    display_raidus : int, optional
-        radius for keypoint display in pixels, default=3
+    display_cmap: str, optional
+        String indicating the Matplotlib colormap to use.
     """
 
     PARAMETERS = (
@@ -92,26 +101,34 @@ class DLCLive(object):
 
     def __init__(
         self,
-        path: str,
-        snapshot: str = None,
-        model_type: str = "onnx",
+        model_path: str | Path,
+        model_type: str = "base",
+        # tf_config: Any = None,
         precision: str = "FP32",
-        device: str = "cpu",
-        cropping: Optional[List[int]] = None,
-        dynamic: Tuple[bool, float, float] = (False, 0.5, 10),
-        resize: Optional[float] = None,
+        # single_animal: bool = True,
+        # device: str | None = None,
+        cropping: list[int] | None = None,
+        dynamic: tuple[bool, float, float] = (False, 0.5, 10),
+        resize: float | None = None,
         convert2rgb: bool = True,
-        processor: Optional["Processor"] = None,
-        display: typing.Union[bool, Display] = False,
+        processor: Processor | None = None,
+        display: bool | Display = False,
         pcutoff: float = 0.5,
+        # bbox_cutoff: float = 0.6,
+        # max_detections: int = 1,
         display_radius: int = 3,
         display_cmap: str = "bmy",
+        **kwargs,
     ):
+        self.path = Path(model_path)
+        self.runner: BaseRunner = factory.build_runner(
+            model_type,
+            model_path,
+            **kwargs,
+        )
+        self.is_initialized = False
 
-        self.path = path
         self.model_type = model_type
-        self.device = device
-        self.snapshot = snapshot
         self.precision = precision
         self.cropping = cropping
         self.dynamic = dynamic
@@ -119,6 +136,7 @@ class DLCLive(object):
         self.resize = resize
         self.processor = processor
         self.convert2rgb = convert2rgb
+
         if isinstance(display, Display):
             self.display = display
         elif display:
@@ -128,50 +146,27 @@ class DLCLive(object):
         else:
             self.display = None
 
-        self.cfg = None
-        self.cfg_path = None
-        self.sess = None
-        self.pose_model = None
-        self.predictor = None
-        self.pose = None
+    @property
+    def cfg(self) -> dict | None:
+        return self.runner.cfg
 
-        if self.model_type == "pytorch" and (self.snapshot) is None:
-            raise DLCLiveError(
-                f"The selected model type is '{self.model_type}', but no snapshot was provided"
-            )
-        if self.model_type == "pytorch" and (self.device) == "tensorrt":
-            raise DLCLiveError(
-                f"The selected model type is '{self.model_type}' is not enabled by the selected runtime {self.device}"
-            )
-        self.read_config()
-
-    def read_config(self):
+    def read_config(self) -> None:
         """Reads configuration yaml file
 
         Raises
         ------
         FileNotFoundError
-            error thrown if pose configuration file does nott exist
+            error thrown if pose configuration file does not exist
         """
-
-        cfg_path = Path(self.path).resolve() / "pytorch_config.yaml"
-        if not cfg_path.exists():
-            raise FileNotFoundError(
-                f"The pose configuration file for the exported model at {str(cfg_path)} was not found. Please check the path to the exported model directory"
-            )
-
-        ruamel_file = ruamel.yaml.YAML()
-        self.cfg = ruamel_file.load(open(str(cfg_path), "r"))
+        self.runner.read_config()
 
     @property
     def parameterization(
         self,
-    ) -> (
-        dict
-    ):
+    ) -> dict:
         return {param: getattr(self, param) for param in self.PARAMETERS}
 
-    def process_frame(self, frame):
+    def process_frame(self, frame: np.ndarray) -> np.ndarray:
         """
         Crops an image according to the object's cropping and dynamic properties.
 
@@ -185,35 +180,45 @@ class DLCLive(object):
         frame :class:`numpy.ndarray`
             processed frame: convert type, crop, convert color
         """
-
         if self.cropping:
             frame = frame[
                 self.cropping[2] : self.cropping[3], self.cropping[0] : self.cropping[1]
             ]
+
         if self.dynamic[0]:
-
             if self.pose is not None:
-                detected = self.pose["poses"][0][0][:, 2] > self.dynamic[1]
+                # Deal with PyTorch multi-animal models
+                if len(self.pose.shape) == 3:
+                    if len(self.pose) == 0:
+                        pose = np.zeros((1, 3))
+                    elif len(self.pose) == 1:
+                        pose = self.pose[0]
+                    else:
+                        raise ValueError(
+                            "Cannot use Dynamic Cropping - more than 1 individual found"
+                        )
 
-                if torch.any(detected):
+                else:
+                    pose = self.pose
 
-                    x = self.pose["poses"][0][0][detected, 0]
-                    y = self.pose["poses"][0][0][detected, 1]
+                detected = pose[:, 2] >= self.dynamic[1]
+                if np.any(detected):
+                    h, w = frame.shape[0], frame.shape[1]
 
-                    x1 = int(max([0, int(torch.amin(x)) - self.dynamic[2]]))
-                    x2 = int(
-                        min([frame.shape[1], int(torch.amax(x)) + self.dynamic[2]])
-                    )
-                    y1 = int(max([0, int(torch.amin(y)) - self.dynamic[2]]))
-                    y2 = int(
-                        min([frame.shape[0], int(torch.amax(y)) + self.dynamic[2]])
-                    )
+                    x = pose[detected, 0]
+                    y = pose[detected, 1]
+                    xmin, xmax = int(np.min(x)), int(np.max(x))
+                    ymin, ymax = int(np.min(y)), int(np.max(y))
+
+                    x1 = max([0, xmin - self.dynamic[2]])
+                    x2 = min([w, xmax + self.dynamic[2]])
+                    y1 = max([0, ymin - self.dynamic[2]])
+                    y2 = min([h, ymax + self.dynamic[2]])
+
                     self.dynamic_cropping = [x1, x2, y1, y2]
-
                     frame = frame[y1:y2, x1:x2]
 
                 else:
-
                     self.dynamic_cropping = None
 
         if self.resize != 1:
@@ -224,62 +229,10 @@ class DLCLive(object):
 
         return frame
 
-    def load_model(self):
-        if self.model_type == "pytorch":
-            # Requires DLC 3.0 to be imported !
-            model_path = os.path.join(self.path, self.snapshot)
-            if not os.path.isfile(model_path):
-                raise FileNotFoundError(
-                    "The model file {} does not exist.".format(model_path)
-                )
-            weights = torch.load(model_path, map_location=torch.device(self.device))
-            self.pose_model = PoseModel.build(self.cfg["model"])
-            self.pose_model.load_state_dict(weights["model"])
-            self.pose_model = self.pose_model.to(self.device)
-            self.pose_model.eval()
-
-        elif self.model_type == "onnx":
-            model_paths = glob.glob(os.path.normpath(self.path + "/*.onnx"))
-            if self.precision == "FP16":
-                model_path = [model_paths[i] for i in range(len(model_paths)) if "fp16" in model_paths[i]][0]
-            else:
-                model_path = model_paths[0]
-            opts = ort.SessionOptions()
-            opts.enable_profiling = False
-            if self.device == "cuda":
-                self.sess = ort.InferenceSession(
-                    model_path, opts, providers=["CUDAExecutionProvider"]
-                )
-            elif self.device == "cpu":
-                self.sess = ort.InferenceSession(
-                    model_path, opts, providers=["CPUExecutionProvider"]
-                )
-
-            elif self.device == "tensorrt":
-                provider = [("TensorrtExecutionProvider", {
-                    "trt_engine_cache_enable": True,
-                    "trt_engine_cache_path": "./trt_engines"
-                })]
-                self.sess = ort.InferenceSession(
-                    model_path, opts, providers=provider
-                )
-            self.predictor = HeatmapPredictor.build(self.cfg)
-
-            if not os.path.isfile(model_path):
-                raise FileNotFoundError(
-                    "The model file {} does not exist.".format(model_path)
-                )
-
-        else:
-            raise DLCLiveError(
-                "model_type = {} is not supported. model_type must be 'pytorch' or 'onnx'".format(
-                    self.model_type
-                )
-            )
-
-    def init_inference(self, frame=None, **kwargs):
+    def init_inference(self, frame=None, **kwargs) -> np.ndarray:
         """
-        Load model and perform inference on first frame -- the first inference is usually very slow.
+        Load model and perform inference on first frame -- the first inference is
+        usually very slow.
 
         Parameters
         -----------
@@ -288,25 +241,20 @@ class DLCLive(object):
 
         Returns
         --------
-        pose :class:`numpy.ndarray`
-            the pose estimated by DeepLabCut for the input image
-        inf_time:class: `float`
-            the pose inference time
+        pose: the pose estimated by DeepLabCut for the input image
         """
+        if frame is None:
+            raise DLCLiveError("No frame provided to initialize inference.")
 
-        # load model
-        self.load_model()
+        if frame.ndim >= 2:
+            self.convert2rgb = True
 
-        inf_time = 0.
-        # get pose of first frame (first inference is very slow)
-        if frame is not None:
-            pose, inf_time = self.get_pose(frame, **kwargs)
-        else:
-            pose = None
+        processed_frame = self.process_frame(frame)
+        self.pose = self.runner.init_inference(processed_frame)
+        self.is_initialized = True
+        return self._post_process_pose(processed_frame, **kwargs)
 
-        return pose, inf_time
-
-    def get_pose(self, frame=None, **kwargs):
+    def get_pose(self, frame: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Get the pose of an image
 
@@ -322,81 +270,42 @@ class DLCLive(object):
         inf_time:class: `float`
             the pose inference time
         """
-
-        inf_time = 0.
         if frame is None:
             raise DLCLiveError("No frame provided for live pose estimation")
 
-        if frame is not None:
-            if frame.ndim >= 2:
-                self.convert2rgb = True
+        if frame.ndim >= 2:
+            self.convert2rgb = True
 
-            processed_frame = self.process_frame(frame)
+        processed_frame = self.process_frame(frame)
+        self.pose = self.runner.get_pose(processed_frame)
+        return self._post_process_pose(processed_frame, **kwargs)
 
-        if self.model_type == "pytorch":
-            frame = torch.Tensor(processed_frame)
-            frame = frame.permute(2, 0, 1).unsqueeze(0)
-            frame = frame.to(self.device)
-
-            with torch.no_grad():
-                start = time.time()
-                outputs = self.pose_model(frame)
-                end = time.time()
-                inf_time = end - start
-
-            self.pose = self.pose_model.get_predictions(outputs)
-            self.pose = self.pose["bodypart"]
-
-        elif self.model_type == "onnx":
-            if self.precision == "FP32":
-                frame = processed_frame.astype(np.float32)
-            elif self.precision == "FP16":
-                frame = processed_frame.astype(np.float16)
-
-            frame = np.transpose(frame, (2, 0, 1))
-            frame = np.expand_dims(frame, axis=0)
-
-            ort_inputs = {self.sess.get_inputs()[0].name: frame}
-
-            start = time.time()
-            outputs = self.sess.run(None, ort_inputs)
-            end = time.time()
-            inf_time = end - start
-
-            outputs = {
-                "heatmap": torch.Tensor(outputs[0]),
-                "locref": torch.Tensor(outputs[1]),
-            }
-
-            self.pose = self.predictor(outputs=outputs)
-
-        else:
-            raise DLCLiveError(
-                "model_type = {} is not supported. model_type must be 'pytorch' or 'onnx'".format(
-                    self.model_type
-                )
-            )
-
+    def _post_process_pose(self, processed_frame: np.ndarray, **kwargs) -> np.ndarray:
+        """Post-processes the frame and pose."""
         # display image if display=True before correcting pose for cropping/resizing
-
         if self.display is not None:
             self.display.display_frame(processed_frame, self.pose)
 
         # if frame is cropped, convert pose coordinates to original frame coordinates
-
         if self.resize is not None:
-            self.pose["poses"][0][0][:, :2] *= 1 / self.resize
+            self.pose[..., :2] *= 1 / self.resize
 
         if self.cropping is not None:
-            self.pose["poses"][0][0][0] += self.cropping[0]
-            self.pose["poses"][0][0][0] += self.cropping[2]
+            self.pose[..., 0] += self.cropping[0]
+            self.pose[..., 1] += self.cropping[2]
 
         if self.dynamic_cropping is not None:
-            self.pose["poses"][0][0][:, 0] += self.dynamic_cropping[0]
-            self.pose["poses"][0][0][:, 1] += self.dynamic_cropping[2]
+            self.pose[..., 0] += self.dynamic_cropping[0]
+            self.pose[..., 1] += self.dynamic_cropping[2]
 
         # process the pose
         if self.processor:
             self.pose = self.processor.process(self.pose, **kwargs)
 
-        return self.pose, inf_time
+        return self.pose
+
+    def close(self) -> None:
+        self.is_initialized = False
+        self.runner.close()
+        if self.display is not None:
+            self.display.destroy()

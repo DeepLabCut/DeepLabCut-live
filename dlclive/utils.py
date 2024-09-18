@@ -13,16 +13,14 @@ from dlclive.exceptions import DLCLiveWarning
 
 try:
     import skimage
-
     SK_IM = True
-except Exception:
+except ImportError as e:
     SK_IM = False
 
 try:
     import cv2
-
     OPEN_CV = True
-except Exception:
+except ImportError as e:
     from PIL import Image
 
     OPEN_CV = False
@@ -32,18 +30,18 @@ except Exception:
     )
 
 
-def convert_to_ubyte(frame):
+def convert_to_ubyte(frame: np.ndarray) -> np.ndarray:
     """Converts an image to unsigned 8-bit integer numpy array.
         If scikit-image is installed, uses skimage.img_as_ubyte, otherwise, uses a similar custom function.
 
     Parameters
     ----------
-    image : :class:`numpy.ndarray`
+    frame:
         an image as a numpy array
 
     Returns
     -------
-    :class:`numpy.ndarray`
+    :class: `numpy.ndarray`
         image converted to uint8
     """
 
@@ -53,21 +51,21 @@ def convert_to_ubyte(frame):
         return _img_as_ubyte_np(frame)
 
 
-def resize_frame(frame, resize=None):
+def resize_frame(frame: np.ndarray, resize=None) -> np.ndarray:
     """Resizes an image. Uses OpenCV if installed, otherwise, uses pillow
 
     Parameters
     ----------
-    image : :class:`numpy.ndarray`
+    frame:
         an image as a numpy array
     """
 
     if (resize is not None) and (resize != 1):
+        new_x = int(frame.shape[0] * resize)
+        new_y = int(frame.shape[1] * resize)
 
         if OPEN_CV:
 
-            new_x = int(frame.shape[0] * resize)
-            new_y = int(frame.shape[1] * resize)
             return cv2.resize(frame, (new_y, new_x))
 
         else:
@@ -81,7 +79,7 @@ def resize_frame(frame, resize=None):
         return frame
 
 
-def img_to_rgb(frame):
+def img_to_rgb(frame: np.ndarray) -> np.ndarray:
     """Convert an image to RGB. Uses OpenCV is installed, otherwise uses pillow.
 
     Parameters
@@ -107,7 +105,7 @@ def img_to_rgb(frame):
         return frame
 
 
-def gray_to_rgb(frame):
+def gray_to_rgb(frame: np.ndarray) -> np.ndarray:
     """Convert an image from grayscale to RGB. Uses OpenCV is installed, otherwise uses pillow.
 
     Parameters
@@ -127,7 +125,7 @@ def gray_to_rgb(frame):
         return np.asarray(img)
 
 
-def bgr_to_rgb(frame):
+def bgr_to_rgb(frame: np.ndarray) -> np.ndarray:
     """Convert an image from BGR to RGB. Uses OpenCV is installed, otherwise uses pillow.
 
     Parameters
@@ -147,7 +145,7 @@ def bgr_to_rgb(frame):
         return np.asarray(img)
 
 
-def _img_as_ubyte_np(frame):
+def _img_as_ubyte_np(frame: np.ndarray) -> np.ndarray:
     """Converts an image as a numpy array to unsinged 8-bit integer.
         As in scikit-image img_as_ubyte, converts negative pixels to 0 and converts range to [0, 255]
 
