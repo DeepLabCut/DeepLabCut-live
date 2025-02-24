@@ -7,9 +7,14 @@ We recommend that you install DeepLabCut-live in a conda environment (It is a st
 
 Create a conda environment with python 3.7 and tensorflow:
 
+New version:
 ```
-conda create -n dlc-live python=3.7 tensorflow-gpu==1.13.1 # if using GPU
-conda create -n dlc-live python=3.7 tensorflow==1.13.1 # if not using GPU
+conda create -n dlc-live python=3.8
+conda activate dlc-live
+conda install -c conda-forge pytables==3.8.0
+pip install "tensorflow-macos<2.13.0" "tensorflow-metal" "tensorpack>=0.11" "tf_slim>=1.1.0"
+pip install deeplabcut-live
+dlc-live-test
 ```
 
 Activate the conda environment, install the DeepLabCut-live package, then test the installation:
