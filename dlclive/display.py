@@ -9,7 +9,8 @@ Licensed under GNU Lesser General Public License v3.0
 from tkinter import Tk, Label
 import colorcet as cc
 from PIL import Image, ImageTk, ImageDraw
-
+import numpy as np
+from dlclive import utils
 
 class Display(object):
     """
@@ -35,7 +36,7 @@ class Display(object):
 
     def set_display(self, im_size, bodyparts):
         """ Create tkinter window to display image
-        
+
         Parameters
         ----------
         im_size : tuple
@@ -64,7 +65,10 @@ class Display(object):
         pose :class:`numpy.ndarray`
             the pose estimated by DeepLabCut for the image
         """
-        
+        frame = np.squeeze(frame)
+        frame = frame.astype(np.uint8)
+        # frame = np.transpose(frame, (1, 2, 0))
+        pose = pose["poses"].squeeze()
         im_size = (frame.shape[1], frame.shape[0])
 
         if pose is not None:

@@ -36,11 +36,12 @@ def extract_cnn_output(outputs, cfg):
     scmap = outputs[0]
     scmap = np.squeeze(scmap)
     locref = None
-    if cfg["location_refinement"]:
+    if cfg["model"]["heads"]["bodypart"]["predictor"]["location_refinement"]:
         locref = np.squeeze(outputs[1])
         shape = locref.shape
-        locref = np.reshape(locref, (shape[0], shape[1], -1, 2))
-        locref *= cfg["locref_stdev"]
+        print(shape, scmap.shape)
+        locref = np.reshape(locref, (shape[1], shape[2], -1, 2))
+        locref *= cfg["model"]["heads"]["bodypart"]["predictor"]["locref_std"]
     if len(scmap.shape) == 2:  # for single body part!
         scmap = np.expand_dims(scmap, axis=2)
     return scmap, locref
@@ -67,15 +68,27 @@ def argmax_pose_predict(scmap, offmat, stride):
         pose as a numpy array
     """
 
-    num_joints = scmap.shape[2]
+    num_joints = scmap.shape[0]
+    # debug
+    print('joints', num_joints)
     pose = []
     for joint_idx in range(num_joints):
         maxloc = np.unravel_index(
-            np.argmax(scmap[:, :, joint_idx]), scmap[:, :, joint_idx].shape
+            np.argmax(scmap[joint_idx, :, :]), scmap[joint_idx, :, :].shape
         )
-        offset = np.array(offmat[maxloc][joint_idx])[::-1]
-        pos_f8 = np.array(maxloc).astype("float") * stride + 0.5 * stride + offset
-        pose.append(np.hstack((pos_f8[::-1], [scmap[maxloc][joint_idx]])))
+        # debug
+        print("maxloc", maxloc)
+        # print(offmat.shape)
+        # offset = np.array(offmat[maxloc][joint_idx])[::-1]
+        # print(offmat[maxloc][joint_idx])
+        offset = np.array(offmat[maxloc])[::-1]
+        print(offset[:,0].shape)
+        # print(np.array(offmat[maxloc]).shape)
+        print('offset', offset.shape)
+        print('offmat*stride+offset', (offmat * stride + offset).shape, (offmat * stride + offset))
+        pos_f8 = np.array(offmat).astype("float") * stride + 0.5 * stride + offset
+        print("pos_f8", pos_f8[::-1].shape)
+        pose.append(np.hstack((pos_f8[::-1], [scmap[joint_idx][maxloc]])))
     return np.array(pose)
 
 

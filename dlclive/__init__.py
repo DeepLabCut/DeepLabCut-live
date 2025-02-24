@@ -9,4 +9,5 @@ from dlclive.version import __version__, VERSION
 from dlclive.dlclive import DLCLive
 from dlclive.display import Display
 from dlclive.processor import Processor
+from dlclive.predictor import HeatmapPredictor
 # from dlclive.benchmark import benchmark, benchmark_videos, download_benchmarking_data
