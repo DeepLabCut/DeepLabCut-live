@@ -6,19 +6,24 @@ Licensed under GNU Lesser General Public License v3.0
 """
 
 import glob
-import ruamel.yaml
 import os
+
+# import tensorflow as tf
 import typing
 import warnings
 from pathlib import Path
 from typing import List, Optional, Tuple
 
+import deeplabcut as dlc
 import numpy as np
-# import tensorflow as tf
-import typing
-from pathlib import Path
-from typing import Optional, Tuple, List
+import ruamel.yaml
 import torch
+from deeplabcut.pose_estimation_pytorch.models import PoseModel
+
+from dlclive import utils
+from dlclive.display import Display
+from dlclive.exceptions import DLCLiveError, DLCLiveWarning
+from dlclive.pose import argmax_pose_predict, extract_cnn_output, multi_pose_predict
 
 # try:
 #     TFVER = [int(v) for v in tf.__version__.split(".")]
@@ -37,12 +42,6 @@ import torch
 #     extract_graph,
 # )
 
-import deeplabcut as dlc
-from deeplabcut.pose_estimation_pytorch.models import PoseModel
-from dlclive.pose import extract_cnn_output, argmax_pose_predict, multi_pose_predict
-from dlclive.display import Display
-from dlclive import utils
-from dlclive.exceptions import DLCLiveError, DLCLiveWarning
 
 if typing.TYPE_CHECKING:
     from dlclive.processor import Processor
@@ -213,7 +212,6 @@ class DLCLive(object):
         ruamel_file = ruamel.yaml.YAML()
         self.cfg = ruamel_file.load(open(str(cfg_path), "r"))
 
-
     @property
     def parameterization(
         self,
@@ -287,18 +285,18 @@ class DLCLive(object):
 
         return frame
 
-
     def load_model(self):
         self.read_config()
-        weights = torch.load(self.snapshot)
+        weights = torch.load(
+            self.snapshot, map_location=torch.device("cpu")
+        )  # added this to run on CPU
         print("Loaded weights")
         print(self.cfg)
-        pose_model = PoseModel.build(self.cfg['model'])
+        pose_model = PoseModel.build(self.cfg["model"])
         print("Built pose model")
         pose_model.load_state_dict(weights["model"])
-        print('Loaded pretrained weights')
+        print("Loaded pretrained weights")
         return pose_model
-
 
     def init_inference(self, frame=None, **kwargs):
         """
@@ -431,7 +429,6 @@ class DLCLive(object):
         #         )
         #     )
 
-
         # get pose of first frame (first inference is often very slow)
 
         if frame is not None:
@@ -499,7 +496,7 @@ class DLCLive(object):
         # if not, get pose from network output
 
         # ! to be replaced
-        '''
+        """
         if len(pose_output) > 1:
             scmap, locref = extract_cnn_output(
                 pose_output, self.cfg
@@ -536,7 +533,7 @@ class DLCLive(object):
         # process the pose
 
         if self.processor:
-            self.pose = self.processor.process(self.pose, **kwargs)'''
+            self.pose = self.processor.process(self.pose, **kwargs)"""
 
         # Mock pose
         num_individuals = 1
@@ -557,7 +554,7 @@ class DLCLive(object):
 
         # debug
         print(pose_model)
-        print(self.pose, self.pose['bodypart']['poses'].shape())
+        # print(self.pose, self.pose["bodypart"]["poses"].shape())
         return self.pose
 
     # def close(self):
