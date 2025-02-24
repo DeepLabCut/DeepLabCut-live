@@ -367,7 +367,7 @@ class DLCLive(object):
             with torch.no_grad():
                 start = time.time()
                 outputs = self.pose_model(frame)
-                torch.cuda.synchronize()
+                #torch.cuda.synchronize()
                 end = time.time()
                 inf_time = end - start
                 print(f"PyTorch inference took {inf_time} sec")

@@ -15,45 +15,6 @@ from pip._internal.operations import freeze
 
 from dlclive import VERSION, DLCLive
 
-# def download_benchmarking_data(
-#     target_dir=".",
-#     url="http://deeplabcut.rowland.harvard.edu/datasets/dlclivebenchmark.tar.gz",
-# ):
-#     """
-#     Downloads a DeepLabCut-Live benchmarking Data (videos & DLC models).
-#     """
-#     import tarfile
-#     import urllib.request
-
-#     from tqdm import tqdm
-
-#     def show_progress(count, block_size, total_size):
-#         pbar.update(block_size)
-
-#     def tarfilenamecutting(tarf):
-#         """' auxfun to extract folder path
-#         ie. /xyz-trainsetxyshufflez/
-#         """
-#         for memberid, member in enumerate(tarf.getmembers()):
-#             if memberid == 0:
-#                 parent = str(member.path)
-#                 l = len(parent) + 1
-#             if member.path.startswith(parent):
-#                 member.path = member.path[l:]
-#                 yield member
-
-#     response = urllib.request.urlopen(url)
-#     print(
-#         "Downloading the benchmarking data from the DeepLabCut server @Harvard -> Go Crimson!!! {}....".format(
-#             url
-#         )
-#     )
-#     total_size = int(response.getheader("Content-Length"))
-#     pbar = tqdm(unit="B", total=total_size, position=0)
-#     filename, _ = urllib.request.urlretrieve(url, reporthook=show_progress)
-#     with tarfile.open(filename, mode="r:gz") as tar:
-#         tar.extractall(target_dir, members=tarfilenamecutting(tar))
-
 
 def get_system_info() -> dict:
     """Return summary info for system running benchmark.
@@ -118,11 +79,12 @@ def get_system_info() -> dict:
     }
 
 
-def analyze_video(
-    video_path: str,
+def analyze_live_video(
     model_path: str,
     model_type: str,
     device: str,
+    camera: float = 0,
+    experiment_name: str = "Test",
     precision: str = "FP32",
     snapshot: str = None,
     display=True,
@@ -142,10 +104,10 @@ def analyze_video(
 
     Parameters:
     -----------
-    video_path : str
-        The path to the video file to be analyzed.
-    dlc_live : DLCLive
-        An instance of the DLCLive class.
+    camera : float, default=0 (webcam)
+        The camera to record the live video from
+    experiment_name : str, default = "Test"
+        Prefix to label generated pose and video files
     pcutoff : float, optional, default=0.5
         The probability cutoff value below which keypoints are not visualized.
     display_radius : int, optional, default=5
@@ -178,21 +140,20 @@ def analyze_video(
         cropping=cropping,  # Pass the cropping parameter
         dynamic=dynamic,
         precision=precision,
-        snapshot=snapshot
+        snapshot=snapshot,
     )
 
     # Ensure save directory exists
     os.makedirs(name=save_dir, exist_ok=True)
 
     # Load video
-    cap = cv2.VideoCapture(video_path)
+    cap = cv2.VideoCapture(camera)
     if not cap.isOpened():
-        print(f"Error: Could not open video file {video_path}")
+        print(f"Error: Could not open video file {camera}")
         return
 
     # Start empty dict to save poses to for each frame
     poses, times = [], []
-    # Create variable indicate current frame. Later in the code +1 is added to frame_index
     frame_index = 0
 
     # Retrieve bodypart names and number of keypoints
@@ -207,8 +168,9 @@ def analyze_video(
     ]
 
     # Define output video path
-    video_name = os.path.splitext(os.path.basename(video_path))[0]
-    output_video_path = os.path.join(save_dir, f"{video_name}_DLCLIVE_LABELLED.mp4")
+    output_video_path = os.path.join(
+        save_dir, f"{experiment_name}_DLCLIVE_LABELLED.mp4"
+    )
 
     # Get video writer setup
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
@@ -229,15 +191,11 @@ def analyze_video(
         ret, frame = cap.read()
         if not ret:
             break
-        # if frame_index == 0:
-        #     pose = dlc_live.init_inference(frame)  # load DLC model
+
         try:
-            # pose = dlc_live.get_pose(frame)
             if frame_index == 0:
-                # dlc_live.dynamic = (False, dynamic[1], dynamic[2]) # TODO trying to fix issues with dynamic cropping jumping back and forth between dyanmic cropped and original image
                 pose = dlc_live.init_inference(frame)  # load DLC model
             else:
-                # dlc_live.dynamic = dynamic
                 pose = dlc_live.get_pose(frame)
         except Exception as e:
             print(f"Error analyzing frame {frame_index}: {e}")
@@ -277,26 +235,35 @@ def analyze_video(
         vwriter.write(image=frame)
         frame_index += 1
 
+        # Display the frame
+        if display:
+            cv2.imshow("DLCLive", frame)
+
+        # Add key press check for quitting
+        if cv2.waitKey(1) & 0xFF == ord("q"):
+            break
+
     cap.release()
     vwriter.release()
+    cv2.destroyAllWindows()
 
     if get_sys_info:
         print(get_system_info())
 
     if save_poses:
-        save_poses_to_files(video_path, save_dir, bodyparts, poses)
+        save_poses_to_files(experiment_name, save_dir, bodyparts, poses)
 
     return poses, times
 
 
-def save_poses_to_files(video_path, save_dir, bodyparts, poses):
+def save_poses_to_files(experiment_name, save_dir, bodyparts, poses):
     """
     Save the keypoint poses detected in the video to CSV and HDF5 files.
 
     Parameters:
     -----------
-    video_path : str
-        The path to the video file that was analyzed.
+    experiment_name : str
+        Name of the experiment, used as a prefix for saving files.
     save_dir : str
         The directory where the pose data files will be saved.
     bodyparts : list of str
@@ -308,7 +275,7 @@ def save_poses_to_files(video_path, save_dir, bodyparts, poses):
     --------
     None
     """
-    base_filename = os.path.splitext(os.path.basename(video_path))[0]
+    base_filename = os.path.splitext(os.path.basename(experiment_name))[0]
     csv_save_path = os.path.join(save_dir, f"{base_filename}_poses.csv")
     h5_save_path = os.path.join(save_dir, f"{base_filename}_poses.h5")
 
@@ -321,8 +288,13 @@ def save_poses_to_files(video_path, save_dir, bodyparts, poses):
         writer.writerow(header)
         for entry in poses:
             frame_num = entry["frame"]
-            pose = entry["pose"]["poses"][0][0]
-            row = [frame_num] + [item for kp in pose for item in kp]
+            pose_data = entry["pose"][0]["poses"][0][0]
+            # Convert tensor data to numeric values
+            row = [frame_num] + [
+                item.item() if isinstance(item, torch.Tensor) else item
+                for kp in pose_data
+                for item in kp
+            ]
             writer.writerow(row)
 
     # Save to HDF5
@@ -331,13 +303,15 @@ def save_poses_to_files(video_path, save_dir, bodyparts, poses):
         for i, bp in enumerate(bodyparts):
             hf.create_dataset(
                 name=f"{bp}_x",
-                data=[entry["pose"]["poses"][0][0][i, 0].item() for entry in poses],
+                data=[
+                    (
+                        entry["pose"][0]["poses"][0][0][i, 0].item()
+                        if isinstance(
+                            entry["pose"][0]["poses"][0][0][i, 0], torch.Tensor
+                        )
+                        else entry["pose"][0]["poses"][0][0][i, 0]
+                    )
+                    for entry in poses
+                ],
             )
             hf.create_dataset(
-                name=f"{bp}_y",
-                data=[entry["pose"]["poses"][0][0][i, 1].item() for entry in poses],
-            )
-            hf.create_dataset(
-                name=f"{bp}_confidence",
-                data=[entry["pose"]["poses"][0][0][i, 2].item() for entry in poses],
-            )
