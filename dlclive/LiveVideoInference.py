@@ -17,20 +17,22 @@ from dlclive import VERSION, DLCLive
 
 
 def get_system_info() -> dict:
-    """Return summary info for system running benchmark.
+    """
+    Returns a summary of system information relevant to running benchmarking.
 
     Returns
     -------
     dict
-        Dictionary containing the following system information:
-        * ``host_name`` (str): name of machine
-        * ``op_sys`` (str): operating system
-        * ``python`` (str): path to python (which conda/virtual environment)
-        * ``device`` (tuple): (device type (``'GPU'`` or ``'CPU'```), device information)
-        * ``freeze`` (list): list of installed packages and versions
-        * ``python_version`` (str): python version
-        * ``git_hash`` (str, None): If installed from git repository, hash of HEAD commit
-        * ``dlclive_version`` (str): dlclive version from :data:`dlclive.VERSION`
+        A dictionary containing the following system information:
+        - host_name (str): Name of the machine.
+        - op_sys (str): Operating system.
+        - python (str): Path to the Python executable, indicating the conda/virtual environment in use.
+        - device_type (str): Type of device used ('GPU' or 'CPU').
+        - device (list): List containing the name of the GPU or CPU brand.
+        - freeze (list): List of installed Python packages with their versions.
+        - python_version (str): Version of Python in use.
+        - git_hash (str or None): If installed from git repository, hash of HEAD commit.
+        - dlclive_version (str): Version of the DLCLive package.
     """
 
     # Get OS and host name
@@ -101,35 +103,55 @@ def analyze_live_video(
     save_video=False,
 ):
     """
-    Analyze a video to track keypoints using an imported DeepLabCut model, visualize keypoints on the video, and optionally save the keypoint data and the labelled video.
+        Analyzes a video to track keypoints using a DeepLabCut model, and optionally saves the keypoint data and the labeled video.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
+    model_path : str
+        Path to the DeepLabCut model.
+    model_type : str
+        Type of the model (e.g., 'onnx').
+    device : str
+        Device to run the model on ('cpu' or 'cuda').
     camera : float, default=0 (webcam)
-        The camera to record the live video from
+        The camera to record the live video from.
     experiment_name : str, default = "Test"
         Prefix to label generated pose and video files
+    precision : str, optional, default='FP32'
+        Precision type for the model ('FP32' or 'FP16').
+    snapshot : str, optional
+        Snapshot to use for the model, if using pytorch as model type.
+    display : bool, optional, default=True
+        Whether to display frame with labelled key points.
     pcutoff : float, optional, default=0.5
-        The probability cutoff value below which keypoints are not visualized.
+        Probability cutoff below which keypoints are not visualized.
     display_radius : int, optional, default=5
-        The radius of the circles drawn to represent keypoints on the video frames.
-    resize : tuple of int (width, height) or None, optional, default=None
-        The size to which the frames should be resized. If None, the frames are not resized.
-    cropping : list of int, optional, default=None
-        Cropping parameters in pixel number: [x1, x2, y1, y2]
+        Radius of circles drawn for keypoints on video frames.
+    resize : tuple of int (width, height) or None, optional
+        Resize dimensions for video frames. e.g. if resize = 0.5, the video will be processed in half the original size. If None, no resizing is applied.
+    cropping : list of int or None, optional
+        Cropping parameters [x1, x2, y1, y2] in pixels. If None, no cropping is applied.
+    dynamic : tuple, optional, default=(False, 0.5, 10) (True/false), p cutoff, margin)
+        Parameters for dynamic cropping. If the state is true, then dynamic cropping will be performed. That means that if an object is detected (i.e. any body part > detectiontreshold), then object boundaries are computed according to the smallest/largest x position and smallest/largest y position of all body parts. This window is expanded by the margin and from then on only the posture within this crop is analyzed (until the object is lost, i.e. <detection treshold). The current position is utilized for updating the crop window for the next frame (this is why the margin is important and should be set large enough given the movement of the animal).
     save_poses : bool, optional, default=False
         Whether to save the detected poses to CSV and HDF5 files.
-    save_dir : str, optional, default="model_predictions"
-        The directory where the output video and pose data will be saved.
+    save_dir : str, optional, default='model_predictions'
+        Directory to save output data and labeled video.
     draw_keypoint_names : bool, optional, default=False
-        Whether to draw the names of the keypoints on the video frames.
-    cmap : str, optional, default="bmy"
-        The colormap from the colorcet library to use for keypoint visualization.
+        Whether to display keypoint names on video frames in the saved video.
+    cmap : str, optional, default='bmy'
+        Colormap from the colorcet library for keypoint visualization.
+    get_sys_info : bool, optional, default=True
+        Whether to print system information.
+    save_video : bool, optional, default=False
+        Whether to save the labeled video.
 
-    Returns:
-    --------
-    poses : list of dict
-        A list of dictionaries where each dictionary contains the frame number and the corresponding pose data.
+    Returns
+    -------
+    tuple
+        A tuple containing:
+        - poses (list of dict): List of pose data for each frame.
+        - times (list of float): List of inference times for each frame.
     """
     # Create the DLCLive object with cropping
     dlc_live = DLCLive(
@@ -146,6 +168,9 @@ def analyze_live_video(
 
     # Ensure save directory exists
     os.makedirs(name=save_dir, exist_ok=True)
+
+    # Get the current date and time as a string
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
 
     # Load video
     cap = cv2.VideoCapture(camera)
@@ -171,7 +196,7 @@ def analyze_live_video(
 
         # Define output video path
         output_video_path = os.path.join(
-            save_dir, f"{experiment_name}_DLCLIVE_LABELLED.mp4"
+            save_dir, f"{experiment_name}_DLCLIVE_LABELLED_{timestamp}.mp4"
         )
 
         # Get video writer setup
@@ -188,7 +213,6 @@ def analyze_live_video(
         )
 
     while True:
-        start_time = time.time()
 
         ret, frame = cap.read()
         if not ret:
@@ -196,21 +220,19 @@ def analyze_live_video(
 
         try:
             if frame_index == 0:
-                pose = dlc_live.init_inference(frame)  # load DLC model
+                pose, inf_time = dlc_live.init_inference(frame)  # load DLC model
             else:
-                pose = dlc_live.get_pose(frame)
+                pose, inf_time = dlc_live.get_pose(frame)
         except Exception as e:
             print(f"Error analyzing frame {frame_index}: {e}")
             continue
 
-        end_time = time.time()
-        processing_time = end_time - start_time
-        print(f"Frame {frame_index} processing time: {processing_time:.4f} seconds")
-
         poses.append({"frame": frame_index, "pose": pose})
+        times.append(inf_time)
+
         if save_video:
             # Visualize keypoints
-            this_pose = pose[0]["poses"][0][0]
+            this_pose = pose["poses"][0][0]
             for j in range(this_pose.shape[0]):
                 if this_pose[j, 2] > pcutoff:
                     x, y = map(int, this_pose[j, :2])
@@ -255,33 +277,35 @@ def analyze_live_video(
         print(get_system_info())
 
     if save_poses:
-        save_poses_to_files(experiment_name, save_dir, bodyparts, poses)
+        save_poses_to_files(
+            experiment_name, save_dir, bodyparts, poses, timestamp=timestamp
+        )
 
     return poses, times
 
 
-def save_poses_to_files(experiment_name, save_dir, bodyparts, poses):
+def save_poses_to_files(experiment_name, save_dir, bodyparts, poses, timestamp):
     """
-    Save the keypoint poses detected in the video to CSV and HDF5 files.
+    Saves the detected keypoint poses from the video to CSV and HDF5 files.
 
-    Parameters:
-    -----------
-    experiment_name : str
-        Name of the experiment, used as a prefix for saving files.
+    Parameters
+    ----------
+    video_path : str
+        Path to the analyzed video file.
     save_dir : str
-        The directory where the pose data files will be saved.
+        Directory where the pose data files will be saved.
     bodyparts : list of str
-        A list of body part names corresponding to the keypoints.
+        List of body part names corresponding to the keypoints.
     poses : list of dict
-        A list of dictionaries where each dictionary contains the frame number and the corresponding pose data.
+        List of dictionaries containing frame numbers and corresponding pose data.
 
-    Returns:
-    --------
+    Returns
+    -------
     None
     """
     base_filename = os.path.splitext(os.path.basename(experiment_name))[0]
-    csv_save_path = os.path.join(save_dir, f"{base_filename}_poses.csv")
-    h5_save_path = os.path.join(save_dir, f"{base_filename}_poses.h5")
+    csv_save_path = os.path.join(save_dir, f"{base_filename}_poses_{timestamp}.csv")
+    h5_save_path = os.path.join(save_dir, f"{base_filename}_poses_{timestamp}.h5")
 
     # Save to CSV
     with open(csv_save_path, mode="w", newline="") as file:
@@ -292,7 +316,7 @@ def save_poses_to_files(experiment_name, save_dir, bodyparts, poses):
         writer.writerow(header)
         for entry in poses:
             frame_num = entry["frame"]
-            pose_data = entry["pose"][0]["poses"][0][0]
+            pose_data = entry["pose"]["poses"][0][0]
             # Convert tensor data to numeric values
             row = [frame_num] + [
                 item.item() if isinstance(item, torch.Tensor) else item
@@ -309,11 +333,9 @@ def save_poses_to_files(experiment_name, save_dir, bodyparts, poses):
                 name=f"{bp}_x",
                 data=[
                     (
-                        entry["pose"][0]["poses"][0][0][i, 0].item()
-                        if isinstance(
-                            entry["pose"][0]["poses"][0][0][i, 0], torch.Tensor
-                        )
-                        else entry["pose"][0]["poses"][0][0][i, 0]
+                        entry["pose"]["poses"][0][0][i, 0].item()
+                        if isinstance(entry["pose"]["poses"][0][0][i, 0], torch.Tensor)
+                        else entry["pose"]["poses"][0][0][i, 0]
                     )
                     for entry in poses
                 ],
@@ -322,11 +344,9 @@ def save_poses_to_files(experiment_name, save_dir, bodyparts, poses):
                 name=f"{bp}_y",
                 data=[
                     (
-                        entry["pose"][0]["poses"][0][0][i, 1].item()
-                        if isinstance(
-                            entry["pose"][0]["poses"][0][0][i, 1], torch.Tensor
-                        )
-                        else entry["pose"][0]["poses"][0][0][i, 1]
+                        entry["pose"]["poses"][0][0][i, 1].item()
+                        if isinstance(entry["pose"]["poses"][0][0][i, 1], torch.Tensor)
+                        else entry["pose"]["poses"][0][0][i, 1]
                     )
                     for entry in poses
                 ],
@@ -335,11 +355,9 @@ def save_poses_to_files(experiment_name, save_dir, bodyparts, poses):
                 name=f"{bp}_confidence",
                 data=[
                     (
-                        entry["pose"][0]["poses"][0][0][i, 2].item()
-                        if isinstance(
-                            entry["pose"][0]["poses"][0][0][i, 2], torch.Tensor
-                        )
-                        else entry["pose"][0]["poses"][0][0][i, 2]
+                        entry["pose"]["poses"][0][0][i, 2].item()
+                        if isinstance(entry["pose"]["poses"][0][0][i, 2], torch.Tensor)
+                        else entry["pose"]["poses"][0][0][i, 2]
                     )
                     for entry in poses
                 ],

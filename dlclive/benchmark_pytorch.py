@@ -16,61 +16,23 @@ from pip._internal.operations import freeze
 from dlclive import VERSION, DLCLive
 
 
-# def download_benchmarking_data(
-#     target_dir=".",
-#     url="http://deeplabcut.rowland.harvard.edu/datasets/dlclivebenchmark.tar.gz",
-# ):
-#     """
-#     Downloads a DeepLabCut-Live benchmarking Data (videos & DLC models).
-#     """
-#     import tarfile
-#     import urllib.request
-
-#     from tqdm import tqdm
-
-#     def show_progress(count, block_size, total_size):
-#         pbar.update(block_size)
-
-#     def tarfilenamecutting(tarf):
-#         """' auxfun to extract folder path
-#         ie. /xyz-trainsetxyshufflez/
-#         """
-#         for memberid, member in enumerate(tarf.getmembers()):
-#             if memberid == 0:
-#                 parent = str(member.path)
-#                 l = len(parent) + 1
-#             if member.path.startswith(parent):
-#                 member.path = member.path[l:]
-#                 yield member
-
-#     response = urllib.request.urlopen(url)
-#     print(
-#         "Downloading the benchmarking data from the DeepLabCut server @Harvard -> Go Crimson!!! {}....".format(
-#             url
-#         )
-#     )
-#     total_size = int(response.getheader("Content-Length"))
-#     pbar = tqdm(unit="B", total=total_size, position=0)
-#     filename, _ = urllib.request.urlretrieve(url, reporthook=show_progress)
-#     with tarfile.open(filename, mode="r:gz") as tar:
-#         tar.extractall(target_dir, members=tarfilenamecutting(tar))
-
-
 def get_system_info() -> dict:
-    """Return summary info for system running benchmark.
+    """
+    Returns a summary of system information relevant to running benchmarking.
 
     Returns
     -------
     dict
-        Dictionary containing the following system information:
-        * ``host_name`` (str): name of machine
-        * ``op_sys`` (str): operating system
-        * ``python`` (str): path to python (which conda/virtual environment)
-        * ``device`` (tuple): (device type (``'GPU'`` or ``'CPU'```), device information)
-        * ``freeze`` (list): list of installed packages and versions
-        * ``python_version`` (str): python version
-        * ``git_hash`` (str, None): If installed from git repository, hash of HEAD commit
-        * ``dlclive_version`` (str): dlclive version from :data:`dlclive.VERSION`
+        A dictionary containing the following system information:
+        - host_name (str): Name of the machine.
+        - op_sys (str): Operating system.
+        - python (str): Path to the Python executable, indicating the conda/virtual environment in use.
+        - device_type (str): Type of device used ('GPU' or 'CPU').
+        - device (list): List containing the name of the GPU or CPU brand.
+        - freeze (list): List of installed Python packages with their versions.
+        - python_version (str): Version of Python in use.
+        - git_hash (str or None): If installed from git repository, hash of HEAD commit.
+        - dlclive_version (str): Version of the DLCLive package.
     """
 
     # Get OS and host name
@@ -137,39 +99,58 @@ def analyze_video(
     draw_keypoint_names=False,
     cmap="bmy",
     get_sys_info=True,
-    save_video=False
+    save_video=False,
 ):
     """
-    Analyze a video to track keypoints using an imported DeepLabCut model, visualize keypoints on the video, and optionally save the keypoint data and the labelled video.
+    Analyzes a video to track keypoints using a DeepLabCut model, and optionally saves the keypoint data and the labeled video.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     video_path : str
-        The path to the video file to be analyzed.
-    dlc_live : DLCLive
-        An instance of the DLCLive class.
+        Path to the video file to be analyzed.
+    model_path : str
+        Path to the DeepLabCut model.
+    model_type : str
+        Type of the model (e.g., 'onnx').
+    device : str
+        Device to run the model on ('cpu' or 'cuda').
+    precision : str, optional, default='FP32'
+        Precision type for the model ('FP32' or 'FP16').
+    snapshot : str, optional
+        Snapshot to use for the model, if using pytorch as model type.
+    display : bool, optional, default=True
+        Whether to display frame with labelled key points.
     pcutoff : float, optional, default=0.5
-        The probability cutoff value below which keypoints are not visualized.
+        Probability cutoff below which keypoints are not visualized.
     display_radius : int, optional, default=5
-        The radius of the circles drawn to represent keypoints on the video frames.
-    resize : tuple of int (width, height) or None, optional, default=None
-        The size to which the frames should be resized. If None, the frames are not resized.
-    cropping : list of int, optional, default=None
-        Cropping parameters in pixel number: [x1, x2, y1, y2]
+        Radius of circles drawn for keypoints on video frames.
+    resize : tuple of int (width, height) or None, optional
+        Resize dimensions for video frames. e.g. if resize = 0.5, the video will be processed in half the original size. If None, no resizing is applied.
+    cropping : list of int or None, optional
+        Cropping parameters [x1, x2, y1, y2] in pixels. If None, no cropping is applied.
+    dynamic : tuple, optional, default=(False, 0.5, 10) (True/false), p cutoff, margin)
+        Parameters for dynamic cropping. If the state is true, then dynamic cropping will be performed. That means that if an object is detected (i.e. any body part > detectiontreshold), then object boundaries are computed according to the smallest/largest x position and smallest/largest y position of all body parts. This window is expanded by the margin and from then on only the posture within this crop is analyzed (until the object is lost, i.e. <detection treshold). The current position is utilized for updating the crop window for the next frame (this is why the margin is important and should be set large enough given the movement of the animal).
     save_poses : bool, optional, default=False
         Whether to save the detected poses to CSV and HDF5 files.
-    save_dir : str, optional, default="model_predictions"
-        The directory where the output video and pose data will be saved.
+    save_dir : str, optional, default='model_predictions'
+        Directory to save output data and labeled video.
     draw_keypoint_names : bool, optional, default=False
-        Whether to draw the names of the keypoints on the video frames.
-    cmap : str, optional, default="bmy"
-        The colormap from the colorcet library to use for keypoint visualization.
+        Whether to display keypoint names on video frames in the saved video.
+    cmap : str, optional, default='bmy'
+        Colormap from the colorcet library for keypoint visualization.
+    get_sys_info : bool, optional, default=True
+        Whether to print system information.
+    save_video : bool, optional, default=False
+        Whether to save the labeled video.
 
-    Returns:
-    --------
-    poses : list of dict
-        A list of dictionaries where each dictionary contains the frame number and the corresponding pose data.
+    Returns
+    -------
+    tuple
+        A tuple containing:
+        - poses (list of dict): List of pose data for each frame.
+        - times (list of float): List of inference times for each frame.
     """
+
     # Create the DLCLive object with cropping
     dlc_live = DLCLive(
         path=model_path,
@@ -180,11 +161,14 @@ def analyze_video(
         cropping=cropping,  # Pass the cropping parameter
         dynamic=dynamic,
         precision=precision,
-        snapshot=snapshot
+        snapshot=snapshot,
     )
 
     # Ensure save directory exists
     os.makedirs(name=save_dir, exist_ok=True)
+
+    # Get the current date and time as a string
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
 
     # Load video
     cap = cv2.VideoCapture(video_path)
@@ -211,7 +195,9 @@ def analyze_video(
 
         # Define output video path
         video_name = os.path.splitext(os.path.basename(video_path))[0]
-        output_video_path = os.path.join(save_dir, f"{video_name}_DLCLIVE_LABELLED.mp4")
+        output_video_path = os.path.join(
+            save_dir, f"{video_name}_DLCLIVE_LABELLED_{timestamp}.mp4"
+        )
 
         # Get video writer setup
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
@@ -227,7 +213,6 @@ def analyze_video(
         )
 
     while True:
-        start_time = time.time()
 
         ret, frame = cap.read()
         if not ret:
@@ -286,344 +271,219 @@ def analyze_video(
         print(get_system_info())
 
     if save_poses:
-        save_poses_to_files(video_path, save_dir, bodyparts, poses)
+        save_poses_to_files(video_path, save_dir, bodyparts, poses, timestamp=timestamp)
 
     return poses, times
 
 
-def save_poses_to_files(video_path, save_dir, bodyparts, poses):
-    import csv
-    import os
-    import platform
-    import subprocess
-    import sys
-    import time
+def save_poses_to_files(video_path, save_dir, bodyparts, poses, timestamp):
+    """
+    Saves the detected keypoint poses from the video to CSV and HDF5 files.
 
-    import colorcet as cc
-    import cv2
-    import h5py
-    import numpy as np
-    import torch
-    from PIL import ImageColor
-    from pip._internal.operations import freeze
+    Parameters
+    ----------
+    video_path : str
+        Path to the analyzed video file.
+    save_dir : str
+        Directory where the pose data files will be saved.
+    bodyparts : list of str
+        List of body part names corresponding to the keypoints.
+    poses : list of dict
+        List of dictionaries containing frame numbers and corresponding pose data.
 
-    from dlclive import VERSION, DLCLive
+    Returns
+    -------
+    None
+    """
 
-    def get_system_info() -> dict:
-        """Return summary info for system running benchmark.
+    base_filename = os.path.splitext(os.path.basename(video_path))[0]
+    csv_save_path = os.path.join(save_dir, f"{base_filename}_poses_{timestamp}.csv")
+    h5_save_path = os.path.join(save_dir, f"{base_filename}_poses_{timestamp}.h5")
 
-        Returns
-        -------
-        dict
-            Dictionary containing the following system information:
-            * ``host_name`` (str): name of machine
-            * ``op_sys`` (str): operating system
-            * ``python`` (str): path to python (which conda/virtual environment)
-            * ``device`` (tuple): (device type (``'GPU'`` or ``'CPU'```), device information)
-            * ``freeze`` (list): list of installed packages and versions
-            * ``python_version`` (str): python version
-            * ``git_hash`` (str, None): If installed from git repository, hash of HEAD commit
-            * ``dlclive_version`` (str): dlclive version from :data:`dlclive.VERSION`
-        """
-
-        # Get OS and host name
-        op_sys = platform.platform()
-        host_name = platform.node().replace(" ", "")
-
-        # Get Python executable path
-        if platform.system() == "Windows":
-            host_python = sys.executable.split(os.path.sep)[-2]
-        else:
-            host_python = sys.executable.split(os.path.sep)[-3]
-
-        # Try to get git hash if possible
-        git_hash = None
-        dlc_basedir = os.path.dirname(os.path.dirname(__file__))
-        try:
-            git_hash = (
-                subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=dlc_basedir)
-                .decode("utf-8")
-                .strip()
-            )
-        except subprocess.CalledProcessError:
-            # Not installed from git repo, e.g., pypi
-            pass
-
-        # Get device info (GPU or CPU)
-        if torch.cuda.is_available():
-            dev_type = "GPU"
-            dev = [torch.cuda.get_device_name(torch.cuda.current_device())]
-        else:
-            from cpuinfo import get_cpu_info
-
-            dev_type = "CPU"
-            dev = [get_cpu_info()["brand_raw"]]
-
-        return {
-            "host_name": host_name,
-            "op_sys": op_sys,
-            "python": host_python,
-            "device_type": dev_type,
-            "device": dev,
-            "freeze": list(freeze.freeze()),
-            "python_version": sys.version,
-            "git_hash": git_hash,
-            "dlclive_version": VERSION,
-        }
-
-    def analyze_video(
-        video_path: str,
-        model_path: str,
-        model_type: str,
-        device: str,
-        precision: str = "FP32",
-        snapshot: str = None,
-        display=True,
-        pcutoff=0.5,
-        display_radius=5,
-        resize=None,
-        cropping=None,  # Adding cropping to the function parameters
-        dynamic=(False, 0.5, 10),
-        save_poses=False,
-        save_dir="model_predictions",
-        draw_keypoint_names=False,
-        cmap="bmy",
-        get_sys_info=True,
-        save_video=False,
-    ):
-        """
-        Analyze a video to track keypoints using an imported DeepLabCut model, visualize keypoints on the video, and optionally save the keypoint data and the labelled video.
-
-        Parameters:
-        -----------
-        video_path : str
-            The path to the video file to be analyzed.
-        dlc_live : DLCLive
-            An instance of the DLCLive class.
-        pcutoff : float, optional, default=0.5
-            The probability cutoff value below which keypoints are not visualized.
-        display_radius : int, optional, default=5
-            The radius of the circles drawn to represent keypoints on the video frames.
-        resize : tuple of int (width, height) or None, optional, default=None
-            The size to which the frames should be resized. If None, the frames are not resized.
-        cropping : list of int, optional, default=None
-            Cropping parameters in pixel number: [x1, x2, y1, y2]
-        save_poses : bool, optional, default=False
-            Whether to save the detected poses to CSV and HDF5 files.
-        save_dir : str, optional, default="model_predictions"
-            The directory where the output video and pose data will be saved.
-        draw_keypoint_names : bool, optional, default=False
-            Whether to draw the names of the keypoints on the video frames.
-        cmap : str, optional, default="bmy"
-            The colormap from the colorcet library to use for keypoint visualization.
-
-        Returns:
-        --------
-        poses : list of dict
-            A list of dictionaries where each dictionary contains the frame number and the corresponding pose data.
-        """
-        # Create the DLCLive object with cropping
-        dlc_live = DLCLive(
-            path=model_path,
-            model_type=model_type,
-            device=device,
-            display=display,
-            resize=resize,
-            cropping=cropping,  # Pass the cropping parameter
-            dynamic=dynamic,
-            precision=precision,
-            snapshot=snapshot,
-        )
-
-        # Ensure save directory exists
-        os.makedirs(name=save_dir, exist_ok=True)
-
-        # Load video
-        cap = cv2.VideoCapture(video_path)
-        if not cap.isOpened():
-            print(f"Error: Could not open video file {video_path}")
-            return
-
-        # Start empty dict to save poses to for each frame
-        poses, times = [], []
-        # Create variable indicate current frame. Later in the code +1 is added to frame_index
-        frame_index = 0
-
-        # Retrieve bodypart names and number of keypoints
-        bodyparts = dlc_live.cfg["metadata"]["bodyparts"]
-        num_keypoints = len(bodyparts)
-
-        if save_video:
-            # Set colors and convert to RGB
-            cmap_colors = getattr(cc, cmap)
-            colors = [
-                ImageColor.getrgb(color)
-                for color in cmap_colors[:: int(len(cmap_colors) / num_keypoints)]
+    # Save to CSV
+    with open(csv_save_path, mode="w", newline="") as file:
+        writer = csv.writer(file)
+        header = ["frame"] + [
+            f"{bp}_{axis}" for bp in bodyparts for axis in ["x", "y", "confidence"]
+        ]
+        writer.writerow(header)
+        for entry in poses:
+            frame_num = entry["frame"]
+            pose = entry["pose"]["poses"][0][0]
+            row = [frame_num] + [
+                item.item() if isinstance(item, torch.Tensor) else item
+                for kp in pose
+                for item in kp
             ]
+            writer.writerow(row)
 
-            # Define output video path
-            video_name = os.path.splitext(os.path.basename(video_path))[0]
-            output_video_path = os.path.join(
-                save_dir, f"{video_name}_DLCLIVE_LABELLED.mp4"
-                )
-
-            # Get video writer setup
-            fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-            fps = cap.get(cv2.CAP_PROP_FPS)
-            frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-            frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
-            vwriter = cv2.VideoWriter(
-                filename=output_video_path,
-                fourcc=fourcc,
-                fps=fps,
-                frameSize=(frame_width, frame_height),
+    # Save to HDF5
+    with h5py.File(h5_save_path, "w") as hf:
+        hf.create_dataset(name="frames", data=[entry["frame"] for entry in poses])
+        for i, bp in enumerate(bodyparts):
+            hf.create_dataset(
+                name=f"{bp}_x",
+                data=[
+                    (
+                        entry["pose"]["poses"][0][0][i, 0].item()
+                        if isinstance(entry["pose"]["poses"][0][0][i, 0], torch.Tensor)
+                        else entry["pose"]["poses"][0][0][i, 0]
+                    )
+                    for entry in poses
+                ],
+            )
+            hf.create_dataset(
+                name=f"{bp}_y",
+                data=[
+                    (
+                        entry["pose"]["poses"][0][0][i, 1].item()
+                        if isinstance(entry["pose"]["poses"][0][0][i, 1], torch.Tensor)
+                        else entry["pose"]["poses"][0][0][i, 1]
+                    )
+                    for entry in poses
+                ],
+            )
+            hf.create_dataset(
+                name=f"{bp}_confidence",
+                data=[
+                    (
+                        entry["pose"]["poses"][0][0][i, 2].item()
+                        if isinstance(entry["pose"]["poses"][0][0][i, 2], torch.Tensor)
+                        else entry["pose"]["poses"][0][0][i, 2]
+                    )
+                    for entry in poses
+                ],
             )
 
-        while True:
-            start_time = time.time()
 
-            ret, frame = cap.read()
-            if not ret:
-                break
-            # if frame_index == 0:
-            #     pose = dlc_live.init_inference(frame)  # load DLC model
-            try:
-                # pose = dlc_live.get_pose(frame)
-                if frame_index == 0:
-                    # dlc_live.dynamic = (False, dynamic[1], dynamic[2]) # TODO trying to fix issues with dynamic cropping jumping back and forth between dyanmic cropped and original image
-                    pose, inf_time = dlc_live.init_inference(frame)  # load DLC model
-                else:
-                    # dlc_live.dynamic = dynamic
-                    pose, inf_time = dlc_live.get_pose(frame)
-            except Exception as e:
-                print(f"Error analyzing frame {frame_index}: {e}")
-                continue
+import argparse
+import os
 
-            poses.append({"frame": frame_index, "pose": pose})
-            times.append(inf_time)
 
-            if save_video:
-                # Visualize keypoints
-                this_pose = pose["poses"][0][0]
-                for j in range(this_pose.shape[0]):
-                    if this_pose[j, 2] > pcutoff:
-                        x, y = map(int, this_pose[j, :2])
-                        cv2.circle(
-                            frame,
-                            center=(x, y),
-                            radius=display_radius,
-                            color=colors[j],
-                            thickness=-1,
-                        )
+def main():
+    """Provides a command line interface to analyze_video function."""
 
-                        if draw_keypoint_names:
-                            cv2.putText(
-                                frame,
-                                text=bodyparts[j],
-                                org=(x + 10, y),
-                                fontFace=cv2.FONT_HERSHEY_SIMPLEX,
-                                fontScale=0.5,
-                                color=colors[j],
-                                thickness=1,
-                                lineType=cv2.LINE_AA,
-                            )
+    parser = argparse.ArgumentParser(
+        description="Analyze a video using a DeepLabCut model and visualize keypoints."
+    )
+    parser.add_argument("model_path", type=str, help="Path to the model.")
+    parser.add_argument("video_path", type=str, help="Path to the video file.")
+    parser.add_argument("model_type", type=str, help="Type of the model (e.g., 'DLC').")
+    parser.add_argument(
+        "device", type=str, help="Device to run the model on (e.g., 'cuda' or 'cpu')."
+    )
+    parser.add_argument(
+        "-p",
+        "--precision",
+        type=str,
+        default="FP32",
+        help="Model precision (e.g., 'FP32', 'FP16').",
+    )
+    parser.add_argument(
+        "-s",
+        "--snapshot",
+        type=str,
+        default=None,
+        help="Path to a specific model snapshot.",
+    )
+    parser.add_argument(
+        "-d", "--display", action="store_true", help="Display keypoints on the video."
+    )
+    parser.add_argument(
+        "-c",
+        "--pcutoff",
+        type=float,
+        default=0.5,
+        help="Probability cutoff for keypoints visualization.",
+    )
+    parser.add_argument(
+        "-dr",
+        "--display-radius",
+        type=int,
+        default=5,
+        help="Radius of keypoint circles in the display.",
+    )
+    parser.add_argument(
+        "-r",
+        "--resize",
+        type=int,
+        default=None,
+        help="Resize video frames to [width, height].",
+    )
+    parser.add_argument(
+        "-x",
+        "--cropping",
+        type=int,
+        nargs=4,
+        default=None,
+        help="Cropping parameters [x1, x2, y1, y2].",
+    )
+    parser.add_argument(
+        "-y",
+        "--dynamic",
+        type=float,
+        nargs=3,
+        default=[False, 0.5, 10],
+        help="Dynamic cropping [flag, pcutoff, margin].",
+    )
+    parser.add_argument(
+        "--save-poses", action="store_true", help="Save the keypoint poses to files."
+    )
+    parser.add_argument(
+        "--save-video",
+        action="store_true",
+        help="Save the output video with keypoints.",
+    )
+    parser.add_argument(
+        "--save-dir",
+        type=str,
+        default="model_predictions",
+        help="Directory to save output files.",
+    )
+    parser.add_argument(
+        "--draw-keypoint-names",
+        action="store_true",
+        help="Draw keypoint names on the video.",
+    )
+    parser.add_argument(
+        "--cmap", type=str, default="bmy", help="Colormap for keypoints visualization."
+    )
+    parser.add_argument(
+        "--no-sys-info",
+        action="store_false",
+        help="Do not print system info.",
+        dest="get_sys_info",
+    )
 
-                vwriter.write(image=frame)
-            frame_index += 1
+    args = parser.parse_args()
 
-        cap.release()
-        if save_video:
-            vwriter.release()
+    # Call the analyze_video function with the parsed arguments
+    analyze_video(
+        video_path=args.video_path,
+        model_path=args.model_path,
+        model_type=args.model_type,
+        device=args.device,
+        precision=args.precision,
+        snapshot=args.snapshot,
+        display=args.display,
+        pcutoff=args.pcutoff,
+        display_radius=args.display_radius,
+        resize=tuple(args.resize) if args.resize else None,
+        cropping=args.cropping,
+        dynamic=tuple(args.dynamic),
+        save_poses=args.save_poses,
+        save_dir=args.save_dir,
+        draw_keypoint_names=args.draw_keypoint_names,
+        cmap=args.cmap,
+        get_sys_info=args.get_sys_info,
+        save_video=args.save_video,
+    )
 
-        if get_sys_info:
-            print(get_system_info())
 
-        if save_poses:
-            save_poses_to_files(video_path, save_dir, bodyparts, poses)
+if __name__ == "__main__":
+    main()
 
-        return poses, times
 
-    def save_poses_to_files(video_path, save_dir, bodyparts, poses):
-        """
-        Save the keypoint poses detected in the video to CSV and HDF5 files.
-
-        Parameters:
-        -----------
-        video_path : str
-            The path to the video file that was analyzed.
-        save_dir : str
-            The directory where the pose data files will be saved.
-        bodyparts : list of str
-            A list of body part names corresponding to the keypoints.
-        poses : list of dict
-            A list of dictionaries where each dictionary contains the frame number and the corresponding pose data.
-
-        Returns:
-        --------
-        None
-        """
-        base_filename = os.path.splitext(os.path.basename(video_path))[0]
-        csv_save_path = os.path.join(save_dir, f"{base_filename}_poses.csv")
-        h5_save_path = os.path.join(save_dir, f"{base_filename}_poses.h5")
-
-        # Save to CSV
-        with open(csv_save_path, mode="w", newline="") as file:
-            writer = csv.writer(file)
-            header = ["frame"] + [
-                f"{bp}_{axis}" for bp in bodyparts for axis in ["x", "y", "confidence"]
-            ]
-            writer.writerow(header)
-            for entry in poses:
-                frame_num = entry["frame"]
-                pose = entry["pose"]["poses"][0][0]
-                row = [frame_num] + [
-                    item.item() if isinstance(item, torch.Tensor) else item
-                    for kp in pose
-                    for item in kp
-                ]
-                writer.writerow(row)
-
-        # Save to HDF5
-        with h5py.File(h5_save_path, "w") as hf:
-            hf.create_dataset(name="frames", data=[entry["frame"] for entry in poses])
-            for i, bp in enumerate(bodyparts):
-                hf.create_dataset(
-                    name=f"{bp}_x",
-                    data=[
-                        (
-                            entry["pose"]["poses"][0][0][i, 0].item()
-                            if isinstance(
-                                entry["pose"]["poses"][0][0][i, 0], torch.Tensor
-                                )
-                            else entry["pose"]["poses"][0][0][i, 0]
-                        )
-                        for entry in poses
-                    ],
-                )
-                hf.create_dataset(
-                    name=f"{bp}_y",
-                    data=[
-                        (
-                            entry["pose"]["poses"][0][0][i, 1].item()
-                            if isinstance(
-                                entry["pose"]["poses"][0][0][i, 1], torch.Tensor
-                                )
-                            else entry["pose"]["poses"][0][0][i, 1]
-                        )
-                        for entry in poses
-                    ],
-                )
-                hf.create_dataset(
-                    name=f"{bp}_confidence",
-                    data=[
-                        (
-                            entry["pose"]["poses"][0][0][i, 2].item()
-                            if isinstance(
-                                entry["pose"]["poses"][0][0][i, 2], torch.Tensor
-                                )
-                            else entry["pose"]["poses"][0][0][i, 2]
-                        )
-                        for entry in poses
-                    ],
-                )
+# Example how to run in command line:
+# python benchmark_pytorch.py /path/to/model /path/to/video DLC cuda -p FP32 -d -c 0.5 -dr 5 -r 0.5 -x 10 630 10 470 --save-poses --save-video --draw-keypoint-names --cmap bmy --save-dir
+# python benchmark_pytorch.py /Users/annastuckert/Documents/DLC_AI_Residency/DLC_AI2024/DeepLabCut-live/dlc-live-dummy/ventral-gait/resnet.onnx /Users/annastuckert/Documents/DLC_AI_Residency/DLC_AI2024/DeepLabCut-live/dlc-live-dummy/ventral-gait/1_20cms_0degUP_first_1s.avi DLC cuda -p FP32 -d -r 0.5 --save-poses --save-video --draw-keypoint-names --cmap bmy --save-dir /Users/annastuckert/Documents/DLC_AI_Residency/DLC_AI2024/DeepLabCut-live/dlc-live-dummy/ventral-gait/out
