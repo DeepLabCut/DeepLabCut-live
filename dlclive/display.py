@@ -5,12 +5,13 @@ DeepLabCut Toolbox (deeplabcut.org)
 Licensed under GNU Lesser General Public License v3.0
 """
 
+from tkinter import Label, Tk
 
-from tkinter import Tk, Label
 import colorcet as cc
-from PIL import Image, ImageTk, ImageDraw
 import numpy as np
 from dlclive import utils
+from PIL import Image, ImageDraw, ImageTk
+
 
 class Display(object):
     """
@@ -25,8 +26,7 @@ class Display(object):
     """
 
     def __init__(self, cmap="bmy", radius=3, pcutoff=0.5):
-        """ Constructor method
-        """
+        """Constructor method"""
 
         self.cmap = cmap
         self.colors = None
@@ -35,7 +35,7 @@ class Display(object):
         self.window = None
 
     def set_display(self, im_size, bodyparts):
-        """ Create tkinter window to display image
+        """Create tkinter window to display image
 
         Parameters
         ----------
@@ -67,7 +67,6 @@ class Display(object):
         """
         frame = np.squeeze(frame)
         frame = frame.astype(np.uint8)
-        # frame = np.transpose(frame, (1, 2, 0))
         pose = pose["poses"].squeeze()
         im_size = (frame.shape[1], frame.shape[0])
 

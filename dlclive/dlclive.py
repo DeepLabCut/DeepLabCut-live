@@ -7,7 +7,7 @@ Licensed under GNU Lesser General Public License v3.0
 
 import glob
 import os
-# import tensorflow as tf
+import time
 import typing
 import warnings
 from pathlib import Path
@@ -159,6 +159,7 @@ class DLCLive(object):
         self.cfg_path = None
         self.sess = None
         self.pose_model = None
+        self.predictor = None
         self.pose = None
         self.read_config()
 
@@ -214,12 +215,10 @@ class DLCLive(object):
             frame = frame[
                 self.cropping[2] : self.cropping[3], self.cropping[0] : self.cropping[1]
             ]
-        if self.dynamic[
-            0
-        ]:
+        if self.dynamic[0]:
 
             if self.pose is not None:
-
+                print(self.pose["bodypart"])
                 detected = self.pose[:, 2] > self.dynamic[1]
 
                 if np.any(detected):
@@ -227,9 +226,7 @@ class DLCLive(object):
                     x = self.pose[detected, 0]
                     y = self.pose[detected, 1]
 
-                    x1 = int(
-                        max([0, int(np.amin(x)) - self.dynamic[2]])
-                    )
+                    x1 = int(max([0, int(np.amin(x)) - self.dynamic[2]]))
                     x2 = int(min([frame.shape[1], int(np.amax(x)) + self.dynamic[2]]))
                     y1 = int(max([0, int(np.amin(y)) - self.dynamic[2]]))
                     y2 = int(min([frame.shape[0], int(np.amax(y)) + self.dynamic[2]]))
@@ -260,10 +257,22 @@ class DLCLive(object):
             weights = torch.load(model_path, map_location=torch.device(self.device))
             self.pose_model = PoseModel.build(self.cfg["model"])
             self.pose_model.load_state_dict(weights["model"])
+            self.pose_model = self.pose_model.to(self.device)
+            self.pose_model.eval()
 
         elif self.model_type == "onnx":
             model_path = glob.glob(os.path.normpath(self.path + "/*.onnx"))[0]
-            self.sess = ort.InferenceSession(model_path) # ! give GPU or CPU provider depending on self.device!!
+            opts = ort.SessionOptions()
+            opts.enable_profiling = False
+            if self.device == "cuda":
+                self.sess = ort.InferenceSession(
+                    model_path, opts, providers=["CUDAExecutionProvider"]
+                )
+            elif self.device == "cpu":
+                self.sess = ort.InferenceSession(
+                    model_path, opts, providers=["CPUExecutionProvider"]
+                )
+            self.predictor = HeatmapPredictor.build(self.cfg)
 
             if not os.path.isfile(model_path):
                 raise FileNotFoundError(
@@ -292,8 +301,11 @@ class DLCLive(object):
             the pose estimated by DeepLabCut for the input image
         """
 
+        start = time.time()
         # load model
         self.load_model()
+        end = time.time()
+        print(f"Loading the model took {end - start} sec")
 
         # get pose of first frame (first inference is often very slow)
         if frame is not None:
@@ -330,8 +342,14 @@ class DLCLive(object):
         if self.model_type == "pytorch":
             frame = torch.Tensor(processed_frame)
             frame = frame.permute(2, 0, 1).unsqueeze(0)
-            self.pose_model.eval()
-            outputs = self.pose_model(frame)
+            frame = frame.to(self.device)
+
+            with torch.no_grad():
+                start = time.time()
+                outputs = self.pose_model(frame)
+                end = time.time()
+                print(f"PyTorch inference took {end - start} sec")
+
             self.pose = self.pose_model.get_predictions(outputs)
             self.pose = self.pose["bodypart"]
 
@@ -339,14 +357,20 @@ class DLCLive(object):
             frame = processed_frame.astype(np.float32)
             frame = np.transpose(frame, (2, 0, 1))
             frame = np.expand_dims(frame, axis=0)
+
             ort_inputs = {self.sess.get_inputs()[0].name: frame}
+
+            start = time.time()
             outputs = self.sess.run(None, ort_inputs)
+            end = time.time()
+            print(f"ONNX inference took {end - start} sec")
+
             outputs = {
                 "heatmap": torch.Tensor(outputs[0]),
                 "locref": torch.Tensor(outputs[1]),
             }
-            predictor = HeatmapPredictor.build(self.cfg)
-            self.pose = predictor(outputs=outputs)
+
+            self.pose = self.predictor(outputs=outputs)
 
         else:
 
