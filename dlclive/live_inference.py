@@ -175,7 +175,7 @@ def analyze_live_video(
     # Load video
     cap = cv2.VideoCapture(camera)
     if not cap.isOpened():
-        print(f"Error: Could not open video file {camera}")
+        print(f"Error: Could not open camera {camera}")
         return
 
     # Start empty dict to save poses to for each frame
