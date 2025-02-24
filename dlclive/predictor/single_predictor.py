@@ -163,17 +163,32 @@ class HeatmapPredictor(BasePredictor):
 
     @staticmethod
     def build(cfg: dict) -> HeatmapPredictor:
+        # if cfg["method"] == "bu":
         apply_sigmoid = cfg["model"]["heads"]["bodypart"]["predictor"]["apply_sigmoid"]
         clip_scores = cfg["model"]["heads"]["bodypart"]["predictor"]["clip_scores"]
         loc_ref = cfg["model"]["heads"]["bodypart"]["predictor"]["location_refinement"]
         loc_ref_std = cfg["model"]["heads"]["bodypart"]["predictor"]["locref_std"]
-        stride = float(cfg["model"]["backbone"]["output_stride"]) / float(
-            cfg["model"]["heads"]["bodypart"]["heatmap_config"]["strides"][0]
-            )
-
+        if len(cfg["model"]["heads"]["bodypart"]["heatmap_config"]["strides"]) > 0:
+            if cfg["model"]["heads"]["bodypart"]["heatmap_config"]["strides"][0] > 0:
+                stride = float(cfg["model"]["backbone"]["output_stride"]) / float(
+                    cfg["model"]["heads"]["bodypart"]["heatmap_config"]["strides"][0]
+                    )
+            else:
+                stride = float(cfg["model"]["backbone"]["output_stride"]) * -float(
+                    cfg["model"]["heads"]["bodypart"]["heatmap_config"]["strides"][0]
+                    )
+        else:
+            stride = float(cfg["model"]["backbone"]["output_stride"])
         predictor = HeatmapPredictor(
             apply_sigmoid=apply_sigmoid, stride=stride, clip_scores=clip_scores,
             location_refinement=loc_ref, locref_std=loc_ref_std
             )
+
+        # elif cfg["method"] == "td":
+        #     apply_sigmoid = cfg["model"]["heads"]["bodypart"]["predictor"]["apply_sigmoid"]
+        #     clip_scores = cfg["model"]["heads"]["bodypart"]["predictor"]["clip_scores"]
+        #     loc_ref = cfg["model"]["heads"]["bodypart"]["predictor"]["location_refinement"]
+        #     heatmap_stride = cfg[]
+        #     predictor = HeatmapPredictor(apply_sigmoid=apply_sigmoid, clip_scores=clip_scores, location_refinement=loc_ref)
 
         return predictor

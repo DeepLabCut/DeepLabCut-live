@@ -15,6 +15,7 @@ from pip._internal.operations import freeze
 
 from dlclive import VERSION, DLCLive
 
+
 # def download_benchmarking_data(
 #     target_dir=".",
 #     url="http://deeplabcut.rowland.harvard.edu/datasets/dlclivebenchmark.tar.gz",
@@ -136,6 +137,7 @@ def analyze_video(
     draw_keypoint_names=False,
     cmap="bmy",
     get_sys_info=True,
+    save_video=False
 ):
     """
     Analyze a video to track keypoints using an imported DeepLabCut model, visualize keypoints on the video, and optionally save the keypoint data and the labelled video.
@@ -199,29 +201,30 @@ def analyze_video(
     bodyparts = dlc_live.cfg["metadata"]["bodyparts"]
     num_keypoints = len(bodyparts)
 
-    # Set colors and convert to RGB
-    cmap_colors = getattr(cc, cmap)
-    colors = [
-        ImageColor.getrgb(color)
-        for color in cmap_colors[:: int(len(cmap_colors) / num_keypoints)]
-    ]
+    if save_video:
+        # Set colors and convert to RGB
+        cmap_colors = getattr(cc, cmap)
+        colors = [
+            ImageColor.getrgb(color)
+            for color in cmap_colors[:: int(len(cmap_colors) / num_keypoints)]
+        ]
 
-    # Define output video path
-    video_name = os.path.splitext(os.path.basename(video_path))[0]
-    output_video_path = os.path.join(save_dir, f"{video_name}_DLCLIVE_LABELLED.mp4")
+        # Define output video path
+        video_name = os.path.splitext(os.path.basename(video_path))[0]
+        output_video_path = os.path.join(save_dir, f"{video_name}_DLCLIVE_LABELLED.mp4")
 
-    # Get video writer setup
-    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        # Get video writer setup
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-    vwriter = cv2.VideoWriter(
-        filename=output_video_path,
-        fourcc=fourcc,
-        fps=fps,
-        frameSize=(frame_width, frame_height),
-    )
+        vwriter = cv2.VideoWriter(
+            filename=output_video_path,
+            fourcc=fourcc,
+            fps=fps,
+            frameSize=(frame_width, frame_height),
+        )
 
     while True:
         start_time = time.time()
@@ -235,50 +238,49 @@ def analyze_video(
             # pose = dlc_live.get_pose(frame)
             if frame_index == 0:
                 # dlc_live.dynamic = (False, dynamic[1], dynamic[2]) # TODO trying to fix issues with dynamic cropping jumping back and forth between dyanmic cropped and original image
-                pose = dlc_live.init_inference(frame)  # load DLC model
+                pose, inf_time = dlc_live.init_inference(frame)  # load DLC model
             else:
                 # dlc_live.dynamic = dynamic
-                pose = dlc_live.get_pose(frame)
+                pose, inf_time = dlc_live.get_pose(frame)
         except Exception as e:
             print(f"Error analyzing frame {frame_index}: {e}")
             continue
 
-        end_time = time.time()
-        processing_time = end_time - start_time
-        print(f"Frame {frame_index} processing time: {processing_time:.4f} seconds")
-
         poses.append({"frame": frame_index, "pose": pose})
+        times.append(inf_time)
 
-        # Visualize keypoints
-        this_pose = pose[0]["poses"][0][0]
-        for j in range(this_pose.shape[0]):
-            if this_pose[j, 2] > pcutoff:
-                x, y = map(int, this_pose[j, :2])
-                cv2.circle(
-                    frame,
-                    center=(x, y),
-                    radius=display_radius,
-                    color=colors[j],
-                    thickness=-1,
-                )
-
-                if draw_keypoint_names:
-                    cv2.putText(
+        if save_video:
+            # Visualize keypoints
+            this_pose = pose["poses"][0][0]
+            for j in range(this_pose.shape[0]):
+                if this_pose[j, 2] > pcutoff:
+                    x, y = map(int, this_pose[j, :2])
+                    cv2.circle(
                         frame,
-                        text=bodyparts[j],
-                        org=(x + 10, y),
-                        fontFace=cv2.FONT_HERSHEY_SIMPLEX,
-                        fontScale=0.5,
+                        center=(x, y),
+                        radius=display_radius,
                         color=colors[j],
-                        thickness=1,
-                        lineType=cv2.LINE_AA,
+                        thickness=-1,
                     )
 
-        vwriter.write(image=frame)
+                    if draw_keypoint_names:
+                        cv2.putText(
+                            frame,
+                            text=bodyparts[j],
+                            org=(x + 10, y),
+                            fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                            fontScale=0.5,
+                            color=colors[j],
+                            thickness=1,
+                            lineType=cv2.LINE_AA,
+                        )
+
+            vwriter.write(image=frame)
         frame_index += 1
 
     cap.release()
-    vwriter.release()
+    if save_video:
+        vwriter.release()
 
     if get_sys_info:
         print(get_system_info())
