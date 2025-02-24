@@ -263,7 +263,7 @@ class DLCLive(object):
 
         elif self.model_type == "onnx":
             model_path = glob.glob(os.path.normpath(self.path + "/*.onnx"))[0]
-            self.sess = ort.InferenceSession(model_path)
+            self.sess = ort.InferenceSession(model_path) # ! give GPU or CPU provider depending on self.device!!
 
             if not os.path.isfile(model_path):
                 raise FileNotFoundError(
@@ -292,22 +292,14 @@ class DLCLive(object):
             the pose estimated by DeepLabCut for the input image
         """
 
-        # if frame is not None:
-        #     if frame.ndim == 2:
-        #         self.convert2rgb = True
-        #     processed_frame = self.process_frame(frame)
-
         # load model
         self.load_model()
 
         # get pose of first frame (first inference is often very slow)
-
         if frame is not None:
             pose = self.get_pose(frame, **kwargs)
         else:
             pose = None
-
-        # self.is_initialized = True
 
         return pose
 
@@ -349,7 +341,7 @@ class DLCLive(object):
             frame = np.expand_dims(frame, axis=0)
             ort_inputs = {self.sess.get_inputs()[0].name: frame}
             outputs = self.sess.run(None, ort_inputs)
-            outputs = {# ! optimise: make it one var 'outputs'
+            outputs = {
                 "heatmap": torch.Tensor(outputs[0]),
                 "locref": torch.Tensor(outputs[1]),
             }
