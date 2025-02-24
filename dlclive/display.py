@@ -64,7 +64,7 @@ class Display(object):
         pose :class:`numpy.ndarray`
             the pose estimated by DeepLabCut for the image
         """
-
+        
         im_size = (frame.shape[1], frame.shape[0])
 
         if pose is not None:
