@@ -120,10 +120,10 @@ class DLCLive(object):
     def __init__(
         self,
         path: str,
+        snapshot: str = None,
         model_type: str = "onnx",
         precision: str = "FP32",
         device: str = "cpu",
-        snapshot=str,
         cropping: Optional[List[int]] = None,
         dynamic: Tuple[bool, float, float] = (False, 0.5, 10),
         resize: Optional[float] = None,
@@ -209,8 +209,8 @@ class DLCLive(object):
             processed frame: convert type, crop, convert color
         """
 
-        # ! NORMALISE FRAMES
-        print(self.dynamic)
+        # ! NORMALISATION ??
+
         if self.cropping:
             frame = frame[
                 self.cropping[2] : self.cropping[3], self.cropping[0] : self.cropping[1]
@@ -266,16 +266,31 @@ class DLCLive(object):
             self.pose_model.eval()
 
         elif self.model_type == "onnx":
-            model_path = glob.glob(os.path.normpath(self.path + "/*.onnx"))[0]
+            model_paths = glob.glob(os.path.normpath(self.path + "/*.onnx"))
+            if self.precision == "FP16":
+                model_path = [model_paths[i] for i in range(len(model_paths)) if "fp16" in model_paths[i]][0]
+                print(model_path)
+            else:
+                model_path = model_paths[0]
             opts = ort.SessionOptions()
             opts.enable_profiling = False
             if self.device == "cuda":
                 self.sess = ort.InferenceSession(
                     model_path, opts, providers=["CUDAExecutionProvider"]
                 )
+                print(self.sess)
             elif self.device == "cpu":
                 self.sess = ort.InferenceSession(
                     model_path, opts, providers=["CPUExecutionProvider"]
+                )
+            # ! TODO implement if statements for choice of tensorrt engine options (precision, and caching)
+            elif self.device == "tensorrt":
+                provider = [("TensorrtExecutionProvider", {
+                    "trt_engine_cache_enable": True,
+                    "trt_engine_cache_path": "./trt_engines"
+                })]
+                self.sess = ort.InferenceSession(
+                    model_path, opts, providers=provider
                 )
             self.predictor = HeatmapPredictor.build(self.cfg)
 
@@ -314,11 +329,11 @@ class DLCLive(object):
 
         # get pose of first frame (first inference is often very slow)
         if frame is not None:
-            pose = self.get_pose(frame, **kwargs)
+            pose, inf_time = self.get_pose(frame, **kwargs)
         else:
             pose = None
 
-        return pose
+        return pose, inf_time
 
     def get_pose(self, frame=None, **kwargs):
         """
@@ -352,14 +367,21 @@ class DLCLive(object):
             with torch.no_grad():
                 start = time.time()
                 outputs = self.pose_model(frame)
+                torch.cuda.synchronize()
                 end = time.time()
-                print(f"PyTorch inference took {end - start} sec")
+                inf_time = end - start
+                print(f"PyTorch inference took {inf_time} sec")
 
+            start = time.time()
             self.pose = self.pose_model.get_predictions(outputs)
+            end = time.time()
+            print(f"PyTorch postprocessing took {end - start} sec")
             self.pose = self.pose["bodypart"]
 
         elif self.model_type == "onnx":
-            frame = processed_frame.astype(np.float32)
+            if self.precision == "FP32": frame = processed_frame.astype(np.float32)
+            elif self.precision == "FP16": frame = processed_frame.astype(np.float16)
+
             frame = np.transpose(frame, (2, 0, 1))
             frame = np.expand_dims(frame, axis=0)
 
@@ -368,17 +390,23 @@ class DLCLive(object):
             start = time.time()
             outputs = self.sess.run(None, ort_inputs)
             end = time.time()
-            print(f"ONNX inference took {end - start} sec")
+            inf_time = end - start
+            print(f"ONNX inference took {inf_time} sec")
 
             outputs = {
                 "heatmap": torch.Tensor(outputs[0]),
                 "locref": torch.Tensor(outputs[1]),
             }
 
+            start = time.time()
             self.pose = self.predictor(outputs=outputs)
+            end = time.time()
+            print(f"ONNX postprocessing took {end - start} sec")
+
+        # elif self.model_type == "torch_tensorrt":
+
 
         else:
-
             raise DLCLiveError(
                 "model_type = {} is not supported. model_type must be 'pytorch' or 'onnx'".format(
                     self.model_type
@@ -396,8 +424,8 @@ class DLCLive(object):
             self.pose["poses"][0][0][:, :2] *= 1 / self.resize
 
         if self.cropping is not None:
-            self.pose["poses"][:, :, :, 0][0] += self.cropping[0]
-            self.pose["poses"][:, :, :, 1][0] += self.cropping[2]
+            self.pose["poses"][0][0][0] += self.cropping[0]
+            self.pose["poses"][0][0][0] += self.cropping[2]
 
         if self.dynamic_cropping is not None:
             self.pose["poses"][0][0][:, 0] += self.dynamic_cropping[0]
@@ -408,7 +436,7 @@ class DLCLive(object):
         if self.processor:
             self.pose = self.processor.process(self.pose, **kwargs)
 
-        return self.pose
+        return self.pose, inf_time
 
     # def close(self):
     #     """ Close tensorflow session
