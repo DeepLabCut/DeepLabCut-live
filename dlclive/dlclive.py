@@ -24,7 +24,8 @@ from deeplabcut.pose_estimation_pytorch.models import PoseModel
 from dlclive import utils
 from dlclive.display import Display
 from dlclive.exceptions import DLCLiveError, DLCLiveWarning
-from dlclive.pose import argmax_pose_predict, extract_cnn_output, multi_pose_predict
+from dlclive.pose import (argmax_pose_predict, extract_cnn_output,
+                          multi_pose_predict)
 from dlclive.predictor import HeatmapPredictor
 
 if typing.TYPE_CHECKING:
@@ -277,7 +278,11 @@ class DLCLive(object):
         elif self.model_type == "onnx":
             model_paths = glob.glob(os.path.normpath(self.path + "/*.onnx"))
             if self.precision == "FP16":
-                model_path = [model_paths[i] for i in range(len(model_paths)) if "fp16" in model_paths[i]][0]
+                model_path = [
+                    model_paths[i]
+                    for i in range(len(model_paths))
+                    if "fp16" in model_paths[i]
+                ][0]
                 print(model_path)
             else:
                 model_path = model_paths[0]
@@ -294,13 +299,16 @@ class DLCLive(object):
                 )
             # ! TODO implement if statements for choice of tensorrt engine options (precision, and caching)
             elif self.device == "tensorrt":
-                provider = [("TensorrtExecutionProvider", {
-                    "trt_engine_cache_enable": True,
-                    "trt_engine_cache_path": "./trt_engines"
-                })]
-                self.sess = ort.InferenceSession(
-                    model_path, opts, providers=provider
-                )
+                provider = [
+                    (
+                        "TensorrtExecutionProvider",
+                        {
+                            "trt_engine_cache_enable": True,
+                            "trt_engine_cache_path": "./trt_engines",
+                        },
+                    )
+                ]
+                self.sess = ort.InferenceSession(model_path, opts, providers=provider)
             self.predictor = HeatmapPredictor.build(self.cfg)
 
             if not os.path.isfile(model_path):
@@ -333,7 +341,7 @@ class DLCLive(object):
         # load model
         self.load_model()
 
-        inf_time = 0.
+        inf_time = 0.0
         # get pose of first frame (first inference is often very slow)
         if frame is not None:
             pose, inf_time = self.get_pose(frame, **kwargs)
@@ -356,7 +364,7 @@ class DLCLive(object):
         pose :class:`numpy.ndarray`
             the pose estimated by DeepLabCut for the input image
         """
-        inf_time = 0.
+        inf_time = 0.0
         if frame is None:
             raise DLCLiveError("No frame provided for live pose estimation")
 
@@ -381,8 +389,10 @@ class DLCLive(object):
             self.pose = self.pose["bodypart"]
 
         elif self.model_type == "onnx":
-            if self.precision == "FP32": frame = processed_frame.astype(np.float32)
-            elif self.precision == "FP16": frame = processed_frame.astype(np.float16)
+            if self.precision == "FP32":
+                frame = processed_frame.astype(np.float32)
+            elif self.precision == "FP16":
+                frame = processed_frame.astype(np.float16)
 
             frame = np.transpose(frame, (2, 0, 1))
             frame = np.expand_dims(frame, axis=0)

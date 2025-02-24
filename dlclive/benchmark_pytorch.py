@@ -13,7 +13,8 @@ import torch
 from PIL import ImageColor
 from pip._internal.operations import freeze
 
-from dlclive import VERSION, DLCLive
+from dlclive import DLCLive
+from dlclive.version import VERSION
 
 
 def get_system_info() -> dict:
@@ -482,8 +483,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-# Example how to run in command line:
-# python benchmark_pytorch.py /path/to/model /path/to/video DLC cuda -p FP32 -d -c 0.5 -dr 5 -r 0.5 -x 10 630 10 470 --save-poses --save-video --draw-keypoint-names --cmap bmy --save-dir
-# python benchmark_pytorch.py /Users/annastuckert/Documents/DLC_AI_Residency/DLC_AI2024/DeepLabCut-live/dlc-live-dummy/ventral-gait/resnet.onnx /Users/annastuckert/Documents/DLC_AI_Residency/DLC_AI2024/DeepLabCut-live/dlc-live-dummy/ventral-gait/1_20cms_0degUP_first_1s.avi DLC cuda -p FP32 -d -r 0.5 --save-poses --save-video --draw-keypoint-names --cmap bmy --save-dir /Users/annastuckert/Documents/DLC_AI_Residency/DLC_AI2024/DeepLabCut-live/dlc-live-dummy/ventral-gait/out

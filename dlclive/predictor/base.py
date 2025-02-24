@@ -13,9 +13,9 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 
 import torch
+from deeplabcut.pose_estimation_pytorch.registry import (Registry,
+                                                         build_from_cfg)
 from torch import nn
-
-from deeplabcut.pose_estimation_pytorch.registry import build_from_cfg, Registry
 
 PREDICTORS = Registry("predictors", build_func=build_from_cfg)
 

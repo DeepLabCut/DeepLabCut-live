@@ -9,8 +9,9 @@ from tkinter import Label, Tk
 
 import colorcet as cc
 import numpy as np
-from dlclive import utils
 from PIL import Image, ImageDraw, ImageTk
+
+from dlclive import utils
 
 
 class Display(object):

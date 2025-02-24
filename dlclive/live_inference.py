@@ -158,7 +158,7 @@ def analyze_live_video(
         path=model_path,
         model_type=model_type,
         device=device,
-        display=display,
+        display=False,
         resize=resize,
         cropping=cropping,  # Pass the cropping parameter
         dynamic=dynamic,
@@ -186,13 +186,14 @@ def analyze_live_video(
     bodyparts = dlc_live.cfg["metadata"]["bodyparts"]
     num_keypoints = len(bodyparts)
 
+    # Set colors and convert to RGB
+    cmap_colors = getattr(cc, cmap)
+    colors = [
+        ImageColor.getrgb(color)
+        for color in cmap_colors[:: int(len(cmap_colors) / num_keypoints)]
+    ]
+
     if save_video:
-        # Set colors and convert to RGB
-        cmap_colors = getattr(cc, cmap)
-        colors = [
-            ImageColor.getrgb(color)
-            for color in cmap_colors[:: int(len(cmap_colors) / num_keypoints)]
-        ]
 
         # Define output video path
         output_video_path = os.path.join(
@@ -230,32 +231,31 @@ def analyze_live_video(
         poses.append({"frame": frame_index, "pose": pose})
         times.append(inf_time)
 
-        if save_video:
-            # Visualize keypoints
-            this_pose = pose["poses"][0][0]
-            for j in range(this_pose.shape[0]):
-                if this_pose[j, 2] > pcutoff:
-                    x, y = map(int, this_pose[j, :2])
-                    cv2.circle(
+        # Visualize keypoints
+        this_pose = pose["poses"][0][0]
+        for j in range(this_pose.shape[0]):
+            if this_pose[j, 2] > pcutoff:
+                x, y = map(int, this_pose[j, :2])
+                cv2.circle(
+                    frame,
+                    center=(x, y),
+                    radius=display_radius,
+                    color=colors[j],
+                    thickness=-1,
+                )
+
+                if draw_keypoint_names:
+                    cv2.putText(
                         frame,
-                        center=(x, y),
-                        radius=display_radius,
+                        text=bodyparts[j],
+                        org=(x + 10, y),
+                        fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                        fontScale=0.5,
                         color=colors[j],
-                        thickness=-1,
+                        thickness=1,
+                        lineType=cv2.LINE_AA,
                     )
-
-                    if draw_keypoint_names:
-                        cv2.putText(
-                            frame,
-                            text=bodyparts[j],
-                            org=(x + 10, y),
-                            fontFace=cv2.FONT_HERSHEY_SIMPLEX,
-                            fontScale=0.5,
-                            color=colors[j],
-                            thickness=1,
-                            lineType=cv2.LINE_AA,
-                        )
-
+        if save_video:
             vwriter.write(image=frame)
         frame_index += 1
 
@@ -271,7 +271,8 @@ def analyze_live_video(
 
     if save_video:
         vwriter.release()
-    # cv2.destroyAllWindows()
+
+    cv2.destroyAllWindows()
 
     if get_sys_info:
         print(get_system_info())

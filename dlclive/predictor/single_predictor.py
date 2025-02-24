@@ -13,14 +13,10 @@ from __future__ import annotations
 from typing import Tuple
 
 import torch
-
-from deeplabcut.pose_estimation_pytorch.models.predictors.base import (
-    BasePredictor,
-    PREDICTORS,
-)
+from deeplabcut.pose_estimation_pytorch.models.predictors.base import \
+    BasePredictor
 
 
-# @PREDICTORS.register_module
 class HeatmapPredictor(BasePredictor):
     """Predictor class for pose estimation from heatmaps (and optionally locrefs).
 
@@ -39,7 +35,7 @@ class HeatmapPredictor(BasePredictor):
         clip_scores: bool = False,
         location_refinement: bool = True,
         locref_std: float = 7.2801,
-        stride: float = 8.
+        stride: float = 8.0,
     ):
         """
         Args:
@@ -57,9 +53,7 @@ class HeatmapPredictor(BasePredictor):
         self.locref_std = locref_std
         self.stride = stride
 
-    def forward(
-        self, outputs: dict[str, torch.Tensor]
-    ) -> dict[str, torch.Tensor]:
+    def forward(self, outputs: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
         """Forward pass of SinglePredictor. Gets predictions from model output.
 
         Args:
@@ -172,17 +166,20 @@ class HeatmapPredictor(BasePredictor):
             if cfg["model"]["heads"]["bodypart"]["heatmap_config"]["strides"][0] > 0:
                 stride = float(cfg["model"]["backbone"]["output_stride"]) / float(
                     cfg["model"]["heads"]["bodypart"]["heatmap_config"]["strides"][0]
-                    )
+                )
             else:
                 stride = float(cfg["model"]["backbone"]["output_stride"]) * -float(
                     cfg["model"]["heads"]["bodypart"]["heatmap_config"]["strides"][0]
-                    )
+                )
         else:
             stride = float(cfg["model"]["backbone"]["output_stride"])
         predictor = HeatmapPredictor(
-            apply_sigmoid=apply_sigmoid, stride=stride, clip_scores=clip_scores,
-            location_refinement=loc_ref, locref_std=loc_ref_std
-            )
+            apply_sigmoid=apply_sigmoid,
+            stride=stride,
+            clip_scores=clip_scores,
+            location_refinement=loc_ref,
+            locref_std=loc_ref_std,
+        )
 
         # elif cfg["method"] == "td":
         #     apply_sigmoid = cfg["model"]["heads"]["bodypart"]["predictor"]["apply_sigmoid"]

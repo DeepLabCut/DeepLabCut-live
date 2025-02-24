@@ -5,9 +5,10 @@ DeepLabCut Toolbox (deeplabcut.org)
 Licensed under GNU Lesser General Public License v3.0
 """
 
-
 import time
+
 import numpy as np
+
 from dlclive.processor import Processor
 
 
@@ -45,7 +46,7 @@ class KalmanFilterPredictor(Processor):
         F = np.zeros((self.n_states, self.n_states))
         for d in range(self.nderiv + 1):
             for i in range(self.n_states - (d * self.bp * 2)):
-                F[i, i + (2 * self.bp * d)] = (dt ** d) / max(1, d)
+                F[i, i + (2 * self.bp * d)] = (dt**d) / max(1, d)
 
         return F
 

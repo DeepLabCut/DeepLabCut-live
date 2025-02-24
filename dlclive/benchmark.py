@@ -5,33 +5,31 @@ DeepLabCut Toolbox (deeplabcut.org)
 Licensed under GNU Lesser General Public License v3.0
 """
 
-
-import platform
 import os
-import time
-import sys
-import warnings
-import subprocess
-import typing
 import pickle
+import platform
+import subprocess
+import sys
+import time
+import typing
+import warnings
+
 import colorcet as cc
-from PIL import ImageColor
 import ruamel
+from PIL import ImageColor
 
 try:
     from pip._internal.operations import freeze
 except ImportError:
     from pip.operations import freeze
 
-from tqdm import tqdm
+import cv2
 import numpy as np
 import tensorflow as tf
-import cv2
+from tqdm import tqdm
 
-from dlclive import DLCLive
-from dlclive import VERSION
+from dlclive import VERSION, DLCLive
 from dlclive import __file__ as dlcfile
-
 from dlclive.utils import decode_fourcc
 
 
@@ -42,8 +40,9 @@ def download_benchmarking_data(
     """
     Downloads a DeepLabCut-Live benchmarking Data (videos & DLC models).
     """
-    import urllib.request
     import tarfile
+    import urllib.request
+
     from tqdm import tqdm
 
     def show_progress(count, block_size, total_size):
@@ -75,7 +74,7 @@ def download_benchmarking_data(
 
 
 def get_system_info() -> dict:
-    """ Return summary info for system running benchmark
+    """Return summary info for system running benchmark
     Returns
     -------
     dict
@@ -165,7 +164,7 @@ def benchmark(
     save_video=False,
     output=None,
 ) -> typing.Tuple[np.ndarray, tuple, bool, dict]:
-    """ Analyze DeepLabCut-live exported model on a video:
+    """Analyze DeepLabCut-live exported model on a video:
     Calculate inference time,
     display keypoints, or
     get poses/create a labeled video
@@ -193,7 +192,7 @@ def benchmark(
     n_frames : int, optional
         number of frames to run inference on, by default 1000
     print_rate : bool, optional
-        flat to print inference rate frame by frame, by default False
+        flag to print inference rate frame by frame, by default False
     display : bool, optional
         flag to display keypoints on images. Useful for checking the accuracy of exported models.
     pcutoff : float, optional
@@ -440,7 +439,7 @@ def benchmark(
 def save_inf_times(
     sys_info, inf_times, im_size, TFGPUinference, model=None, meta=None, output=None
 ):
-    """ Save inference time data collected using :function:`benchmark` with system information to a pickle file.
+    """Save inference time data collected using :function:`benchmark` with system information to a pickle file.
     This is primarily used through :function:`benchmark_videos`
 
 
@@ -666,8 +665,7 @@ def benchmark_videos(
 
 
 def main():
-    """Provides a command line interface :function:`benchmark_videos`
-    """
+    """Provides a command line interface :function:`benchmark_videos`"""
 
     import argparse
 
