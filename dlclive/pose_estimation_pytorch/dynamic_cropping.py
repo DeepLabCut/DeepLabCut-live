@@ -261,13 +261,13 @@ class TopDownDynamicCropper(DynamicCropper):
     def __init__(
         self,
         top_down_crop_size: tuple[int, int] = (256, 256),
-        patch_counts: tuple[int, int] = (4, 3),
+        patch_counts: tuple[int, int] = (3, 2),
         patch_overlap: int = 50,
-        min_bbox_size: tuple[int, int] = (100, 100),
-        threshold: float = 0.6,
+        min_bbox_size: tuple[int, int] = (50, 50),
+        threshold: float = 0.25,
         margin: int = 10,
         min_hq_keypoints: int = 2,
-        bbox_from_hq: bool = False,
+        bbox_from_hq: bool = True,
         store_crops: bool = False,
         **kwargs,
     ) -> None:
