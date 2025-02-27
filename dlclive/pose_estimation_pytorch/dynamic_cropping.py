@@ -260,18 +260,19 @@ class TopDownDynamicCropper(DynamicCropper):
 
     def __init__(
         self,
-        top_down_crop_size: tuple[int, int],
-        patch_counts: tuple[int, int],
-        patch_overlap: int,
-        min_bbox_size: tuple[int, int],
-        threshold: float,
-        margin: int,
+        top_down_crop_size: tuple[int, int] = (256, 256),
+        patch_counts: tuple[int, int] = (4, 3),
+        patch_overlap: int = 50,
+        min_bbox_size: tuple[int, int] = (100, 100),
+        threshold: float = 0.6,
+        margin: int = 10,
         min_hq_keypoints: int = 2,
         bbox_from_hq: bool = False,
         store_crops: bool = False,
         **kwargs,
     ) -> None:
         super().__init__(threshold=threshold, margin=margin, **kwargs)
+        self.top_down_crop_size = top_down_crop_size
         self.min_bbox_size = min_bbox_size
         self.min_hq_keypoints = min_hq_keypoints
         self.bbox_from_hq = bbox_from_hq
@@ -280,8 +281,7 @@ class TopDownDynamicCropper(DynamicCropper):
         self._patch_overlap = patch_overlap
         self._patches = []
         self._patch_offsets = []
-        self._td_crop_size = top_down_crop_size
-        self._td_ratio = self._td_crop_size[0] / self._td_crop_size[1]
+        self._td_ratio = self.top_down_crop_size[0] / self.top_down_crop_size[1]
 
         self.crop_history = []
         self.store_crops = store_crops
@@ -363,7 +363,7 @@ class TopDownDynamicCropper(DynamicCropper):
             )
 
         # offset and rescale the pose to the original image space
-        out_w, out_h = self._td_crop_size
+        out_w, out_h = self.top_down_crop_size
         offset_x, offset_y, w, h = self._crop
         scale_x, scale_y = w / out_w, h / out_h
         pose[..., 0] = (pose[..., 0] * scale_x) + offset_x
@@ -448,7 +448,7 @@ class TopDownDynamicCropper(DynamicCropper):
             The cropped and resized image.
         """
         x1, y1, w, h = bbox
-        out_w, out_h = self._td_crop_size
+        out_w, out_h = self.top_down_crop_size
         return F.resized_crop(image, y1, x1, h, w, [out_h, out_w])
 
     def _crop_patches(self, image: torch.Tensor) -> torch.Tensor:

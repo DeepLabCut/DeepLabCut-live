@@ -46,14 +46,55 @@ class DLCLive:
         TensorFlow only. Optional ConfigProto for the TensorFlow session.
 
     single_animal: bool, default=True
-        PyTorch only.
+        PyTorch only. If True, the predicted pose array returned by the runner will be
+        (num_bodyparts, 3). As multi-animal pose estimation can be run with the PyTorch
+        engine, setting this to False means the returned pose array will be of shape
+        (num_detections, num_bodyparts, 3).
 
     device: str, optional, default=None
-        PyTorch only.
+        PyTorch only. The device on which to run inference, e.g. "cpu", "cuda" or
+        "cuda:0". If set to None or "auto", the device will be automatically selected
+        based on CUDA availability.
 
     top_down_config: dict, optional, default=None
+        PyTorch only. Configuration settings for top-down pose estimation models. Must
+        be provided when running top-down models and `top_down_dynamic` is None. The
+        parameters in the dict will be given to the `TopDownConfig` class (in
+        `dlclive/pose_estimation_pytorch/runner.py`). The `crop_size` does not need to
+        be set, as it will be read from the model configuration file.
+        Example parameters:
+            >>> # Running a top-down model with basic parameters
+            >>> top_down_config = {
+            >>>     "bbox_cutoff": 0.5,  # min confidence score for a bbox to be used
+            >>>     "max_detections": 3,  # max number of detections to return in a frame
+            >>> }
+            >>> # Running a top-down model with skip-frames
+            >>> top_down_config = {
+            >>>     "bbox_cutoff": 0.5,  # min confidence score for a bbox to be used
+            >>>     "max_detections": 3,  # max number of detections to return in a frame
+            >>>     "skip_frames": {  # only run the detector every 5 frames
+            >>>         "skip": 5,  # number of frames to skip between detections
+            >>>         "margin": 5,  # margin (in pixels) to use when generating bboxes
+            >>>     },
+            >>> }
 
     top_down_dynamic: dict, optional, default=None
+        PyTorch only. Single animal only. Top-down models do not need a detector to be
+        used for single animal pose estimation. This is equivalent to dynamic cropping
+        in TensorFlow or for bottom-up models, but crops are resized to the input size
+        required by the model. Pose estimation is never run on the full image. If no
+        animal is detected, the image is split into N by M "patches", and we run pose
+        estimation on the batch of patches. Pose is kept from the patch with the
+        highest likelyhood. No need to provide the `top_down_crop_size` parameter, as it
+        set using the model configuration file.
+        The parameters (except "type") will be passed to the `TopDownDynamicCropper`
+        class (in `dlclive/pose_estimation_pytorch/dynamic_cropping.py`
+
+        Example parameters:
+            >>> top_down_dynamic = {
+            >>>     "type": "TopDownDynamicCropper",
+            >>>     "min_bbox_size": (50, 50),
+            >>> }
 
     cropping: list of int
         Cropping parameters in pixel number: [x1, x2, y1, y2]

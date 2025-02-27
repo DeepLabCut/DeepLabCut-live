@@ -32,6 +32,15 @@ class SkipFrames:
     then the detector will only be run every `skip` frames. Between frames where the
     detector is run, bounding boxes will be computed from the pose estimated in the
     previous frame.
+
+    Every `N` frames, the detector will be run to detect bounding boxes for individuals.
+    In the "skipped" frames between the frames where the object detector is run, the
+    bounding boxes will be computed from the poses estimated in the previous frame (with
+    some margin added around the poses).
+
+    Attributes:
+        skip: The number of frames to skip between each run of the detector.
+        margin: The margin (in pixels) to use when generating bboxes
     """
 
     skip: int
@@ -78,19 +87,27 @@ class TopDownConfig:
     """Configuration for top-down models.
 
     Attributes:
+        bbox_cutoff: The minimum score required for a bounding box to be considered.
+        max_detections: The maximum number of detections to keep in a frame. If None,
+            the `max_detections` will be set to the number of individuals in the model
+            configuration file when `read_config` is called.
         skip_frames: If defined, the detector will only be run every
             `skip_frames.skip` frames.
     """
 
-    bbox_cutoff: float
-    max_detections: int
+    bbox_cutoff: float = 0.6
+    max_detections: int | None = 30
     crop_size: tuple[int, int] = (256, 256)
     skip_frames: SkipFrames | None = None
 
-    def read_config(self, detector_cfg: dict) -> None:
-        crop = detector_cfg.get("data", {}).get("inference", {}).get("top_down_crop")
+    def read_config(self, model_cfg: dict) -> None:
+        crop = model_cfg.get("data", {}).get("inference", {}).get("top_down_crop")
         if crop is not None:
             self.crop_size = (crop["width"], crop["height"])
+
+        if self.max_detections is None:
+            individuals = model_cfg.get("metadata", {}).get("individuals", [])
+            self.max_detections = len(individuals)
 
 
 class PyTorchRunner(BaseRunner):
@@ -242,7 +259,7 @@ class PyTorchRunner(BaseRunner):
             self.model = self.model.half()
 
         self.detector = None
-        if raw_data.get("detector") is not None:
+        if self.dynamic is None and raw_data.get("detector") is not None:
             self.detector = models.DETECTORS.build(self.cfg["detector"]["model"])
             self.detector.to(self.device)
             self.detector.load_state_dict(raw_data["detector"])
@@ -251,18 +268,23 @@ class PyTorchRunner(BaseRunner):
             if self.precision == "FP16":
                 self.detector = self.detector.half()
 
-        if self.cfg["method"] == "td" and self.detector is None:
-            crop_cfg = self.cfg["data"]["inference"]["top_down_crop"]
-            top_down_crop_size = crop_cfg["width"], crop_cfg["height"]
-            self.dynamic = dynamic_cropping.TopDownDynamicCropper(
-                top_down_crop_size,
-                patch_counts=(4, 3),
-                patch_overlap=50,
-                min_bbox_size=(250, 250),
-                threshold=0.6,
-                margin=25,
-                min_hq_keypoints=2,
-                bbox_from_hq=True,
+            if self.top_down_config is None:
+                self.top_down_config = TopDownConfig()
+
+            self.top_down_config.read_config(self.cfg)
+
+        if isinstance(self.dynamic, dynamic_cropping.TopDownDynamicCropper):
+            crop = self.cfg["data"]["inference"].get("top_down_crop", {})
+            w, h = crop.get("width", 256), crop.get("height", 256)
+            self.dynamic.top_down_crop_size = w, h
+
+        if (
+            self.cfg["method"] == "td"
+            and self.detector is None
+            and self.dynamic is None
+        ):
+            raise ValueError(
+                "Top-down models must either use a detector or a TopDownDynamicCropper."
             )
 
         self.transform = v2.Compose(
@@ -283,9 +305,10 @@ class PyTorchRunner(BaseRunner):
     def _prepare_top_down(
         self, frame: torch.Tensor, detections: dict[str, torch.Tensor]
     ):
+        """Prepares a frame for top-down pose estimation."""
         bboxes, scores = detections["boxes"], detections["scores"]
         bboxes = bboxes[scores >= self.top_down_config.bbox_cutoff]
-        if len(bboxes) > 0:
+        if len(bboxes) > 0 and self.top_down_config.max_detections is not None:
             bboxes = bboxes[: self.top_down_config.max_detections]
 
         crops = []
