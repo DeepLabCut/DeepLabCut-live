@@ -112,24 +112,41 @@ dlc_live.get_pose(<your image>)
 
 `DLCLive` **parameters:**
 
-  - `path` = string; full path to the exported DLC model directory
-  - `model_type` = string; the type of model to use for inference. Types include:
-      - `base` = the base DeepLabCut model
-      - `tensorrt` = apply [tensor-rt](https://developer.nvidia.com/tensorrt) optimizations to model
-      - `tflite` = use [tensorflow lite](https://www.tensorflow.org/lite) inference (in progress...)
-  - `cropping` = list of int, optional; cropping parameters in pixel number: [x1, x2, y1, y2]
-  - `dynamic` = tuple, optional; defines parameters for dynamic cropping of images
-      - `index 0` = use dynamic cropping, bool
-      - `index 1` = detection threshold, float
-      - `index 2` = margin (in pixels) around identified points, int
-  - `resize` = float, optional; factor by which to resize image (resize=0.5 downsizes both width and height of image by half). Can be used to downsize large images for faster inference
-  - `processor` = dlc pose processor object, optional
-  - `display` = bool, optional; display processed image with DeepLabCut points? Can be used to troubleshoot cropping and resizing parameters, but is very slow
+- `path` = string; full path to the exported DLC model directory
+- `model_type` = string; the type of model to use for inference. Types include:
+  - `pytorch` = the base PyTorch DeepLabCut model
+  - `base` = the base TensorFlow DeepLabCut model
+  - `tensorrt` = apply [tensor-rt](https://developer.nvidia.com/tensorrt) optimizations to model
+  - `tflite` = use [tensorflow lite](https://www.tensorflow.org/lite) inference (in progress...)
+- `cropping` = list of int, optional; cropping parameters in pixel number: [x1, x2, y1, y2]
+- `dynamic` = tuple, optional; defines parameters for dynamic cropping of images
+  - `index 0` = use dynamic cropping, bool
+  - `index 1` = detection threshold, float
+  - `index 2` = margin (in pixels) around identified points, int
+- `resize` = float, optional; factor by which to resize image (resize=0.5 downsizes 
+  both width and height of image by half). Can be used to downsize large images for
+  faster inference
+- `processor` = dlc pose processor object, optional
+- `display` = bool, optional; display processed image with DeepLabCut points? Can be
+  used to troubleshoot cropping and resizing parameters, but is very slow
 
 `DLCLive` **inputs:**
 
-  - `<path to exported model directory>` = path to the folder that has the `.pb` files that you acquire after running `deeplabcut.export_model`
-  - `<your image>` = is a numpy array of each frame
+- `<path to exported model>` = 
+  - For TensorFlow models: path to the folder that has the `.pb` files that you 
+  acquire after running `deeplabcut.export_model`
+  - For PyTorch models: path to the `.pt` file that is generated after running 
+  `deeplabcut.export_model`
+- `<your image>` = is a numpy array of each frame
+
+#### DLCLive - PyTorch Specific Guide
+
+This guide is for users who trained a model with the PyTorch engine with 
+`DeepLabCut 3.0`.
+
+Once you've trained your model in [DeepLabCut](https://github.com/DeepLabCut/DeepLabCut)
+and you are happy with its performance, you can export the model to be used for live 
+inference with DLCLive!
 
 ### Switching from TensorFlow to PyTorch
 
