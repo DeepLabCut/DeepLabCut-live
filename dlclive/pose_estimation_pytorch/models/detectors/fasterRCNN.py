@@ -13,7 +13,9 @@ from __future__ import annotations
 import torchvision.models.detection as detection
 
 from dlclive.pose_estimation_pytorch.models.detectors.base import DETECTORS
-from dlclive.pose_estimation_pytorch.models.detectors.torchvision import TorchvisionDetectorAdaptor
+from dlclive.pose_estimation_pytorch.models.detectors.torchvision import (
+    TorchvisionDetectorAdaptor,
+)
 
 
 @DETECTORS.register_module

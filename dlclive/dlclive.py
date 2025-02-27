@@ -28,31 +28,41 @@ class DLCLive:
     -----------
 
     model_path: Path
-        Full path to exported model file
+        Full path to exported model (created when `deeplabcut.export_model(...)` was
+        called). For PyTorch models, this is a single model file. For TensorFlow models,
+        this is a directory containing the model snapshots.
 
     model_type: string, optional
-        which model to use: 'pytorch' or 'onnx' for exported snapshot
-
-    tf_config:
-
+        Which model to use. For the PyTorch engine, options are [`pytorch`]. For the
+        TensorFlow engine, options are [`base`, `tensorrt`, `lite`].
 
     precision: string, optional
-        precision of model weights, for model_type='onnx' or 'pytorch'. Can be 'FP32'
-        (default) or 'FP16'
+        Precision of model weights, for model_type "pytorch" and "tensorrt". Options
+        are, for different model_types:
+            "pytorch": {"FP32", "FP16"}
+            "tensorrt": {"FP32", "FP16", "INT8"}
+
+    tf_config:
+        TensorFlow only. Optional ConfigProto for the TensorFlow session.
+
+    single_animal: bool, default=True
+        PyTorch only.
+
+    device: str, optional, default=None
+        PyTorch only.
+
+    top_down_config: dict, optional, default=None
+
+    top_down_dynamic: dict, optional, default=None
 
     cropping: list of int
-        cropping parameters in pixel number: [x1, x2, y1, y2] #A: Maybe this is the
-        dynamic cropping of each frame to speed of processing, so instead of analyzing
-        the whole frame, it analyzes only the part of the frame where the animal is
+        Cropping parameters in pixel number: [x1, x2, y1, y2]
 
-    dynamic: triple containing (state, detectiontreshold, margin) #A: margin adds some
-        space so the 'bbox' isn't too narrow around the animal'. First key points are
-        predicted, then dynamic cropping is performed to 'single out' the animal, and
-        then pose is estimated, we think.
+    dynamic: triple containing (state, detectiontreshold, margin)
         If the state is true, then dynamic cropping will be performed. That means that
         if an object is detected (i.e. any body part > detectiontreshold), then object
         boundaries are computed according to the smallest/largest x position and
-        smallest/largest y position of all body parts. This  window is expanded by the
+        smallest/largest y position of all body parts. This window is expanded by the
         margin and from then on only the posture within this crop is analyzed (until the
         object is lost, i.e. <detectiontreshold). The current position is utilized for
         updating the crop window for the next frame (this is why the margin is important
@@ -63,8 +73,7 @@ class DLCLive:
         For example, resize=0.5 will downsize both the height and width of the image by
         a factor of 2.
 
-    processor: dlc pose processor object, optional #A: this is possibly the 'predictor'
-        - or is it what enables use on jetson boards?
+    processor: dlc pose processor object, optional
         User-defined processor object. Must contain two methods: process and save.
         The 'process' method takes in a pose, performs some processing, and returns
         processed pose.
@@ -80,12 +89,19 @@ class DLCLive:
         boolean flag to convert frames from BGR to RGB color scheme
 
     display: bool, optional
-        Display frames with DeepLabCut labels?
+        Open a display to show predicted pose in frames with DeepLabCut labels.
         This is useful for testing model accuracy and cropping parameters, but it is
         very slow.
 
+    pcutoff: float, default=0.5
+        Only used when display=True. The score threshold for displaying a bodypart in
+        the display.
+
+    display_radius: int, default=3
+        Only used when display=True. Radius for keypoint display in pixels, default=3
+
     display_cmap: str, optional
-        String indicating the Matplotlib colormap to use.
+        Only used when display=True. String indicating the Matplotlib colormap to use.
     """
 
     PARAMETERS = (
@@ -103,10 +119,12 @@ class DLCLive:
         self,
         model_path: str | Path,
         model_type: str = "base",
-        # tf_config: Any = None,
         precision: str = "FP32",
-        # single_animal: bool = True,
-        # device: str | None = None,
+        tf_config: Any = None,
+        single_animal: bool = True,
+        device: str | None = None,
+        top_down_config: dict | None = None,
+        top_down_dynamic: dict | None = None,
         cropping: list[int] | None = None,
         dynamic: tuple[bool, float, float] = (False, 0.5, 10),
         resize: float | None = None,
@@ -114,22 +132,23 @@ class DLCLive:
         processor: Processor | None = None,
         display: bool | Display = False,
         pcutoff: float = 0.5,
-        # bbox_cutoff: float = 0.6,
-        # max_detections: int = 1,
         display_radius: int = 3,
         display_cmap: str = "bmy",
-        **kwargs,
     ):
         self.path = Path(model_path)
         self.runner: BaseRunner = factory.build_runner(
             model_type,
             model_path,
-            **kwargs,
+            precision=precision,
+            tf_config=tf_config,
+            single_animal=single_animal,
+            device=device,
+            dynamic=top_down_dynamic,
+            top_down_config=top_down_config,
         )
         self.is_initialized = False
 
         self.model_type = model_type
-        self.precision = precision
         self.cropping = cropping
         self.dynamic = dynamic
         self.dynamic_cropping = None

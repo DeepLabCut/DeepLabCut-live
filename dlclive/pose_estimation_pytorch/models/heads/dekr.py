@@ -14,7 +14,11 @@ import torch
 import torch.nn as nn
 
 from dlclive.pose_estimation_pytorch.models.heads.base import HEADS, BaseHead
-from dlclive.pose_estimation_pytorch.models.modules.conv_block import AdaptBlock, BaseBlock, BasicBlock
+from dlclive.pose_estimation_pytorch.models.modules.conv_block import (
+    AdaptBlock,
+    BaseBlock,
+    BasicBlock,
+)
 from dlclive.pose_estimation_pytorch.models.predictors import BasePredictor
 
 

@@ -14,7 +14,10 @@ from __future__ import annotations
 import torch
 import torch.nn.functional as F
 
-from dlclive.pose_estimation_pytorch.models.predictors.base import PREDICTORS, BasePredictor
+from dlclive.pose_estimation_pytorch.models.predictors.base import (
+    PREDICTORS,
+    BasePredictor,
+)
 
 
 @PREDICTORS.register_module

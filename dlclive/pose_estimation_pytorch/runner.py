@@ -33,6 +33,7 @@ class SkipFrames:
     detector is run, bounding boxes will be computed from the pose estimated in the
     previous frame.
     """
+
     skip: int
     margin: int
     _age: int = 0
@@ -80,6 +81,7 @@ class TopDownConfig:
         skip_frames: If defined, the detector will only be run every
             `skip_frames.skip` frames.
     """
+
     bbox_cutoff: float
     max_detections: int
     crop_size: tuple[int, int] = (256, 256)
@@ -112,10 +114,8 @@ class PyTorchRunner(BaseRunner):
         device: str = "auto",
         precision: Literal["FP16", "FP32"] = "FP32",
         single_animal: bool = True,
-        bbox_cutoff: float = 0.6,  # FIXME(niels)
-        max_detections: int | None = None,
-        dynamic: dynamic_cropping.DynamicCropper | None = None,
-        top_down_config: TopDownConfig | None = None,
+        dynamic: dict | dynamic_cropping.DynamicCropper | None = None,
+        top_down_config: dict | TopDownConfig | None = None,
     ) -> None:
         super().__init__(path)
         self.device = _parse_device(device)
@@ -126,6 +126,24 @@ class PyTorchRunner(BaseRunner):
         self.detector = None
         self.model = None
         self.transform = None
+
+        # Parse Dynamic Cropping parameters
+        if isinstance(dynamic, dict):
+            dynamic_type = dynamic.get("type", "DynamicCropper")
+            if dynamic_type == "DynamicCropper":
+                cropper_cls = dynamic_cropping.DynamicCropper
+            else:
+                cropper_cls = dynamic_cropping.TopDownDynamicCropper
+            dynamic_params = dynamic.copy()
+            dynamic_params.pop("type")
+            dynamic = cropper_cls(**dynamic_params)
+
+        # Parse Top-Down config
+        if isinstance(top_down_config, dict):
+            skip_frame_cfg = top_down_config.get("skip_frames")
+            if skip_frame_cfg is not None:
+                top_down_config["skip_frames"] = SkipFrames(**skip_frame_cfg)
+            top_down_config = TopDownConfig(**top_down_config)
 
         self.dynamic = dynamic
         self.top_down_config = top_down_config
@@ -306,7 +324,10 @@ class PyTorchRunner(BaseRunner):
         for pose, (offset, scale) in zip(batch_pose, offsets_and_scales):
             poses.append(
                 torch.cat(
-                    [pose[..., :2] * torch.tensor(scale) + torch.tensor(offset), pose[..., 2:3]],
+                    [
+                        pose[..., :2] * torch.tensor(scale) + torch.tensor(offset),
+                        pose[..., 2:3],
+                    ],
                     dim=-1,
                 )
             )

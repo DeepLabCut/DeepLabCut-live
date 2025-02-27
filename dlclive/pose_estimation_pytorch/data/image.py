@@ -109,7 +109,7 @@ def top_down_crop(
 
     # crop the pixels we care about
     image_crop = np.zeros((crop_h, crop_w, c), dtype=image.dtype)
-    image_crop[pad_top:pad_top + h, pad_left:pad_left + w] = image[y1:y2, x1:x2]
+    image_crop[pad_top : pad_top + h, pad_left : pad_left + w] = image[y1:y2, x1:x2]
 
     # resize the cropped image
     image = cv2.resize(image_crop, (out_w, out_h), interpolation=cv2.INTER_LINEAR)

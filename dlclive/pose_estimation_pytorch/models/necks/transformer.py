@@ -16,7 +16,9 @@ from timm.layers import trunc_normal_
 
 from dlclive.pose_estimation_pytorch.models.necks.base import NECKS, BaseNeck
 from dlclive.pose_estimation_pytorch.models.necks.layers import TransformerLayer
-from dlclive.pose_estimation_pytorch.models.necks.utils import make_sine_position_embedding
+from dlclive.pose_estimation_pytorch.models.necks.utils import (
+    make_sine_position_embedding,
+)
 
 MIN_NUM_PATCHES = 16
 BN_MOMENTUM = 0.1

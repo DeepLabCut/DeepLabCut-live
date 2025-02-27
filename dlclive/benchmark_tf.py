@@ -305,7 +305,6 @@ def benchmark(
 
     iterator = range(n_frames) if (print_rate) or (display) else tqdm(range(n_frames))
     for i in iterator:
-
         ret, frame = cap.read()
 
         if not ret:
@@ -321,7 +320,6 @@ def benchmark(
         inf_times[i] = time.time() - start_pose
 
         if save_video:
-
             if colors is None:
                 all_colors = getattr(cc, cmap)
                 colors = [
@@ -399,7 +397,6 @@ def benchmark(
         vwriter.release()
 
     if save_poses:
-
         cfg_path = os.path.normpath(f"{model_path}/pose_cfg.yaml")
         ruamel_file = ruamel.yaml.YAML()
         dlc_cfg = ruamel_file.load(open(cfg_path, "r"))
@@ -407,7 +404,6 @@ def benchmark(
         poses = np.array(poses)
 
         if use_pandas:
-
             poses = poses.reshape((poses.shape[0], poses.shape[1] * poses.shape[2]))
             pdindex = pd.MultiIndex.from_product(
                 [bodyparts, ["x", "y", "likelihood"]], names=["bodyparts", "coords"]
@@ -426,7 +422,6 @@ def benchmark(
             pose_df.to_hdf(out_dlc_file, key="df_with_missing", mode="w")
 
         else:
-
             out_vid_base = os.path.basename(video_path)
             out_dlc_file = os.path.normpath(
                 f"{out_dir}/{os.path.splitext(out_vid_base)[0]}_DLCLIVE_POSES.npy"
@@ -614,14 +609,12 @@ def benchmark_videos(
     # loop over videos
 
     for v in video_path:
-
         # initialize full inference times
 
         inf_times = []
         im_size_out = []
 
         for i in range(len(resize)):
-
             print(f"\nRun {i+1} / {len(resize)}\n")
 
             this_inf_times, this_im_size, TFGPUinference, meta = benchmark(

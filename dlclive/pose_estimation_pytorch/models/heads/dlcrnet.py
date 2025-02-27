@@ -14,7 +14,10 @@ import torch
 import torch.nn as nn
 
 from dlclive.pose_estimation_pytorch.models.heads.base import HEADS
-from dlclive.pose_estimation_pytorch.models.heads.simple_head import DeconvModule, HeatmapHead
+from dlclive.pose_estimation_pytorch.models.heads.simple_head import (
+    DeconvModule,
+    HeatmapHead,
+)
 from dlclive.pose_estimation_pytorch.models.predictors import BasePredictor
 
 
@@ -38,9 +41,9 @@ class DLCRNetHead(HeatmapHead):
         num_limbs = paf_config["channels"][-1]  # Already has the 2x multiplier
         in_refined_channels = features_dim + num_keypoints + num_limbs
         if num_stages > 0:
-            heatmap_config["channels"][0] = paf_config["channels"][0] = (
-                in_refined_channels
-            )
+            heatmap_config["channels"][0] = paf_config["channels"][
+                0
+            ] = in_refined_channels
             locref_config["channels"][0] = locref_config["channels"][-1]
 
         super().__init__(predictor, heatmap_config, locref_config)

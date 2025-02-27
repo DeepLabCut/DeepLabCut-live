@@ -39,9 +39,9 @@ class DynamicCropper:
             The margin used to expand an individuals bounding box before cropping it.
 
     Examples:
-        >>> import deeplabcut.pose_estimation_pytorch.models as models
+        >>> import torch.nn as nn
         >>>
-        >>> model: models.PoseModel
+        >>> model: nn.Module  # pose estimation model
         >>> frames: torch.Tensor  # shape (num_frames, 3, H, W)
         >>>
         >>> dynamic = DynamicCropper(threshold=0.6, margin=25)
@@ -57,6 +57,7 @@ class DynamicCropper:
         >>>     predictions.append(pose)
         >>>
     """
+
     threshold: float
     margin: int
     _crop: tuple[int, int, int, int] | None = field(default=None, repr=False)
@@ -424,16 +425,18 @@ class TopDownDynamicCropper(DynamicCropper):
 
         input_ratio = w / h
         if input_ratio > self._td_ratio:  # h/w < h0/w0 => h' = w * h0/w0
-            h = w /  self._td_ratio
+            h = w / self._td_ratio
         elif input_ratio < self._td_ratio:  # w/h < w0/h0 => w' = h * w0/h0
-            w = h *  self._td_ratio
+            w = h * self._td_ratio
 
         x1, y1 = int(round(cx - (w / 2))), int(round(cy - (h / 2)))
         w, h = max(int(w), self.min_bbox_size[0]), max(int(h), self.min_bbox_size[1])
         return x1, y1, w, h
 
     def _crop_bounding_box(
-        self, image: torch.Tensor, bbox: tuple[int, int, int, int],
+        self,
+        image: torch.Tensor,
+        bbox: tuple[int, int, int, int],
     ) -> torch.Tensor:
         """Applies a top-down crop to an image given a bounding box.
 
@@ -487,7 +490,7 @@ class TopDownDynamicCropper(DynamicCropper):
         # set the crop to the one used for the best patch
         self._crop = self._patches[best_patch]
 
-        return pose[best_patch:best_patch + 1]
+        return pose[best_patch : best_patch + 1]
 
     def generate_patches(self) -> list[tuple[int, int, int, int]]:
         """Generates patch coordinates for splitting an image.

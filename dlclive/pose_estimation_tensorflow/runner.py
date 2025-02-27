@@ -35,26 +35,20 @@ from dlclive.pose_estimation_tensorflow.pose import (
 
 
 class TensorFlowRunner(BaseRunner):
-    """TensorFlow runner for live pose estimation using DeepLabCut-Live.
-
-    Args:
-        path: The path to the model to run inference with.
-
-    Attributes:
-        path: The path to the model to run inference with.
-    """
+    """TensorFlow runner for live pose estimation using DeepLabCut-Live."""
 
     def __init__(
         self,
         path: str | Path,
         model_type: str = "base",
         tf_config: Any = None,
+        precision: str = "FP32",
     ) -> None:
         super().__init__(path)
         self.cfg = self.read_config()
         self.model_type = model_type
         self.tf_config = tf_config
-        self.precision = "FP32"
+        self.precision = precision
         self.sess = None
         self.inputs = None
         self.outputs = None
@@ -172,7 +166,6 @@ class TensorFlowRunner(BaseRunner):
             self.outputs = self.tflite_interpreter.get_output_details()
 
         elif self.model_type == "tensorrt":
-
             graph_def = read_graph(model_file)
             graph = finalize_graph(graph_def)
             output_tensors = get_output_tensors(graph)

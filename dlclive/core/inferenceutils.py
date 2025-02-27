@@ -841,7 +841,6 @@ class Assembler:
         # work nicely with the GUI or interactive sessions.
         # In that case, we fall back to the serial assembly.
         if chunk_size == 0 or multiprocessing.get_start_method() == "spawn":
-
             for i, data_dict in enumerate(tqdm(self)):
                 assemblies, unique = self._assemble(data_dict, i)
                 if assemblies:

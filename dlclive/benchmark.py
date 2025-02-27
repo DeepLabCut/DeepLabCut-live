@@ -549,7 +549,6 @@ def benchmark_videos(
         )
 
     while True:
-
         ret, frame = cap.read()
         if not ret:
             break
@@ -654,8 +653,6 @@ def save_poses_to_files(video_path, save_dir, bodyparts, poses, timestamp):
                 for item in kp
             ]
             writer.writerow(row)
-
-
 
 
 import argparse

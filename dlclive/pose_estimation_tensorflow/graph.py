@@ -106,12 +106,13 @@ def get_output_tensors(graph):
 
 
 def get_input_tensor(graph):
-
     input_tensor = str(graph.get_operations()[0].name) + ":0"
     return input_tensor
 
 
-def extract_graph(graph, tf_config=None) -> tuple[tf.Session, tf.Tensor, list[tf.Tensor]]:
+def extract_graph(
+    graph, tf_config=None
+) -> tuple[tf.Session, tf.Tensor, list[tf.Tensor]]:
     """
     Initializes a tensorflow session with the specified graph and extracts the model's inputs and outputs
 

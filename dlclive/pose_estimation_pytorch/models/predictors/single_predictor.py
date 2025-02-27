@@ -14,7 +14,10 @@ from typing import Tuple
 
 import torch
 
-from dlclive.pose_estimation_pytorch.models.predictors.base import BasePredictor, PREDICTORS
+from dlclive.pose_estimation_pytorch.models.predictors.base import (
+    BasePredictor,
+    PREDICTORS,
+)
 
 
 @PREDICTORS.register_module

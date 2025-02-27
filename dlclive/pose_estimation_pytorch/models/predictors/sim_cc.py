@@ -157,7 +157,7 @@ def get_simcc_normalized(pred: torch.Tensor) -> torch.Tensor:
     mask = (pred.amax(dim=-1) > 1).reshape(b, k, 1)
 
     # Normalize the tensor using the maximum value
-    norm = (pred / pred.amax(dim=-1).reshape(b, k, 1))
+    norm = pred / pred.amax(dim=-1).reshape(b, k, 1)
 
     # return the normalized tensor
     return torch.where(mask, norm, pred)

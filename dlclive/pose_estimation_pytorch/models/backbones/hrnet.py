@@ -13,7 +13,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from dlclive.pose_estimation_pytorch.models.backbones.base import BACKBONES, BaseBackbone
+from dlclive.pose_estimation_pytorch.models.backbones.base import (
+    BACKBONES,
+    BaseBackbone,
+)
 
 
 @BACKBONES.register_module

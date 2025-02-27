@@ -13,12 +13,14 @@ from dlclive.exceptions import DLCLiveWarning
 
 try:
     import skimage
+
     SK_IM = True
 except ImportError as e:
     SK_IM = False
 
 try:
     import cv2
+
     OPEN_CV = True
 except ImportError as e:
     from PIL import Image
@@ -65,17 +67,14 @@ def resize_frame(frame: np.ndarray, resize=None) -> np.ndarray:
         new_y = int(frame.shape[1] * resize)
 
         if OPEN_CV:
-
             return cv2.resize(frame, (new_y, new_x))
 
         else:
-
             img = Image.fromarray(frame)
             img = img.resize((new_y, new_x))
             return np.asarray(img)
 
     else:
-
         return frame
 
 
@@ -89,15 +88,12 @@ def img_to_rgb(frame: np.ndarray) -> np.ndarray:
     """
 
     if frame.ndim == 2:
-
         return gray_to_rgb(frame)
 
     elif frame.ndim == 3:
-
         return bgr_to_rgb(frame)
 
     else:
-
         warnings.warn(
             f"Image has {frame.ndim} dimensions. Must be 2 or 3 dimensions to convert to RGB",
             DLCLiveWarning,
@@ -115,11 +111,9 @@ def gray_to_rgb(frame: np.ndarray) -> np.ndarray:
     """
 
     if OPEN_CV:
-
         return cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
 
     else:
-
         img = Image.fromarray(frame)
         img = img.convert("RGB")
         return np.asarray(img)
@@ -135,11 +129,9 @@ def bgr_to_rgb(frame: np.ndarray) -> np.ndarray:
     """
 
     if OPEN_CV:
-
         return cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
     else:
-
         img = Image.fromarray(frame)
         img = img.convert("RGB")
         return np.asarray(img)
@@ -165,12 +157,10 @@ def _img_as_ubyte_np(frame: np.ndarray) -> np.ndarray:
 
     # check if already ubyte
     if np.issubdtype(im_type, np.uint8):
-
         return frame
 
     # if floating
     elif np.issubdtype(im_type, np.floating):
-
         if (np.min(frame) < -1) or (np.max(frame) > 1):
             raise ValueError("Images of type float must be between -1 and 1.")
 
@@ -181,14 +171,12 @@ def _img_as_ubyte_np(frame: np.ndarray) -> np.ndarray:
 
     # if integer
     elif np.issubdtype(im_type, np.integer):
-
         im_type_info = np.iinfo(im_type)
         frame *= 255 / im_type_info.max
         frame[frame < 0] = 0
         return frame.astype(np.uint8)
 
     else:
-
         raise TypeError(
             "image of type {} could not be converted to ubyte".format(im_type)
         )

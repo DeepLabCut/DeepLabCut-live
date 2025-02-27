@@ -197,7 +197,6 @@ def analyze_live_video(
     ]
 
     if save_video:
-
         # Define output video path
         output_video_path = os.path.join(
             save_dir, f"{experiment_name}_DLCLIVE_LABELLED_{timestamp}.mp4"
@@ -217,7 +216,6 @@ def analyze_live_video(
         )
 
     while True:
-
         ret, frame = cap.read()
         if not ret:
             break
