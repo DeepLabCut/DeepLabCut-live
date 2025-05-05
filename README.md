@@ -55,8 +55,8 @@ https://github.com/DeepLabCut/DeepLabCut-live-GUI).🔥🔥🔥🔥🔥**
 deeplabcut-live`, thanks to PR #60.
 - March 2021: DeepLabCut-Live! [**version 1.0** is released](https://pypi.org/project/deeplabcut-live/), with support for 
 tensorflow 1 and tensorflow 2!
-- Feb 2021: DeepLabCut-Live! was featured in **Nature Methods**: [
-"Real-time behavioral analysis"](https://www.nature.com/articles/s41592-021-01072-z)
+- Feb 2021: DeepLabCut-Live! was featured in **Nature Methods**:
+["Real-time behavioral analysis"](https://www.nature.com/articles/s41592-021-01072-z)
 - Jan 2021: full **eLife** paper is published: ["Real-time, low-latency closed-loop 
 feedback using markerless posture tracking"](https://elifesciences.org/articles/61909)
 - Dec 2020: we talked to **RTS Suisse Radio** about DLC-Live!: ["Capture animal
