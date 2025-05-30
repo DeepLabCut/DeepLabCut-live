@@ -210,6 +210,10 @@ class DLCLive:
     def cfg(self) -> dict | None:
         return self.runner.cfg
 
+    @property
+    def precision(self) -> str:
+        return self.runner.precision
+
     def read_config(self) -> None:
         """Reads configuration yaml file
 
