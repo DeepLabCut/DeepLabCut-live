@@ -1,5 +1,4 @@
 import csv
-import os
 import platform
 import subprocess
 import sys
@@ -8,10 +7,11 @@ import time
 import colorcet as cc
 import cv2
 import h5py
-import numpy as np
-import torch
 from PIL import ImageColor
 from pip._internal.operations import freeze
+import torch
+# torch import needs to switch order with "from pip._internal.operations import freeze" because of crash
+# see https://github.com/pytorch/pytorch/issues/140914
 
 from dlclive import DLCLive
 from dlclive.version import VERSION
