@@ -3654,12 +3654,46 @@ files = [
 
 [[package]]
 name = "tensorflow-io-gcs-filesystem"
+version = "0.27.0"
+description = "TensorFlow IO"
+optional = false
+python-versions = ">=3.7, <3.11"
+groups = ["main"]
+markers = "python_version == \"3.10\" and (platform_machine != \"arm64\" or platform_system != \"Darwin\" or sys_platform == \"win32\") and (sys_platform == \"linux\" or sys_platform == \"win32\" or sys_platform == \"darwin\")"
+files = [
+    {file = "tensorflow_io_gcs_filesystem-0.27.0-cp310-cp310-macosx_10_14_x86_64.whl", hash = "sha256:babca2a12755badd1517043f9d633823533fbd7b463d7d36e9e6179b246731dc"},
+    {file = "tensorflow_io_gcs_filesystem-0.27.0-cp310-cp310-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:b3a0ebfeac11507f6fc96162b8b22010b7d715bb0848311e54ef18d88f07014a"},
+    {file = "tensorflow_io_gcs_filesystem-0.27.0-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:c22c71ee80f131b2d55d53a3c66a910156004c2dcba976cabd8deeb5e236397a"},
+    {file = "tensorflow_io_gcs_filesystem-0.27.0-cp310-cp310-win_amd64.whl", hash = "sha256:244754af85090d3fdd67c0b160bce8509e9a43fefccb295e3c9b72df21d9db61"},
+    {file = "tensorflow_io_gcs_filesystem-0.27.0-cp37-cp37m-macosx_10_14_x86_64.whl", hash = "sha256:3e510134375ed0467d1d90cd80b762b68e93b429fe7b9b38a953e3fe4306536f"},
+    {file = "tensorflow_io_gcs_filesystem-0.27.0-cp37-cp37m-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:e21842a0a7c906525884bdbdc6d82bcfec98c6da5bafe7bfc89fd7253fcab5cf"},
+    {file = "tensorflow_io_gcs_filesystem-0.27.0-cp37-cp37m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:043008e51e920028b7c564795d82d2487b0baf6bdb23cb9d84796c4a8fcab668"},
+    {file = "tensorflow_io_gcs_filesystem-0.27.0-cp37-cp37m-win_amd64.whl", hash = "sha256:5c809435233893c0df80dce3d10d310885c86dcfb08ca9ebb55e0fcb8a4e13ac"},
+    {file = "tensorflow_io_gcs_filesystem-0.27.0-cp38-cp38-macosx_10_14_x86_64.whl", hash = "sha256:4cc906a12bbd788be071e2dab333f953e82938b77f93429e55ad4b4bfd77072a"},
+    {file = "tensorflow_io_gcs_filesystem-0.27.0-cp38-cp38-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:1ad97ef862c1fb3f7ba6fe3cb5de25cb41d1c55121deaf00c590a5726a7afe88"},
+    {file = "tensorflow_io_gcs_filesystem-0.27.0-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:564a7de156650cac9e1e361dabd6b5733a4ef31f5f11ef5eebf7fe694128334f"},
+    {file = "tensorflow_io_gcs_filesystem-0.27.0-cp38-cp38-win_amd64.whl", hash = "sha256:9cf6a8efc35a04a8c3d5ec4c6b6e4931a6bc8d4e1f9d9aa0bad5fd272941c886"},
+    {file = "tensorflow_io_gcs_filesystem-0.27.0-cp39-cp39-macosx_10_14_x86_64.whl", hash = "sha256:f7d24da555e2a1fe890b020b1953819ad990e31e63088a77ce87b7ffa67a7aaf"},
+    {file = "tensorflow_io_gcs_filesystem-0.27.0-cp39-cp39-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:ed17c281a28df9ab0547cdf166e885208d2a43db0f0f8fbe66addc4e23ee36ff"},
+    {file = "tensorflow_io_gcs_filesystem-0.27.0-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:8d2c01ba916866204b70f96103bbaa24655b1e7b416b399e49dce893a7835aa7"},
+    {file = "tensorflow_io_gcs_filesystem-0.27.0-cp39-cp39-win_amd64.whl", hash = "sha256:152f4c20e5341d486df35f7ce9751a441ed89b43c1036491cd2b30a742fbe20a"},
+]
+
+[package.extras]
+tensorflow = ["tensorflow (>=2.10.0,<2.11.0)"]
+tensorflow-aarch64 = ["tensorflow-aarch64 (>=2.10.0,<2.11.0)"]
+tensorflow-cpu = ["tensorflow-cpu (>=2.10.0,<2.11.0)"]
+tensorflow-gpu = ["tensorflow-gpu (>=2.10.0,<2.11.0)"]
+tensorflow-rocm = ["tensorflow-rocm (>=2.10.0,<2.11.0)"]
+
+[[package]]
+name = "tensorflow-io-gcs-filesystem"
 version = "0.37.1"
 description = "TensorFlow IO"
 optional = false
 python-versions = "<3.13,>=3.7"
 groups = ["main"]
-markers = "(sys_platform == \"linux\" or sys_platform == \"win32\" or sys_platform == \"darwin\") and (platform_system != \"Darwin\" or platform_machine != \"arm64\" or sys_platform == \"win32\")"
+markers = "python_version < \"3.10\" and (sys_platform == \"linux\" or sys_platform == \"win32\" or sys_platform == \"darwin\") and (platform_system != \"Darwin\" or platform_machine != \"arm64\" or sys_platform == \"win32\")"
 files = [
     {file = "tensorflow_io_gcs_filesystem-0.37.1-cp310-cp310-macosx_10_14_x86_64.whl", hash = "sha256:249c12b830165841411ba71e08215d0e94277a49c551e6dd5d72aab54fe5491b"},
     {file = "tensorflow_io_gcs_filesystem-0.37.1-cp310-cp310-macosx_12_0_arm64.whl", hash = "sha256:257aab23470a0796978efc9c2bcf8b0bc80f22e6298612a4c0a50d3f4e88060c"},
@@ -4292,4 +4326,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.7.1,<3.11"
-content-hash = "4c68fb41c22c9e379b44a4abcef037428999b6b28e7900df803ef85990f1a265"
+content-hash = "e07011d77fa1adbb5fe0948af0530cce361472523a04e472cb309347859a6cc9"
