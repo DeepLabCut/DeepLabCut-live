@@ -154,7 +154,7 @@ def analyze_video(
 
     # Create the DLCLive object with cropping
     dlc_live = DLCLive(
-        path=model_path,
+        model_path=model_path,
         model_type=model_type,
         device=device,
         display=display,
