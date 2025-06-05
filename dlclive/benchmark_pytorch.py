@@ -90,7 +90,7 @@ def benchmark(
     precision: str = "FP32",
     display=True,
     pcutoff=0.5,
-    display_radius=5,
+    display_radius=3,
     resize=None,
     cropping=None,  # Adding cropping to the function parameters
     dynamic=(False, 0.5, 10),
@@ -159,6 +159,9 @@ def benchmark(
         cropping=cropping,  # Pass the cropping parameter
         dynamic=dynamic,
         precision=precision,
+        pcutoff=pcutoff,
+        display_radius=display_radius,
+        display_cmap=cmap,
     )
 
     # Ensure save directory exists
