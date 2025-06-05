@@ -288,7 +288,7 @@ def benchmark(
     poses = []
 
     live = DLCLive(
-        model_path,
+        model_path=model_path,
         model_type="base",
         tf_config=tf_config,
         resize=resize,
