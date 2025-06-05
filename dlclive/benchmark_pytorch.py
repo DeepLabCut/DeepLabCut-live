@@ -88,7 +88,6 @@ def analyze_video(
     model_type: str,
     device: str,
     precision: str = "FP32",
-    snapshot: str = None,
     display=True,
     pcutoff=0.5,
     display_radius=5,
@@ -117,8 +116,6 @@ def analyze_video(
         Device to run the model on ('cpu' or 'cuda').
     precision : str, optional, default='FP32'
         Precision type for the model ('FP32' or 'FP16').
-    snapshot : str, optional
-        Snapshot to use for the model, if using pytorch as model type.
     display : bool, optional, default=True
         Whether to display frame with labelled key points.
     pcutoff : float, optional, default=0.5
@@ -162,7 +159,6 @@ def analyze_video(
         cropping=cropping,  # Pass the cropping parameter
         dynamic=dynamic,
         precision=precision,
-        snapshot=snapshot,
     )
 
     # Ensure save directory exists
@@ -380,13 +376,6 @@ def main():
         help="Model precision (e.g., 'FP32', 'FP16').",
     )
     parser.add_argument(
-        "-s",
-        "--snapshot",
-        type=str,
-        default=None,
-        help="Path to a specific model snapshot.",
-    )
-    parser.add_argument(
         "-d", "--display", action="store_true", help="Display keypoints on the video."
     )
     parser.add_argument(
@@ -464,7 +453,6 @@ def main():
         model_type=args.model_type,
         device=args.device,
         precision=args.precision,
-        snapshot=args.snapshot,
         display=args.display,
         pcutoff=args.pcutoff,
         display_radius=args.display_radius,
