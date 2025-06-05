@@ -219,32 +219,17 @@ def benchmark(
         times.append(inf_time)
 
         if save_video:
-            # Visualize keypoints
-            this_pose = pose["poses"][0][0]
-            for j in range(this_pose.shape[0]):
-                if this_pose[j, 2] > pcutoff:
-                    x, y = map(int, this_pose[j, :2])
-                    cv2.circle(
-                        frame,
-                        center=(x, y),
-                        radius=display_radius,
-                        color=colors[j],
-                        thickness=-1,
-                    )
+            draw_pose_and_write(
+                frame=frame,
+                pose=pose,
+                colors=colors,
+                bodyparts=bodyparts,
+                pcutoff=pcutoff,
+                display_radius=display_radius,
+                draw_keypoint_names=draw_keypoint_names,
+                vwriter=vwriter
+            )
 
-                    if draw_keypoint_names:
-                        cv2.putText(
-                            frame,
-                            text=bodyparts[j],
-                            org=(x + 10, y),
-                            fontFace=cv2.FONT_HERSHEY_SIMPLEX,
-                            fontScale=0.5,
-                            color=colors[j],
-                            thickness=1,
-                            lineType=cv2.LINE_AA,
-                        )
-
-            vwriter.write(image=frame)
         frame_index += 1
 
     cap.release()
@@ -290,6 +275,47 @@ def setup_video_writer(
     )
 
     return colors, vwriter
+
+def draw_pose_and_write(
+    frame: np.ndarray,
+    pose: np.ndarray,
+    colors: list[tuple[int, int, int]],
+    bodyparts: list[str],
+    pcutoff: float,
+    display_radius: int,
+    draw_keypoint_names: bool,
+    vwriter: cv2.VideoWriter,
+):
+    if len(pose.shape) == 2:
+        pose = pose[None]
+
+    # Visualize keypoints
+    for i in range(pose.shape[0]):
+        for j in range(pose.shape[1]):
+            if pose[i, j, 2] > pcutoff:
+                x, y = map(int, pose[i, j, :2])
+                cv2.circle(
+                    frame,
+                    center=(x, y),
+                    radius=display_radius,
+                    color=colors[j],
+                    thickness=-1,
+                )
+
+                if draw_keypoint_names:
+                    cv2.putText(
+                        frame,
+                        text=bodyparts[j],
+                        org=(x + 10, y),
+                        fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                        fontScale=0.5,
+                        color=colors[j],
+                        thickness=1,
+                        lineType=cv2.LINE_AA,
+                    )
+
+
+    vwriter.write(image=frame)
 
 def save_poses_to_files(video_path, save_dir, bodyparts, poses, timestamp):
     """
