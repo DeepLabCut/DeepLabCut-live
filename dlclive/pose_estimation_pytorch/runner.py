@@ -314,7 +314,7 @@ class PyTorchRunner(BaseRunner):
         crops = []
         offsets_and_scales = []
         for bbox in bboxes:
-            x1, y1, x2, y2 = bbox
+            x1, y1, x2, y2 = bbox.tolist()
             cropped_frame, offset, scale = data.top_down_crop_torch(
                 frame[0],
                 (x1, y1, x2 - x1, y2 - y1),
