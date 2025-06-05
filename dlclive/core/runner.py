@@ -87,8 +87,14 @@ class BaseRunner(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def read_config(self):
-        """Reads the pose configuration file.
+    def read_config(self) -> dict:
+        """
+        Reads the pose configuration file.
+
+        Returns
+        -------
+        dict
+            The runner configuration
 
         Raises:
             FileNotFoundError: if the pose configuration file does not exist

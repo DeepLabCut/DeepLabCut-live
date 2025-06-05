@@ -179,7 +179,7 @@ def analyze_video(
     frame_index = 0
 
     # Retrieve bodypart names and number of keypoints
-    bodyparts = dlc_live.cfg["metadata"]["bodyparts"]
+    bodyparts = dlc_live.read_config()["metadata"]["bodyparts"]
     num_keypoints = len(bodyparts)
 
     if save_video:

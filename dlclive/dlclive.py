@@ -214,15 +214,20 @@ class DLCLive:
     def precision(self) -> str:
         return self.runner.precision
 
-    def read_config(self) -> None:
+    def read_config(self) -> dict:
         """Reads configuration yaml file
+
+        Returns
+        -------
+        dict
+            The configuration
 
         Raises
         ------
         FileNotFoundError
             error thrown if pose configuration file does not exist
         """
-        self.runner.read_config()
+        return self.runner.read_config()
 
     @property
     def parameterization(
