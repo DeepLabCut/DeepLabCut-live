@@ -173,11 +173,6 @@ def benchmark(
         print(f"Error: Could not open video file {video_path}")
         return
 
-    # Start empty dict to save poses to for each frame
-    poses, times = [], []
-    # Create variable indicate current frame. Later in the code +1 is added to frame_index
-    frame_index = 0
-
     # Retrieve bodypart names and number of keypoints
     bodyparts = dlc_live.read_config()["metadata"]["bodyparts"]
     num_keypoints = len(bodyparts)
@@ -209,24 +204,27 @@ def benchmark(
             frameSize=(frame_width, frame_height),
         )
 
+    # Start empty dict to save poses to for each frame
+    poses, times = [], []
+    frame_index = 0
+
     while True:
         ret, frame = cap.read()
         if not ret:
             break
-        # if frame_index == 0:
-        #     pose = dlc_live.init_inference(frame)  # load DLC model
+
         try:
-            # pose = dlc_live.get_pose(frame)
+            start_time = time.perf_counter()
             if frame_index == 0:
-                # dlc_live.dynamic = (False, dynamic[1], dynamic[2]) # TODO trying to fix issues with dynamic cropping jumping back and forth between dyanmic cropped and original image
-                pose, inf_time = dlc_live.init_inference(frame)  # load DLC model
+                pose = dlc_live.init_inference(frame) # Loads model
             else:
-                # dlc_live.dynamic = dynamic
-                pose, inf_time = dlc_live.get_pose(frame)
+                pose = dlc_live.get_pose(frame)
         except Exception as e:
             print(f"Error analyzing frame {frame_index}: {e}")
+            frame_index += 1
             continue
 
+        inf_time = time.perf_counter() - start_time
         poses.append({"frame": frame_index, "pose": pose})
         times.append(inf_time)
 
