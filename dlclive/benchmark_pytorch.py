@@ -7,6 +7,7 @@ import time
 import colorcet as cc
 import cv2
 import h5py
+from pathlib import Path
 from PIL import ImageColor
 from pip._internal.operations import freeze
 import torch
@@ -95,7 +96,7 @@ def benchmark(
     cropping=None,  # Adding cropping to the function parameters
     dynamic=(False, 0.5, 10),
     save_poses=False,
-    save_dir="model_predictions",
+    save_dir=None,
     draw_keypoint_names=False,
     cmap="bmy",
     get_sys_info=True,
@@ -130,8 +131,9 @@ def benchmark(
         Parameters for dynamic cropping. If the state is true, then dynamic cropping will be performed. That means that if an object is detected (i.e. any body part > detectiontreshold), then object boundaries are computed according to the smallest/largest x position and smallest/largest y position of all body parts. This window is expanded by the margin and from then on only the posture within this crop is analyzed (until the object is lost, i.e. <detection treshold). The current position is utilized for updating the crop window for the next frame (this is why the margin is important and should be set large enough given the movement of the animal).
     save_poses : bool, optional, default=False
         Whether to save the detected poses to CSV and HDF5 files.
-    save_dir : str, optional, default='model_predictions'
+    save_dir : str, optional
         Directory to save output data and labeled video.
+        If not specified, will use the directory of video_path, by default None
     draw_keypoint_names : bool, optional, default=False
         Whether to display keypoint names on video frames in the saved video.
     cmap : str, optional, default='bmy'
@@ -164,8 +166,10 @@ def benchmark(
         display_cmap=cmap,
     )
 
+    if save_dir is None:
+        save_dir = Path(video_path).resolve().parent
     # Ensure save directory exists
-    os.makedirs(name=save_dir, exist_ok=True)
+    save_dir.mkdir(parents=True, exist_ok=True)
 
     # Get the current date and time as a string
     timestamp = time.strftime("%Y%m%d_%H%M%S")
