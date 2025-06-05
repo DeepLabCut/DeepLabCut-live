@@ -82,7 +82,7 @@ def get_system_info() -> dict:
     }
 
 
-def analyze_video(
+def benchmark(
     video_path: str,
     model_path: str,
     model_type: str,
@@ -447,7 +447,7 @@ def main():
     args = parser.parse_args()
 
     # Call the analyze_video function with the parsed arguments
-    analyze_video(
+    benchmark(
         video_path=args.video_path,
         model_path=args.model_path,
         model_type=args.model_type,
