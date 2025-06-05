@@ -7,6 +7,7 @@ import time
 import colorcet as cc
 import cv2
 import h5py
+import numpy as np
 from pathlib import Path
 from PIL import ImageColor
 from pip._internal.operations import freeze
@@ -182,34 +183,16 @@ def benchmark(
 
     # Retrieve bodypart names and number of keypoints
     bodyparts = dlc_live.read_config()["metadata"]["bodyparts"]
-    num_keypoints = len(bodyparts)
 
-    if save_video:
-        # Set colors and convert to RGB
-        cmap_colors = getattr(cc, cmap)
-        colors = [
-            ImageColor.getrgb(color)
-            for color in cmap_colors[:: int(len(cmap_colors) / num_keypoints)]
-        ]
-
-        # Define output video path
-        video_name = os.path.splitext(os.path.basename(video_path))[0]
-        output_video_path = os.path.join(
-            save_dir, f"{video_name}_DLCLIVE_LABELLED_{timestamp}.mp4"
-        )
-
-        # Get video writer setup
-        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-        fps = cap.get(cv2.CAP_PROP_FPS)
-        frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
-        vwriter = cv2.VideoWriter(
-            filename=output_video_path,
-            fourcc=fourcc,
-            fps=fps,
-            frameSize=(frame_width, frame_height),
-        )
+    colors, vwriter = setup_video_writer(
+        video_path=video_path,
+        save_dir=save_dir,
+        timestamp=timestamp,
+        num_keypoints=len(bodyparts),
+        cmap=cmap,
+        fps=cap.get(cv2.CAP_PROP_FPS),
+        frame_size=(int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))),
+    )
 
     # Start empty dict to save poses to for each frame
     poses, times = [], []
@@ -276,6 +259,37 @@ def benchmark(
 
     return poses, times
 
+def setup_video_writer(
+    video_path:str,
+    save_dir:str,
+    timestamp:str,
+    num_keypoints:int,
+    cmap:str,
+    fps:float,
+    frame_size:tuple[int, int],
+):
+    # Set colors and convert to RGB
+    cmap_colors = getattr(cc, cmap)
+    colors = [
+        ImageColor.getrgb(color)
+        for color in cmap_colors[:: int(len(cmap_colors) / num_keypoints)]
+    ]
+
+    # Define output video path
+    video_path = Path(video_path)
+    video_name = video_path.stem  # filename without extension
+    output_video_path = Path(save_dir) / f"{video_name}_DLCLIVE_LABELLED_{timestamp}.mp4"
+
+    # Get video writer setup
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+    vwriter = cv2.VideoWriter(
+        filename=output_video_path,
+        fourcc=fourcc,
+        fps=fps,
+        frameSize=frame_size,
+    )
+
+    return colors, vwriter
 
 def save_poses_to_files(video_path, save_dir, bodyparts, poses, timestamp):
     """
