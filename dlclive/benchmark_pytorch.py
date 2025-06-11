@@ -89,6 +89,7 @@ def benchmark(
     model_path: str,
     model_type: str,
     device: str,
+    single_animal: bool,
     precision: str = "FP32",
     display=True,
     pcutoff=0.5,
@@ -156,6 +157,7 @@ def benchmark(
     dlc_live = DLCLive(
         model_path=model_path,
         model_type=model_type,
+        single_animal=single_animal,
         device=device,
         display=display,
         resize=resize,
