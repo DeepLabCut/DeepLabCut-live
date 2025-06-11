@@ -22,6 +22,7 @@ import dlclive.pose_estimation_pytorch.data as data
 import dlclive.pose_estimation_pytorch.models as models
 import dlclive.pose_estimation_pytorch.dynamic_cropping as dynamic_cropping
 from dlclive.core.runner import BaseRunner
+from dlclive.pose_estimation_pytorch.data.image import AutoPadToDivisor
 
 
 @dataclass
@@ -142,7 +143,8 @@ class PyTorchRunner(BaseRunner):
         self.cfg = None
         self.detector = None
         self.model = None
-        self.transform = None
+        self.detector_transform = None
+        self.pose_transform = None
 
         # Parse Dynamic Cropping parameters
         if isinstance(dynamic, dict):
@@ -172,13 +174,7 @@ class PyTorchRunner(BaseRunner):
     @torch.inference_mode()
     def get_pose(self, frame: np.ndarray) -> np.ndarray:
         c, h, w = frame.shape
-        frame = (
-            self.transform(torch.from_numpy(frame).permute(2, 0, 1))
-            .unsqueeze(0)
-            .to(self.device)
-        )
-        if self.precision == "FP16":
-            frame = frame.half()
+        tensor = torch.from_numpy(frame).permute(2, 0, 1) # CHW, still on CPU
 
         offsets_and_scales = None
         if self.detector is not None:
@@ -187,18 +183,32 @@ class PyTorchRunner(BaseRunner):
                 detections = self.top_down_config.skip_frames.get_detections()
 
             if detections is None:
-                detections = self.detector(frame)[0]
+                # Apply detector transform before inference
+                detector_input = self.detector_transform(tensor).unsqueeze(0).to(self.device)
+                if self.precision == "FP16":
+                    detector_input = detector_input.half()
+                detections = self.detector(detector_input)[0]
 
-            frame_batch, offsets_and_scales = self._prepare_top_down(frame, detections)
+            frame_batch, offsets_and_scales = self._prepare_top_down(tensor, detections)
             if len(frame_batch) == 0:
                 offsets_and_scales = [(0, 0), 1]
             else:
-                frame = frame_batch.to(self.device)
+                tensor = frame_batch  # still CHW, batched
 
         if self.dynamic is not None:
-            frame = self.dynamic.crop(frame)
+            tensor = self.dynamic.crop(tensor)
 
-        outputs = self.model(frame)
+        # Apply pose transform
+        model_input = self.pose_transform(tensor)
+        # Ensure 4D input: (N, C, H, W)
+        if model_input.dim() == 3:
+            model_input = model_input.unsqueeze(0)
+        # Send to device
+        model_input = model_input.to(self.device)
+        if self.precision == "FP16":
+            model_input = model_input.half()
+
+        outputs = self.model(model_input)
         batch_pose = self.model.get_predictions(outputs)["bodypart"]["poses"]
 
         if self.dynamic is not None:
@@ -264,14 +274,17 @@ class PyTorchRunner(BaseRunner):
             self.detector.to(self.device)
             self.detector.load_state_dict(raw_data["detector"])
             self.detector.eval()
-
             if self.precision == "FP16":
                 self.detector = self.detector.half()
 
             if self.top_down_config is None:
                 self.top_down_config = TopDownConfig()
-
             self.top_down_config.read_config(self.cfg)
+
+            detector_transforms = [v2.ToDtype(torch.float32, scale=True)]
+            if self.cfg["detector"]["data"]["inference"].get("normalize_images", False):
+                detector_transforms.append(v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]))
+            self.detector_transform = v2.Compose(detector_transforms)
 
         if isinstance(self.dynamic, dynamic_cropping.TopDownDynamicCropper):
             crop = self.cfg["data"]["inference"].get("top_down_crop", {})
@@ -287,12 +300,18 @@ class PyTorchRunner(BaseRunner):
                 "Top-down models must either use a detector or a TopDownDynamicCropper."
             )
 
-        self.transform = v2.Compose(
-            [
-                v2.ToDtype(torch.float32, scale=True),
-                v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-            ]
-        )
+        pose_transforms = [v2.ToDtype(torch.float32, scale=True)]
+        auto_padding_cfg = self.cfg["data"]["inference"].get("auto_padding", None)
+        if auto_padding_cfg:
+            pose_transforms.append(
+                AutoPadToDivisor(
+                    pad_height_divisor=auto_padding_cfg.get("pad_height_divisor", 1),
+                    pad_width_divisor=auto_padding_cfg.get("pad_width_divisor", 1),
+                )
+            )
+        if self.cfg["data"]["inference"].get("normalize_images", False):
+            pose_transforms.append(v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]))
+        self.pose_transform = v2.Compose(pose_transforms)
 
     def read_config(self) -> dict:
         """Reads the configuration file"""
@@ -306,8 +325,17 @@ class PyTorchRunner(BaseRunner):
         self, frame: torch.Tensor, detections: dict[str, torch.Tensor]
     ):
         """Prepares a frame for top-down pose estimation."""
+        # Accept unbatched frame (C, H, W) or batched frame (1, C, H, W)
+        if frame.dim() == 4:
+            if frame.size(0) != 1:
+                raise ValueError(f"Expected batch size 1, got {frame.size(0)}")
+            frame = frame[0]  # (C, H, W)
+        elif frame.dim() != 3:
+            raise ValueError(f"Expected frame of shape (C, H, W) or (1, C, H, W), got {frame.shape}")
+
         bboxes, scores = detections["boxes"], detections["scores"]
         bboxes = bboxes[scores >= self.top_down_config.bbox_cutoff]
+
         if len(bboxes) > 0 and self.top_down_config.max_detections is not None:
             bboxes = bboxes[: self.top_down_config.max_detections]
 
@@ -316,7 +344,7 @@ class PyTorchRunner(BaseRunner):
         for bbox in bboxes:
             x1, y1, x2, y2 = bbox.tolist()
             cropped_frame, offset, scale = data.top_down_crop_torch(
-                frame[0],
+                frame,
                 (x1, y1, x2 - x1, y2 - y1),
                 output_size=self.top_down_config.crop_size,
                 margin=0,

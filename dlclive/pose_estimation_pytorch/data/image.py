@@ -138,3 +138,30 @@ def top_down_crop_torch(
     offset = x1, y1
     crop = F.resized_crop(image, y1, x1, h, w, [out_h, out_w])
     return crop, offset, scale
+
+
+class AutoPadToDivisor(torch.nn.Module):
+    def __init__(self, pad_height_divisor: int = 1, pad_width_divisor: int = 1):
+        super().__init__()
+        self.pad_height_divisor = pad_height_divisor
+        self.pad_width_divisor = pad_width_divisor
+
+    def forward(self, img: torch.Tensor) -> torch.Tensor:
+        # Accepts either (C, H, W) or (N, C, H, W)
+        if img.ndim == 3:
+            img = img.unsqueeze(0)  # add batch dim
+
+        assert img.ndim == 4, f"Expected 4D tensor, got shape {img.shape}"
+        _, _, h, w = img.shape
+
+        target_h = ((h + self.pad_height_divisor - 1) // self.pad_height_divisor) * self.pad_height_divisor
+        target_w = ((w + self.pad_width_divisor - 1) // self.pad_width_divisor) * self.pad_width_divisor
+
+        pad_h = target_h - h
+        pad_w = target_w - w
+
+        # Pad (left, top, right, bottom)
+        padding = (0, 0, pad_w, pad_h)
+
+        # Warning: this method returns the batched image, regardless if its input was batched or not
+        return F.pad(img, padding, padding_mode="reflect")
