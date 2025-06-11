@@ -186,15 +186,16 @@ def benchmark(
     # Retrieve bodypart names and number of keypoints
     bodyparts = dlc_live.read_config()["metadata"]["bodyparts"]
 
-    colors, vwriter = setup_video_writer(
-        video_path=video_path,
-        save_dir=save_dir,
-        timestamp=timestamp,
-        num_keypoints=len(bodyparts),
-        cmap=cmap,
-        fps=cap.get(cv2.CAP_PROP_FPS),
-        frame_size=(int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))),
-    )
+    if save_video:
+        colors, vwriter = setup_video_writer(
+            video_path=video_path,
+            save_dir=save_dir,
+            timestamp=timestamp,
+            num_keypoints=len(bodyparts),
+            cmap=cmap,
+            fps=cap.get(cv2.CAP_PROP_FPS),
+            frame_size=(int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))),
+        )
 
     # Start empty dict to save poses to for each frame
     poses, times = [], []
