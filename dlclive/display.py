@@ -63,13 +63,14 @@ class Display:
         """
         im_size = (frame.shape[1], frame.shape[0])
         if pose is not None:
-            if self.window is None:
-                self.set_display(im_size, pose.shape[0])
-
             img = Image.fromarray(frame)
             draw = ImageDraw.Draw(img)
+
             if len(pose.shape) == 2:
                 pose = pose[None]
+
+            if self.window is None:
+                self.set_display(im_size=im_size, bodyparts=pose.shape[1])
 
             for i in range(pose.shape[0]):
                 for j in range(pose.shape[1]):
