@@ -243,7 +243,9 @@ def benchmark(
         print(get_system_info())
 
     if save_poses:
-        save_poses_to_files(video_path, save_dir, bodyparts, poses, timestamp=timestamp)
+        individuals = dlc_live.read_config()["metadata"].get("individuals", [])
+        n_individuals = len(individuals) or 1
+        save_poses_to_files(video_path, save_dir, n_individuals, bodyparts, poses, timestamp=timestamp)
 
     return poses, times
 
@@ -320,7 +322,7 @@ def draw_pose_and_write(
 
     vwriter.write(image=frame)
 
-def save_poses_to_files(video_path, save_dir, bodyparts, poses, timestamp):
+def save_poses_to_files(video_path, save_dir, n_individuals, bodyparts, poses, timestamp):
     """
     Saves the detected keypoint poses from the video to CSV and HDF5 files.
 
@@ -330,6 +332,8 @@ def save_poses_to_files(video_path, save_dir, bodyparts, poses, timestamp):
         Path to the analyzed video file.
     save_dir : str
         Directory where the pose data files will be saved.
+    n_individuals: int
+        Number of individuals
     bodyparts : list of str
         List of body part names corresponding to the keypoints.
     poses : list of dict
@@ -339,65 +343,48 @@ def save_poses_to_files(video_path, save_dir, bodyparts, poses, timestamp):
     -------
     None
     """
+    import pandas as pd
 
-    base_filename = os.path.splitext(os.path.basename(video_path))[0]
-    csv_save_path = os.path.join(save_dir, f"{base_filename}_poses_{timestamp}.csv")
-    h5_save_path = os.path.join(save_dir, f"{base_filename}_poses_{timestamp}.h5")
+    base_filename = Path(video_path).stem
+    save_dir = Path(save_dir)
+    h5_save_path = save_dir / f"{base_filename}_poses_{timestamp}.h5"
+    csv_save_path = save_dir / f"{base_filename}_poses_{timestamp}.csv"
 
-    # Save to CSV
-    with open(csv_save_path, mode="w", newline="") as file:
-        writer = csv.writer(file)
-        header = ["frame"] + [
-            f"{bp}_{axis}" for bp in bodyparts for axis in ["x", "y", "confidence"]
-        ]
-        writer.writerow(header)
-        for entry in poses:
-            frame_num = entry["frame"]
-            pose = entry["pose"]["poses"][0][0]
-            row = [frame_num] + [
-                item.item() if isinstance(item, torch.Tensor) else item
-                for kp in pose
-                for item in kp
-            ]
-            writer.writerow(row)
+    poses_array = _create_poses_np_array(n_individuals, bodyparts, poses)
+    flattened_poses = poses_array.reshape(poses_array.shape[0], -1)
 
-    # Save to HDF5
-    with h5py.File(h5_save_path, "w") as hf:
-        hf.create_dataset(name="frames", data=[entry["frame"] for entry in poses])
-        for i, bp in enumerate(bodyparts):
-            hf.create_dataset(
-                name=f"{bp}_x",
-                data=[
-                    (
-                        entry["pose"]["poses"][0][0][i, 0].item()
-                        if isinstance(entry["pose"]["poses"][0][0][i, 0], torch.Tensor)
-                        else entry["pose"]["poses"][0][0][i, 0]
-                    )
-                    for entry in poses
-                ],
-            )
-            hf.create_dataset(
-                name=f"{bp}_y",
-                data=[
-                    (
-                        entry["pose"]["poses"][0][0][i, 1].item()
-                        if isinstance(entry["pose"]["poses"][0][0][i, 1], torch.Tensor)
-                        else entry["pose"]["poses"][0][0][i, 1]
-                    )
-                    for entry in poses
-                ],
-            )
-            hf.create_dataset(
-                name=f"{bp}_confidence",
-                data=[
-                    (
-                        entry["pose"]["poses"][0][0][i, 2].item()
-                        if isinstance(entry["pose"]["poses"][0][0][i, 2], torch.Tensor)
-                        else entry["pose"]["poses"][0][0][i, 2]
-                    )
-                    for entry in poses
-                ],
-            )
+    if n_individuals == 1:
+        pdindex = pd.MultiIndex.from_product(
+            [bodyparts, ["x", "y", "likelihood"]], names=["bodyparts", "coords"]
+        )
+    else:
+        individuals = [f"individual_{i}" for i in range(n_individuals)]
+        pdindex = pd.MultiIndex.from_product(
+            [individuals, bodyparts, ["x", "y", "likelihood"]], names=["individuals", "bodyparts", "coords"]
+        )
+
+    pose_df = pd.DataFrame(flattened_poses, columns=pdindex)
+
+    pose_df.to_hdf(h5_save_path, key="df_with_missing", mode="w")
+    pose_df.to_csv(csv_save_path, index=False)
+
+def _create_poses_np_array(n_individuals: int, bodyparts: list, poses: list):
+    # Create numpy array with poses:
+    max_frame = max(p["frame"] for p in poses)
+    pose_target_shape = (n_individuals, len(bodyparts), 3)
+    poses_array = np.full((max_frame + 1, *pose_target_shape), np.nan)
+
+    for item in poses:
+        frame = item["frame"]
+        pose = item["pose"]
+        if pose.ndim == 2:
+            pose = pose[np.newaxis, :, :]
+        padded_pose = np.full(pose_target_shape, np.nan)
+        slices = tuple(slice(0, min(pose.shape[i], pose_target_shape[i])) for i in range(3))
+        padded_pose[slices] = pose[slices]
+        poses_array[frame] = padded_pose
+
+    return poses_array
 
 
 import argparse
