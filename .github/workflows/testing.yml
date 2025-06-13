@@ -58,7 +58,7 @@ jobs:
           
       - name: Install dependencies via Conda
         shell: bash -el {0}
-        run: conda install -y numpy=1.23.5
+        run: conda install -y "numpy>=1.26,<2.0"
 
       - name: Install and test
         run: |
