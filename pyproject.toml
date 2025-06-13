@@ -33,13 +33,18 @@ colorcet = "^3.0.0"
 Pillow = ">=8.0.0"
 py-cpuinfo = ">=5.0.0"
 tqdm = "^4.62.3"
-tensorflow = "^2.7.0,<=2.12"
+tensorflow = [
+    { version = "^2.7.0,<=2.12", markers = "sys_platform == 'linux'" },
+    { version = "^2.7.0,<=2.10", markers = "sys_platform == 'win32'" }
+]
+tensorflow-macos = { version = "^2.7.0,<=2.12", markers = "sys_platform == 'darwin'" }
+tensorflow-io-gcs-filesystem = { version = "0.27", markers = "sys_platform == 'win32' and python_version >= '3.10' and python_version < '3.11'" }
 pandas = "^1.3"
 tables = "^3.6"
 opencv-python-headless = "^4.5"
-dlclibrary = ">=0.0.2"
+dlclibrary = ">=0.0.6"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
