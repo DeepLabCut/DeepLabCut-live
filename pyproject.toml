@@ -29,7 +29,7 @@ dlc-live-benchmark = "dlclive.benchmark:main"
 
 [tool.poetry.dependencies]
 python = ">=3.7.1,<3.13"
-numpy = "^1.20"
+numpy = ">=1.26,<2.0"
 "ruamel.yaml" = "^0.17.20"
 colorcet = "^3.0.0"
 Pillow = ">=8.0.0"
