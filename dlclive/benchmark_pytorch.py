@@ -117,6 +117,8 @@ def benchmark(
         Type of the model (e.g., 'onnx').
     device : str
         Device to run the model on ('cpu' or 'cuda').
+    single_animal: bool
+        Whether the video contains only one animal (True) or multiple animals (False).
     precision : str, optional, default='FP32'
         Precision type for the model ('FP32' or 'FP16').
     display : bool, optional, default=True
