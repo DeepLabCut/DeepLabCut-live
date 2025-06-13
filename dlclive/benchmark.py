@@ -130,7 +130,7 @@ def get_system_info() -> dict:
     else:
         from cpuinfo import get_cpu_info
 
-        dev = [get_cpu_info()["brand"]]
+        dev = get_cpu_info()
         dev_type = "CPU"
 
     return {
