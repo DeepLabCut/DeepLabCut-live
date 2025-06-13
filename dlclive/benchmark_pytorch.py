@@ -90,6 +90,7 @@ def benchmark(
     model_type: str,
     device: str,
     single_animal: bool,
+    save_dir=None,
     precision: str = "FP32",
     display=True,
     pcutoff=0.5,
@@ -98,7 +99,6 @@ def benchmark(
     cropping=None,  # Adding cropping to the function parameters
     dynamic=(False, 0.5, 10),
     save_poses=False,
-    save_dir=None,
     draw_keypoint_names=False,
     cmap="bmy",
     get_sys_info=True,
@@ -119,6 +119,9 @@ def benchmark(
         Device to run the model on ('cpu' or 'cuda').
     single_animal: bool
         Whether the video contains only one animal (True) or multiple animals (False).
+    save_dir : str, optional
+        Directory to save output data and labeled video.
+        If not specified, will use the directory of video_path, by default None
     precision : str, optional, default='FP32'
         Precision type for the model ('FP32' or 'FP16').
     display : bool, optional, default=True
@@ -135,9 +138,6 @@ def benchmark(
         Parameters for dynamic cropping. If the state is true, then dynamic cropping will be performed. That means that if an object is detected (i.e. any body part > detectiontreshold), then object boundaries are computed according to the smallest/largest x position and smallest/largest y position of all body parts. This window is expanded by the margin and from then on only the posture within this crop is analyzed (until the object is lost, i.e. <detection treshold). The current position is utilized for updating the crop window for the next frame (this is why the margin is important and should be set large enough given the movement of the animal).
     save_poses : bool, optional, default=False
         Whether to save the detected poses to CSV and HDF5 files.
-    save_dir : str, optional
-        Directory to save output data and labeled video.
-        If not specified, will use the directory of video_path, by default None
     draw_keypoint_names : bool, optional, default=False
         Whether to display keypoint names on video frames in the saved video.
     cmap : str, optional, default='bmy'
