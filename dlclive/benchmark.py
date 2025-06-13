@@ -37,7 +37,7 @@ from dlclive.utils import decode_fourcc
 
 def download_benchmarking_data(
     target_dir=".",
-    url="http://deeplabcut.rowland.harvard.edu/datasets/dlclivebenchmark.tar.gz",
+    url="https://huggingface.co/datasets/mwmathis/DLCspeed_benchmarking/blob/main/Data-DLC-live-benchmark.zip",
 ):
     """
     Downloads a DeepLabCut-Live benchmarking Data (videos & DLC models).
