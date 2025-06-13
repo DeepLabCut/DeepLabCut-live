@@ -220,16 +220,11 @@ def benchmark(
         if not ret:
             break
 
-        try:
-            start_time = time.perf_counter()
-            if frame_index == 0:
-                pose = dlc_live.init_inference(frame) # Loads model
-            else:
-                pose = dlc_live.get_pose(frame)
-        except Exception as e:
-            print(f"Error analyzing frame {frame_index}: {e}")
-            frame_index += 1
-            continue
+        start_time = time.perf_counter()
+        if frame_index == 0:
+            pose = dlc_live.init_inference(frame) # Loads model
+        else:
+            pose = dlc_live.get_pose(frame)
 
         inf_time = time.perf_counter() - start_time
         poses.append({"frame": frame_index, "pose": pose})
