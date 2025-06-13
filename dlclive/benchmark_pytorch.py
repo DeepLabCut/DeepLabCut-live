@@ -12,6 +12,8 @@ from pathlib import Path
 from PIL import ImageColor
 from pip._internal.operations import freeze
 import torch
+from tqdm import tqdm
+
 # torch import needs to switch order with "from pip._internal.operations import freeze" because of crash
 # see https://github.com/pytorch/pytorch/issues/140914
 
@@ -91,6 +93,7 @@ def benchmark(
     device: str,
     single_animal: bool,
     save_dir=None,
+    n_frames=1000,
     precision: str = "FP32",
     display=True,
     pcutoff=0.5,
@@ -122,6 +125,8 @@ def benchmark(
     save_dir : str, optional
         Directory to save output data and labeled video.
         If not specified, will use the directory of video_path, by default None
+    n_frames : int, optional
+        Number of frames to run inference on, by default 1000
     precision : str, optional, default='FP32'
         Precision type for the model ('FP32' or 'FP16').
     display : bool, optional, default=True
@@ -203,7 +208,14 @@ def benchmark(
     poses, times = [], []
     frame_index = 0
 
-    while True:
+    total_n_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+    n_frames = int(
+        n_frames
+        if (n_frames > 0) and n_frames < total_n_frames
+        else total_n_frames
+    )
+    iterator = range(n_frames) if display else tqdm(range(n_frames))
+    for i in iterator:
         ret, frame = cap.read()
         if not ret:
             break
