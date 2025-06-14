@@ -5,7 +5,8 @@ DeepLabCut Toolbox (deeplabcut.org)
 Licensed under GNU Lesser General Public License v3.0
 """
 
-
+import os
+import urllib.request
 import sys
 import shutil
 import warnings
@@ -41,26 +42,27 @@ def main():
     if not display:
         print('Running without displaying video')
 
-    # make temporary directory in $HOME
-    # TODO: why create this temp directory in $HOME?
+    # make temporary directory in $current
     print("\nCreating temporary directory...\n")
-    tmp_dir = Path().home() / 'dlc-live-tmp'
-    tmp_dir.mkdir(mode=0o775,exist_ok=True)
+    tmp_dir = Path.cwd() / 'dlc-live-tmp'
+    tmp_dir.mkdir(mode=0o775, exist_ok=True)
 
     video_file = str(tmp_dir / 'dog_clip.avi')
     model_dir = tmp_dir / 'DLC_Dog_resnet_50_iteration-0_shuffle-0'
 
     # download dog test video from github:
-    # TODO: Should check if the video's already there before downloading it (should have been cloned with the files)
-    print(f"Downloading Video to {video_file}")
-    url_link = "https://github.com/DeepLabCut/DeepLabCut-live/blob/master/check_install/dog_clip.avi?raw=True"
-    urllib.request.urlretrieve(url_link, video_file, reporthook=urllib_pbar)
+    if not os.path.exists(video_file):
+        print(f"Downloading Video to {video_file}")
+        url_link = "https://github.com/DeepLabCut/DeepLabCut-live/blob/main/check_install/dog_clip.avi?raw=True"
+        urllib.request.urlretrieve(url_link, video_file, reporthook=urllib_pbar)
+    else:
+        print(f"Video already exists at {video_file}")
 
     # download model from the DeepLabCut Model Zoo
     if Path(model_dir / SNAPSHOT_NAME).exists():
         print('Model already downloaded, using cached version')
     else:
-        print("Downloading full_dog model from the DeepLabCut Model Zoo...")
+        print("Downloading a test model from the DeepLabCut Model Zoo...")
         download_huggingface_model(MODEL_NAME, model_dir)
 
     # assert these things exist so we can give informative error messages

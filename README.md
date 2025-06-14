@@ -41,12 +41,17 @@ For more details and examples, see documentation [here](dlclive/processor/README
 Please see our instruction manual to install on a [Windows or Linux machine](docs/install_desktop.md) or on a [NVIDIA Jetson Development Board](docs/install_jetson.md). Note, this code works with tensorflow (TF) 1 or TF 2 models, but TF requires that whatever version you exported your model with, you must import with the same version (i.e., export with TF1.13, then use TF1.13 with DlC-Live; export with TF2.3, then use TF2.3 with DLC-live).
 
 - available on pypi as: `pip install deeplabcut-live`
+  
 
-Note, you can then test your installation by running:
+Note, you can then test your installation by installing poetry (`pip install poetry`), then running:
 
-`dlc-live-test`
 
-If installed properly, this script will i) create a temporary folder ii) download the full_dog model from the [DeepLabCut Model Zoo](http://www.mousemotorlab.org/dlc-modelzoo), iii) download a short video clip of a dog, and iv) run inference while displaying keypoints. v) remove the temporary folder.
+
+```python
+poetry run dlc-live-test
+```
+
+If installed properly, this script will i) create a temporary folder ii) download the SuperAnimal-Quadruped model from the [DeepLabCut Model Zoo](http://www.mousemotorlab.org/dlc-modelzoo), iii) download a short video clip of a dog, and iv) run inference while displaying keypoints. v) remove the temporary folder.
 
 <img src="https://images.squarespace-cdn.com/content/v1/57f6d51c9f74566f55ecf271/1606081086014-TG9GWH63ZGGOO7K779G3/ke17ZwdGBToddI8pDm48kHiSoSToKfKUI9t99vKErWoUqsxRUqqbr1mOJYKfIPR7LoDQ9mXPOjoJoqy81S2I8N_N4V1vUb5AoIIIbLZhVYxCRW4BPu10St3TBAUQYVKcOoIGycwr1shdgJWzLuxyzjLbSRGBFFxjYMBr42yCvRK5HHsLZWtMlAHzDU294nCd/dlclivetest.png?format=1000w" width="650" title="DLC-live-test" alt="DLC LIVE TEST" align="center" vspace = "50">
 
