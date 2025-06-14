@@ -60,11 +60,11 @@ jobs:
         shell: bash -el {0}
         run: conda install -y "numpy>=1.26,<2.0"
 
-#      - name: Install Poetry
-#        run: |
-#          pip install --upgrade pip wheel poetry
+      - name: Install Poetry
+        run: |
+          pip install --upgrade pip wheel poetry
 #          poetry lock --no-cache
 #          poetry install --no-root
           
       - name: Run DLC Live Tests
-        run: python dlc-live-test --nodisplay
+        run: poetry dlc-live-test --nodisplay
