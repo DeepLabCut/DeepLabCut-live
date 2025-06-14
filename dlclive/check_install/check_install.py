@@ -42,11 +42,10 @@ def main():
     if not display:
         print('Running without displaying video')
 
-    # make temporary directory in $HOME
-    # TODO: why create this temp directory in $HOME?
+    # make temporary directory in $current
     print("\nCreating temporary directory...\n")
-    tmp_dir = Path().home() / 'dlc-live-tmp'
-    tmp_dir.mkdir(mode=0o775,exist_ok=True)
+    tmp_dir = Path.cwd() / 'dlc-live-tmp'
+    tmp_dir.mkdir(mode=0o775, exist_ok=True)
 
     video_file = str(tmp_dir / 'dog_clip.avi')
     model_dir = tmp_dir / 'DLC_Dog_resnet_50_iteration-0_shuffle-0'
