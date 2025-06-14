@@ -9,8 +9,6 @@ homepage = "https://github.com/DeepLabCut/DeepLabCut-live"
 repository = "https://github.com/DeepLabCut/DeepLabCut-live"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -28,7 +26,7 @@ dlc-live-test = "dlclive.check_install.check_install:main"
 dlc-live-benchmark = "dlclive.benchmark:main"
 
 [tool.poetry.dependencies]
-python = ">=3.7.1,<3.13"
+python = ">=3.9,<3.14"
 numpy = ">=1.26,<2.0"
 "ruamel.yaml" = "^0.17.20"
 colorcet = "^3.0.0"
