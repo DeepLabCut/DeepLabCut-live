@@ -67,4 +67,4 @@ jobs:
 #          poetry install --no-root
           
       - name: Run DLC Live Tests
-        run: poetry run dlc-live-test --nodisplay
+        run: python run dlc-live-test --nodisplay
