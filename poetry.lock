@@ -5,9 +5,9 @@ name = "absl-py"
 version = "2.1.0"
 description = "Abseil Python Common Libraries, see https://github.com/abseil/abseil-py."
 optional = false
-python-versions = ">=3.9"
+python-versions = ">=3.7"
 groups = ["main"]
-markers = "python_version < \"3.13\" and (python_version == \"3.9\" or python_version == \"3.9\" or platform_system == \"Darwin\" or platform_system == \"Linux\") and (sys_platform == \"linux\" or sys_platform == \"win32\" or sys_platform == \"darwin\") and (python_version == \"3.9\" or platform_system == \"Darwin\" or platform_machine == \"aarch64\") and (platform_system == \"Linux\" or python_version == \"3.9\" or python_version == \"3.9\" or platform_machine == \"arm64\") and (platform_machine == \"arm64\" or platform_machine == \"aarch64\" or python_version == \"3.9\")"
+markers = "python_version < \"3.10\" and (python_version == \"3.9\" or python_version == \"3.7\" or platform_system == \"Darwin\" or platform_system == \"Linux\") and (sys_platform == \"linux\" or sys_platform == \"win32\" or sys_platform == \"darwin\") and (python_version == \"3.7\" or platform_system == \"Darwin\" or platform_machine == \"aarch64\") and (platform_system == \"Linux\" or python_version == \"3.9\" or python_version == \"3.7\" or platform_machine == \"arm64\") and (platform_machine == \"arm64\" or platform_machine == \"aarch64\" or python_version == \"3.7\")"
 files = [
     {file = "absl-py-2.1.0.tar.gz", hash = "sha256:7820790efbb316739cde8b4e19357243fc3608a152024288513dd968d7d959ff"},
     {file = "absl_py-2.1.0-py3-none-any.whl", hash = "sha256:526a04eadab8b4ee719ce68f204172ead1027549089702d99b9059f129ff1308"},
@@ -20,7 +20,7 @@ description = "Abseil Python Common Libraries, see https://github.com/abseil/abs
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "(python_version == \"3.13\" or python_version == \"3.9\" or platform_machine != \"aarch64\") and (sys_platform == \"linux\" or sys_platform == \"win32\" or sys_platform == \"darwin\") and (platform_machine != \"aarch64\" or platform_system != \"Linux\" or python_version == \"3.13\") and (platform_system != \"Darwin\" or platform_machine != \"arm64\" or python_version == \"3.13\") and python_version >= \"3.9\" and (python_version == \"3.13\" or platform_system != \"Darwin\" or platform_machine != \"arm64\" and platform_machine != \"aarch64\" or python_version == \"3.9\")"
+markers = "(python_version == \"3.10\" or python_version == \"3.8\" or platform_machine != \"aarch64\") and (sys_platform == \"linux\" or sys_platform == \"win32\" or sys_platform == \"darwin\") and (platform_machine != \"aarch64\" or platform_system != \"Linux\" or python_version == \"3.10\") and (platform_system != \"Darwin\" or platform_machine != \"arm64\" or python_version == \"3.10\") and python_version >= \"3.8\" and (python_version == \"3.10\" or platform_system != \"Darwin\" or platform_machine != \"arm64\" and platform_machine != \"aarch64\" or python_version == \"3.8\")"
 files = [
     {file = "absl_py-2.3.0-py3-none-any.whl", hash = "sha256:9824a48b654a306168f63e0d97714665f8490b8d89ec7bf2efc24bf67cf579b3"},
     {file = "absl_py-2.3.0.tar.gz", hash = "sha256:d96fda5c884f1b22178852f30ffa85766d50b99e00775ea626c23304f582fc4f"},
@@ -48,9 +48,9 @@ name = "blosc2"
 version = "2.0.0"
 description = "Python wrapper for the C-Blosc2 library."
 optional = false
-python-versions = ">=3.9, <4"
+python-versions = ">=3.8, <4"
 groups = ["main"]
-markers = "(platform_system != \"Darwin\" or platform_machine != \"arm64\") and python_version == \"3.9\" and (platform_system != \"Linux\" or platform_machine != \"aarch64\")"
+markers = "(platform_system != \"Darwin\" or platform_machine != \"arm64\") and python_version == \"3.8\" and (platform_system != \"Linux\" or platform_machine != \"aarch64\")"
 files = [
     {file = "blosc2-2.0.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:4085e5c1df186e1747d8a8578b0cc1c8b7668391d635e9f89e17156912fba85a"},
     {file = "blosc2-2.0.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:cec4c0570543921ce6b8c9ffdbf9f2170de37ecaf8e2b213e867e3130b81f205"},
@@ -83,7 +83,7 @@ name = "blosc2"
 version = "2.5.1"
 description = "Python wrapper for the C-Blosc2 library"
 optional = false
-python-versions = "<4,>=3.9"
+python-versions = "<4,>=3.8"
 groups = ["main"]
 markers = "platform_machine != \"aarch64\" and python_version == \"3.9\" and (platform_system != \"Darwin\" or platform_machine != \"arm64\" and platform_machine != \"aarch64\")"
 files = [
@@ -182,7 +182,7 @@ name = "certifi"
 version = "2025.4.26"
 description = "Python package for providing Mozilla's CA Bundle."
 optional = false
-python-versions = ">=3.9"
+python-versions = ">=3.6"
 groups = ["main"]
 files = [
     {file = "certifi-2025.4.26-py3-none-any.whl", hash = "sha256:30350364dfe371162649852c63336a15c70c6510c2ad5015b21c2345311805f3"},
@@ -194,7 +194,7 @@ name = "charset-normalizer"
 version = "3.4.2"
 description = "The Real First Universal Charset Detector. Open, modern and actively maintained alternative to Chardet."
 optional = false
-python-versions = ">=3.9"
+python-versions = ">=3.7"
 groups = ["main"]
 files = [
     {file = "charset_normalizer-3.4.2-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:7c48ed483eb946e6c04ccbe02c6b4d1d48e51944b6db70f697e089c193404941"},
@@ -329,7 +329,7 @@ name = "cython"
 version = "3.1.1"
 description = "The Cython compiler for writing C extensions in the Python language."
 optional = false
-python-versions = ">=3.9"
+python-versions = ">=3.8"
 groups = ["main"]
 markers = "(platform_system != \"Darwin\" or platform_machine != \"arm64\") and python_version == \"3.8\" and (platform_system != \"Linux\" or platform_machine != \"aarch64\")"
 files = [
