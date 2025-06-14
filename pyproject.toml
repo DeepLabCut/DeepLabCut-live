@@ -43,7 +43,7 @@ tensorflow = [
     { version = "^2.5.0,<=2.10", markers = "sys_platform == 'win32'" }
 ]
 
-tensorflow-io-gcs-filesystem = { version = ">=0.27", markers = "sys_platform == 'win32'" }
+#tensorflow-io-gcs-filesystem = { version = ">=0.27", markers = "sys_platform == 'win32'" }
 tensorflow-macos = { version = ">=2.7.0,<2.12", markers = "sys_platform == 'darwin'" }
 
 
