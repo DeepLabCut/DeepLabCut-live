@@ -25,7 +25,7 @@ dlc-live-test = "dlclive.check_install.check_install:main"
 dlc-live-benchmark = "dlclive.benchmark:main"
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.14"
+python = ">=3.9,<3.12"
 numpy = ">=1.26,<2.0"
 "ruamel.yaml" = "^0.17.20"
 colorcet = "^3.0.0"
