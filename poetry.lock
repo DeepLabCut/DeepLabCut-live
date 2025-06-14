@@ -40,8 +40,8 @@ files = [
 ]
 
 [package.dependencies]
-six 
-wheel
+six = ">=1.6.1,<2.0"
+wheel = ">=0.23.0,<1.0"
 
 [[package]]
 name = "blosc2"
