@@ -12,7 +12,6 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
     "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
     "Operating System :: OS Independent"
 ]
@@ -33,16 +32,16 @@ colorcet = "^3.0.0"
 Pillow = ">=8.0.0"
 py-cpuinfo = ">=5.0.0"
 tqdm = "^4.62.3"
+torch = ">=1.10,<3.0"
+
+# OS-specific TensorFlow packages
 tensorflow = [
-    {version = ">=2.7.0,<2.17", python = "<4", markers = "sys_platform == 'linux'"},
-    {version = "^2.7.0,<=2.10", python = ">=3.9", markers = "sys_platform == 'win32'" }
+    { version = ">=2.7.0,<2.17", markers = "sys_platform == 'linux'" },
+    { version = "^2.5.0,<=2.10", markers = "sys_platform == 'win32'" }
 ]
-tensorflow-macos = { version = "^2.7.0,<=2.12", markers = "sys_platform == 'darwin'" }
 tensorflow-io-gcs-filesystem = { version = "0.27", markers = "sys_platform == 'win32' and python_version >= '3.9' and python_version < '3.11'" }
-pandas = "^1.3"
-tables = "^3.6"
-opencv-python-headless = "^4.5"
-dlclibrary = ">=0.0.6"
+tensorflow-macos = { version = ">=2.7.0,<2.17", markers = "sys_platform == 'darwin'" }
+
 
 [tool.poetry.group.dev.dependencies]
 
