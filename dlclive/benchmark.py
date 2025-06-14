@@ -42,37 +42,34 @@ def download_benchmarking_data(
     """
     Downloads a DeepLabCut-Live benchmarking Data (videos & DLC models).
     """
+    import os
     import urllib.request
-    import tarfile
     from tqdm import tqdm
+    import zipfile
 
     def show_progress(count, block_size, total_size):
         pbar.update(block_size)
 
-    def tarfilenamecutting(tarf):
-        """' auxfun to extract folder path
-        ie. /xyz-trainsetxyshufflez/
-        """
-        for memberid, member in enumerate(tarf.getmembers()):
-            if memberid == 0:
-                parent = str(member.path)
-                l = len(parent) + 1
-            if member.path.startswith(parent):
-                member.path = member.path[l:]
-                yield member
-
     response = urllib.request.urlopen(url)
-    print(
-        "Downloading the benchmarking data from the DeepLabCut server @Harvard -> Go Crimson!!! {}....".format(
-            url
-        )
-    )
     total_size = int(response.getheader("Content-Length"))
-    pbar = tqdm(unit="B", total=total_size, position=0)
-    filename, _ = urllib.request.urlretrieve(url, reporthook=show_progress)
-    with tarfile.open(filename, mode="r:gz") as tar:
-        tar.extractall(target_dir, members=tarfilenamecutting(tar))
+    pbar = tqdm(unit="B", total=total_size, position=0, desc="Downloading")
+    filename, _ = urllib.request.urlretrieve(url, filename=zip_path, reporthook=show_progress)
+    pbar.close()
 
+    class DownloadProgressBar(tqdm):
+        def update_to(self, b=1, bsize=1, tsize=None):
+            if tsize is not None:
+                self.total = tsize
+            self.update(b * bsize - self.n)
+
+    zip_path = os.path.join(target_dir, "Data-DLC-live-benchmark.zip")
+    print(
+        f"Downloading the benchmarking data from {url} ..."
+    )
+
+    print(f"Extracting {zip_path} to {target_dir} ...")
+    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        zip_ref.extractall(target_dir)
 
 def get_system_info() -> dict:
     """ Return summary info for system running benchmark
