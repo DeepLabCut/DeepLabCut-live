@@ -37,7 +37,6 @@ tensorflow = [
     {version = ">=2.7.0,<2.13", python = "<3.11"},
     {version = ">=2.13", python = ">=3.11"}
 ]
-]
 tensorflow-macos = { version = "^2.7.0,<=2.12", markers = "sys_platform == 'darwin'" }
 tensorflow-io-gcs-filesystem = { version = "0.27", markers = "sys_platform == 'win32' and python_version >= '3.10' and python_version < '3.11'" }
 pandas = "^1.3"
