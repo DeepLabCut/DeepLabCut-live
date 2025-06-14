@@ -53,14 +53,14 @@ def main():
     # download dog test video from github:
     # TODO: Should check if the video's already there before downloading it (should have been cloned with the files)
     print(f"Downloading Video to {video_file}")
-    url_link = "https://github.com/DeepLabCut/DeepLabCut-live/blob/master/check_install/dog_clip.avi?raw=True"
+    url_link = "https://github.com/DeepLabCut/DeepLabCut-live/blob/main/check_install/dog_clip.avi?raw=True"
     urllib.request.urlretrieve(url_link, video_file, reporthook=urllib_pbar)
 
     # download model from the DeepLabCut Model Zoo
     if Path(model_dir / SNAPSHOT_NAME).exists():
         print('Model already downloaded, using cached version')
     else:
-        print("Downloading full_dog model from the DeepLabCut Model Zoo...")
+        print("Downloading a test model from the DeepLabCut Model Zoo...")
         download_huggingface_model(MODEL_NAME, model_dir)
 
     # assert these things exist so we can give informative error messages
