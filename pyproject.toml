@@ -34,6 +34,7 @@ opencv-python-headless = ">=4.5.0,<5.0.0"
 py-cpuinfo = ">=5.0.0"
 tqdm = "^4.62.3"
 torch = ">=1.10,<3.0"
+dlclibrary = ">=0.0.6"
 
 # OS-specific TensorFlow packages
 tensorflow = [
