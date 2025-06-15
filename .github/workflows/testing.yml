@@ -14,7 +14,10 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.10"] #3.11+ issues with TF 
+        python-version: ["3.9", "3.10"] #3.11+ issues with TF 
+        exclude:
+          - os: windows-latest
+            python-version: "3.10"
         include:
           - os: ubuntu-latest
             path: ~/.cache/pip
@@ -61,10 +64,13 @@ jobs:
         run: conda install -y "numpy>=1.26,<2.0"
 
       - name: Install Poetry
-        run: |
-          pip install --upgrade pip wheel poetry
-          poetry lock --no-cache
-          poetry install --no-root
+        run: pip install --upgrade pip wheel poetry
+
+      - name: Regenerate Poetry lock
+        run: poetry lock --no-cache --no-update
+
+      - name: Install project dependencies
+        run: poetry install --no-root
           
       - name: Run DLC Live Tests
         run: poetry run dlc-live-test --nodisplay
