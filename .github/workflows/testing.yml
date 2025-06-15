@@ -67,7 +67,7 @@ jobs:
         run: pip install --upgrade pip wheel poetry
 
       - name: Regenerate Poetry lock
-        run: poetry lock --no-cache --no-update
+        run: poetry lock --no-cache
 
       - name: Install project dependencies
         run: poetry install --no-root
