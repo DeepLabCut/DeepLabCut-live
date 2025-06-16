@@ -49,7 +49,7 @@ tensorflow = [
 ]
 tensorflow-macos = { version = "^2.7.0,<=2.12", optional = true, markers = "sys_platform == 'darwin'" }
 tensorflow-io-gcs-filesystem = [
-    { version = "==0.27", optional = true, platform = "win32", python = ">=3.10,<3.11" },
+    { version = "==0.27", optional = true, platform = "win32", python = ">=3.9,<3.11" },
     { version = "*", optional = true, platform = "linux" },
     { version = "*", optional = true, markers = "sys_platform == 'darwin'" }
 ]

@@ -1468,10 +1468,10 @@ files = [
 
 [package.dependencies]
 numpy = [
-    {version = ">=1.21.4", markers = "python_version >= \"3.10\" and platform_system == \"Darwin\""},
-    {version = ">=1.21.2", markers = "platform_system != \"Darwin\" and python_version >= \"3.10\""},
     {version = ">=1.21.0", markers = "python_version == \"3.9\" and platform_system == \"Darwin\" and platform_machine == \"arm64\""},
     {version = ">=1.19.3", markers = "(python_version >= \"3.8\" and platform_system == \"Linux\" and platform_machine == \"aarch64\" or python_version >= \"3.9\") and (python_version > \"3.9\" or platform_system != \"Darwin\" or platform_machine != \"arm64\")"},
+    {version = ">=1.21.4", markers = "python_version >= \"3.10\" and platform_system == \"Darwin\""},
+    {version = ">=1.21.2", markers = "platform_system != \"Darwin\" and python_version >= \"3.10\""},
     {version = ">=1.23.5", markers = "python_version >= \"3.11\""},
 ]
 
@@ -1539,8 +1539,8 @@ files = [
 
 [package.dependencies]
 numpy = [
-    {version = ">=1.21.0", markers = "python_version >= \"3.10\""},
     {version = ">=1.20.3", markers = "python_version < \"3.10\""},
+    {version = ">=1.21.0", markers = "python_version >= \"3.10\""},
     {version = ">=1.23.2", markers = "python_version >= \"3.11\""},
 ]
 python-dateutil = ">=2.8.1"
@@ -2492,7 +2492,7 @@ description = "TensorFlow IO"
 optional = true
 python-versions = ">=3.7, <3.11"
 groups = ["main"]
-markers = "python_version == \"3.10\" and extra == \"tf\" and sys_platform == \"win32\""
+markers = "python_version < \"3.11\" and extra == \"tf\" and sys_platform == \"win32\""
 files = [
     {file = "tensorflow_io_gcs_filesystem-0.27.0-cp310-cp310-macosx_10_14_x86_64.whl", hash = "sha256:babca2a12755badd1517043f9d633823533fbd7b463d7d36e9e6179b246731dc"},
     {file = "tensorflow_io_gcs_filesystem-0.27.0-cp310-cp310-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:b3a0ebfeac11507f6fc96162b8b22010b7d715bb0848311e54ef18d88f07014a"},
@@ -2526,7 +2526,7 @@ description = "TensorFlow IO"
 optional = true
 python-versions = "<3.13,>=3.7"
 groups = ["main"]
-markers = "extra == \"tf\" and (python_version == \"3.9\" or python_version == \"3.11\" or sys_platform == \"linux\" or sys_platform == \"darwin\") and (sys_platform == \"win32\" or sys_platform == \"linux\" or sys_platform == \"darwin\")"
+markers = "extra == \"tf\" and (python_version == \"3.11\" or sys_platform == \"linux\" or sys_platform == \"darwin\") and (sys_platform == \"win32\" or sys_platform == \"linux\" or sys_platform == \"darwin\")"
 files = [
     {file = "tensorflow_io_gcs_filesystem-0.37.1-cp310-cp310-macosx_10_14_x86_64.whl", hash = "sha256:249c12b830165841411ba71e08215d0e94277a49c551e6dd5d72aab54fe5491b"},
     {file = "tensorflow_io_gcs_filesystem-0.37.1-cp310-cp310-macosx_12_0_arm64.whl", hash = "sha256:257aab23470a0796978efc9c2bcf8b0bc80f22e6298612a4c0a50d3f4e88060c"},
@@ -3005,4 +3005,4 @@ tf = ["tensorflow", "tensorflow", "tensorflow-io-gcs-filesystem", "tensorflow-io
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9,<3.12"
-content-hash = "0f103b32eca20c6e339e91abac0bbc0d7dc46da444623a8e02c4631ffb50aa69"
+content-hash = "2d256ce0c45e58bd20fee0d3a9eda1a1c22498cad41c4a977bc10ce67c762f26"
