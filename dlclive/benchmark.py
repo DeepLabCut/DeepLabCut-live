@@ -27,18 +27,47 @@ try:
 except ModuleNotFoundError as err:
     has_pandas = False
 
-try:
-    from tqdm import tqdm
-
-    has_tqdm = True
-except ModuleNotFoundError as err:
-    has_tqdm = False
-
-
 from dlclive import DLCLive
-from dlclive.utils import decode_fourcc
-from dlclive.version import VERSION
+from dlclive import VERSION
+from dlclive import __file__ as dlcfile
 
+from dlclive.utils import decode_fourcc
+
+
+def download_benchmarking_data(
+    target_dir=".",
+    url="https://huggingface.co/datasets/mwmathis/DLCspeed_benchmarking/resolve/main/Data-DLC-live-benchmark.zip",
+):
+    """
+    Downloads and extracts DeepLabCut-Live benchmarking data (videos & DLC models).
+    """
+    import os
+    import urllib.request
+    from tqdm import tqdm
+    import zipfile
+
+    # Avoid nested folder issue
+    if os.path.basename(os.path.normpath(target_dir)) == "Data-DLC-live-benchmark":
+        target_dir = os.path.dirname(os.path.normpath(target_dir))
+    os.makedirs(target_dir, exist_ok=True)  # Ensure target directory exists
+
+    zip_path = os.path.join(target_dir, "Data-DLC-live-benchmark.zip")
+
+    if os.path.exists(zip_path):
+        print(f"{zip_path} already exists. Skipping download.")
+    else:
+        def show_progress(count, block_size, total_size):
+            pbar.update(block_size)
+
+        print(f"Downloading the benchmarking data from {url} ...")
+        pbar = tqdm(unit="B", total=0, position=0, desc="Downloading")
+
+        filename, _ = urllib.request.urlretrieve(url, filename=zip_path, reporthook=show_progress)
+        pbar.close()
+
+    print(f"Extracting {zip_path} to {target_dir} ...")
+    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        zip_ref.extractall(target_dir)
 
 def get_system_info() -> dict:
     """
