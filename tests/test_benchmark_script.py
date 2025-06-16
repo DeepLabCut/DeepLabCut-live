@@ -18,12 +18,16 @@ def test_benchmark_script_runs(tmp_path):
     out_dir.mkdir(exist_ok=True)
 
     pixels = [2500, 10000]
-    n_frames = 10
+    n_frames = 15
 
     for m in dog_models:
-        benchmark_videos(m, dog_video, output=str(out_dir), n_frames=n_frames, pixels=pixels)
+    print(f"Running dog model: {m}")
+    result = benchmark_videos(m, dog_video, output=str(out_dir), n_frames=n_frames, pixels=pixels)
+    print("Dog model result:", result)
 
     for m in mouse_models:
-        benchmark_videos(m, mouse_video, output=str(out_dir), n_frames=n_frames, pixels=pixels)
+        print(f"Running mouse model: {m}")
+        result = benchmark_videos(m, mouse_video, output=str(out_dir), n_frames=n_frames, pixels=pixels)
+        print("Mouse model result:", result)
 
     assert any(out_dir.iterdir())
