@@ -21,9 +21,9 @@ def test_benchmark_script_runs(tmp_path):
     n_frames = 15
 
     for m in dog_models:
-    print(f"Running dog model: {m}")
-    result = benchmark_videos(m, dog_video, output=str(out_dir), n_frames=n_frames, pixels=pixels)
-    print("Dog model result:", result)
+        print(f"Running dog model: {m}")
+        result = benchmark_videos(m, dog_video, output=str(out_dir), n_frames=n_frames, pixels=pixels)
+        print("Dog model result:", result)
 
     for m in mouse_models:
         print(f"Running mouse model: {m}")
