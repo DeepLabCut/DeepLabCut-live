@@ -22,71 +22,6 @@ from dlclive import DLCLive
 from dlclive.version import VERSION
 
 
-def get_system_info() -> dict:
-    """
-    Returns a summary of system information relevant to running benchmarking.
-
-    Returns
-    -------
-    dict
-        A dictionary containing the following system information:
-        - host_name (str): Name of the machine.
-        - op_sys (str): Operating system.
-        - python (str): Path to the Python executable, indicating the conda/virtual environment in use.
-        - device_type (str): Type of device used ('GPU' or 'CPU').
-        - device (list): List containing the name of the GPU or CPU brand.
-        - freeze (list): List of installed Python packages with their versions.
-        - python_version (str): Version of Python in use.
-        - git_hash (str or None): If installed from git repository, hash of HEAD commit.
-        - dlclive_version (str): Version of the DLCLive package.
-    """
-
-    # Get OS and host name
-    op_sys = platform.platform()
-    host_name = platform.node().replace(" ", "")
-
-    # Get Python executable path
-    if platform.system() == "Windows":
-        host_python = sys.executable.split(os.path.sep)[-2]
-    else:
-        host_python = sys.executable.split(os.path.sep)[-3]
-
-    # Try to get git hash if possible
-    git_hash = None
-    dlc_basedir = os.path.dirname(os.path.dirname(__file__))
-    try:
-        git_hash = (
-            subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=dlc_basedir)
-            .decode("utf-8")
-            .strip()
-        )
-    except subprocess.CalledProcessError:
-        # Not installed from git repo, e.g., pypi
-        pass
-
-    # Get device info (GPU or CPU)
-    if torch.cuda.is_available():
-        dev_type = "GPU"
-        dev = [torch.cuda.get_device_name(torch.cuda.current_device())]
-    else:
-        from cpuinfo import get_cpu_info
-
-        dev_type = "CPU"
-        dev = [get_cpu_info()["brand_raw"]]
-
-    return {
-        "host_name": host_name,
-        "op_sys": op_sys,
-        "python": host_python,
-        "device_type": dev_type,
-        "device": dev,
-        "freeze": list(freeze.freeze()),
-        "python_version": sys.version,
-        "git_hash": git_hash,
-        "dlclive_version": VERSION,
-    }
-
-
 def benchmark(
     video_path: str,
     model_path: str,
@@ -106,7 +41,6 @@ def benchmark(
     save_poses=False,
     draw_keypoint_names=False,
     cmap="bmy",
-    get_sys_info=True,
     save_video=False,
 ):
     """
@@ -152,8 +86,6 @@ def benchmark(
         Whether to display keypoint names on video frames in the saved video.
     cmap : str, optional, default='bmy'
         Colormap from the colorcet library for keypoint visualization.
-    get_sys_info : bool, optional, default=True
-        Whether to print system information.
     save_video : bool, optional, default=False
         Whether to save the labeled video.
 
@@ -267,9 +199,6 @@ def benchmark(
 
     if save_video:
         vwriter.release()
-
-    if get_sys_info:
-        print(get_system_info())
 
     if save_poses:
         individuals = dlc_live.read_config()["metadata"].get("individuals", [])
