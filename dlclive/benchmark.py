@@ -37,42 +37,38 @@ from dlclive.utils import decode_fourcc
 
 def download_benchmarking_data(
     target_dir=".",
-    url="http://deeplabcut.rowland.harvard.edu/datasets/dlclivebenchmark.tar.gz",
+    url="https://huggingface.co/datasets/mwmathis/DLCspeed_benchmarking/resolve/main/Data-DLC-live-benchmark.zip",
 ):
     """
-    Downloads a DeepLabCut-Live benchmarking Data (videos & DLC models).
+    Downloads and extracts DeepLabCut-Live benchmarking data (videos & DLC models).
     """
+    import os
     import urllib.request
-    import tarfile
     from tqdm import tqdm
+    import zipfile
 
-    def show_progress(count, block_size, total_size):
-        pbar.update(block_size)
+    # Avoid nested folder issue
+    if os.path.basename(os.path.normpath(target_dir)) == "Data-DLC-live-benchmark":
+        target_dir = os.path.dirname(os.path.normpath(target_dir))
+    os.makedirs(target_dir, exist_ok=True)  # Ensure target directory exists
 
-    def tarfilenamecutting(tarf):
-        """' auxfun to extract folder path
-        ie. /xyz-trainsetxyshufflez/
-        """
-        for memberid, member in enumerate(tarf.getmembers()):
-            if memberid == 0:
-                parent = str(member.path)
-                l = len(parent) + 1
-            if member.path.startswith(parent):
-                member.path = member.path[l:]
-                yield member
+    zip_path = os.path.join(target_dir, "Data-DLC-live-benchmark.zip")
 
-    response = urllib.request.urlopen(url)
-    print(
-        "Downloading the benchmarking data from the DeepLabCut server @Harvard -> Go Crimson!!! {}....".format(
-            url
-        )
-    )
-    total_size = int(response.getheader("Content-Length"))
-    pbar = tqdm(unit="B", total=total_size, position=0)
-    filename, _ = urllib.request.urlretrieve(url, reporthook=show_progress)
-    with tarfile.open(filename, mode="r:gz") as tar:
-        tar.extractall(target_dir, members=tarfilenamecutting(tar))
+    if os.path.exists(zip_path):
+        print(f"{zip_path} already exists. Skipping download.")
+    else:
+        def show_progress(count, block_size, total_size):
+            pbar.update(block_size)
 
+        print(f"Downloading the benchmarking data from {url} ...")
+        pbar = tqdm(unit="B", total=0, position=0, desc="Downloading")
+
+        filename, _ = urllib.request.urlretrieve(url, filename=zip_path, reporthook=show_progress)
+        pbar.close()
+
+    print(f"Extracting {zip_path} to {target_dir} ...")
+    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        zip_ref.extractall(target_dir)
 
 def get_system_info() -> dict:
     """ Return summary info for system running benchmark
