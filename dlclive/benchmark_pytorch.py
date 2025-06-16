@@ -3,6 +3,7 @@ import platform
 import subprocess
 import sys
 import time
+import warnings
 
 import colorcet as cc
 import cv2
@@ -218,6 +219,12 @@ def benchmark(
     for i in iterator:
         ret, frame = cap.read()
         if not ret:
+            warnings.warn(
+                (
+                    "Did not complete {:d} frames. "
+                    "There probably were not enough frames in the video {}."
+                ).format(n_frames, video_path)
+            )
             break
 
         start_time = time.perf_counter()
