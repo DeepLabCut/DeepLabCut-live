@@ -181,7 +181,7 @@ class DLCLive(object):
         """
         return {param: getattr(self, param) for param in self.PARAMETERS}
 
-    def process_frame(self, frame):
+    def process_frame(self, frame: np.ndarray) -> np.ndarray:
         """
         Crops an image according to the object's cropping and dynamic properties.
 
@@ -237,7 +237,7 @@ class DLCLive(object):
 
         return frame
 
-    def init_inference(self, frame=None, **kwargs):
+    def init_inference(self, frame=None, **kwargs) -> np.ndarray:
         """
         Load model and perform inference on first frame -- the first inference is usually very slow.
 
@@ -376,7 +376,7 @@ class DLCLive(object):
 
         return pose
 
-    def get_pose(self, frame=None, **kwargs):
+    def get_pose(self, frame=None, **kwargs) -> np.ndarray:
         """
         Get the pose of an image
 
