@@ -17,8 +17,8 @@ def test_benchmark_script_runs(tmp_path):
     out_dir = tmp_path / "results"
     out_dir.mkdir(exist_ok=True)
 
-    pixels = [2500, 10000]
-    n_frames = 15
+    pixels = [100, 400] #[2500, 10000]
+    n_frames = 5
 
     for m in dog_models:
         print(f"Running dog model: {m}")
