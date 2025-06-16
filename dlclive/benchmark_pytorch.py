@@ -252,6 +252,9 @@ def benchmark(
         frame_index += 1
 
     cap.release()
+
+    dlc_live.close()
+
     if save_video:
         vwriter.release()
 
