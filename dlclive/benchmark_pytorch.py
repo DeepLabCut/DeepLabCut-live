@@ -92,14 +92,15 @@ def benchmark(
     model_path: str,
     model_type: str,
     device: str,
-    single_animal: bool,
+    resize: float | None = None,
+    pixels: int | None = None,
+    single_animal: bool = True,
     save_dir=None,
     n_frames=1000,
     precision: str = "FP32",
     display=True,
     pcutoff=0.5,
     display_radius=3,
-    resize=None,
     cropping=None,  # Adding cropping to the function parameters
     dynamic=(False, 0.5, 10),
     save_poses=False,
@@ -121,7 +122,12 @@ def benchmark(
         Type of the model (e.g., 'onnx').
     device : str
         Device to run the model on ('cpu' or 'cuda').
-    single_animal: bool
+    resize : float or None, optional
+        Resize dimensions for video frames. e.g. if resize = 0.5, the video will be processed in half the original size. If None, no resizing is applied.
+    pixels : int, optional
+        downsize image to this number of pixels, maintaining aspect ratio.
+        Can only use one of resize or pixels. If both are provided, will use pixels.
+    single_animal: bool, optional, default=True
         Whether the video contains only one animal (True) or multiple animals (False).
     save_dir : str, optional
         Directory to save output data and labeled video.
@@ -136,8 +142,6 @@ def benchmark(
         Probability cutoff below which keypoints are not visualized.
     display_radius : int, optional, default=5
         Radius of circles drawn for keypoints on video frames.
-    resize : tuple of int (width, height) or None, optional
-        Resize dimensions for video frames. e.g. if resize = 0.5, the video will be processed in half the original size. If None, no resizing is applied.
     cropping : list of int or None, optional
         Cropping parameters [x1, x2, y1, y2] in pixels. If None, no cropping is applied.
     dynamic : tuple, optional, default=(False, 0.5, 10) (True/false), p cutoff, margin)
@@ -160,6 +164,17 @@ def benchmark(
         - poses (list of dict): List of pose data for each frame.
         - times (list of float): List of inference times for each frame.
     """
+    # Load video
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        print(f"Error: Could not open video file {video_path}")
+        return
+    im_size = (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+
+    if pixels is not None:
+        resize = np.sqrt(pixels / (im_size[0] * im_size[1]))
+    if resize is not None:
+        im_size = (int(im_size[0] * resize), int(im_size[1] * resize))
 
     # Create the DLCLive object with cropping
     dlc_live = DLCLive(
@@ -185,12 +200,6 @@ def benchmark(
     # Get the current date and time as a string
     timestamp = time.strftime("%Y%m%d_%H%M%S")
 
-    # Load video
-    cap = cv2.VideoCapture(video_path)
-    if not cap.isOpened():
-        print(f"Error: Could not open video file {video_path}")
-        return
-
     # Retrieve bodypart names and number of keypoints
     bodyparts = dlc_live.read_config()["metadata"]["bodyparts"]
 
@@ -202,7 +211,7 @@ def benchmark(
             num_keypoints=len(bodyparts),
             cmap=cmap,
             fps=cap.get(cv2.CAP_PROP_FPS),
-            frame_size=(int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))),
+            frame_size=im_size,
         )
 
     # Start empty dict to save poses to for each frame
@@ -241,6 +250,7 @@ def benchmark(
             draw_pose_and_write(
                 frame=frame,
                 pose=pose,
+                resize=resize,
                 colors=colors,
                 bodyparts=bodyparts,
                 pcutoff=pcutoff,
@@ -303,6 +313,7 @@ def setup_video_writer(
 def draw_pose_and_write(
     frame: np.ndarray,
     pose: np.ndarray,
+    resize: float,
     colors: list[tuple[int, int, int]],
     bodyparts: list[str],
     pcutoff: float,
@@ -312,6 +323,14 @@ def draw_pose_and_write(
 ):
     if len(pose.shape) == 2:
         pose = pose[None]
+
+    if resize is not None and resize != 1.0:
+        # Resize the frame
+        frame = cv2.resize(frame, None, fx=resize, fy=resize, interpolation=cv2.INTER_LINEAR)
+
+        # Scale pose coordinates
+        pose = pose.copy()
+        pose[..., :2] *= resize
 
     # Visualize keypoints
     for i in range(pose.shape[0]):
