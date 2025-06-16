@@ -16,9 +16,9 @@ from pathlib import Path
 import colorcet as cc
 import cv2
 import numpy as np
-import torch
 from PIL import ImageColor
 from pip._internal.operations import freeze
+import torch
 
 try:
     import pandas as pd

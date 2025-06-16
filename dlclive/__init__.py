@@ -9,3 +9,4 @@ from dlclive.display import Display
 from dlclive.dlclive import DLCLive
 from dlclive.processor.processor import Processor
 from dlclive.version import VERSION, __version__
+from dlclive.benchmark import benchmark_videos, download_benchmarking_data
