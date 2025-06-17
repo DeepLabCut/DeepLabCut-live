@@ -16,6 +16,7 @@ from pathlib import Path
 import colorcet as cc
 import cv2
 import numpy as np
+import pickle
 from PIL import ImageColor
 from pip._internal.operations import freeze
 import torch
@@ -61,6 +62,149 @@ def download_benchmarking_data(
     print(f"Extracting {zip_path} to {target_dir} ...")
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
         zip_ref.extractall(target_dir)
+
+
+def benchmark_videos(
+    model_path,
+    video_path,
+    output=None,
+    n_frames=1000,
+    tf_config=None,
+    resize=None,
+    pixels=None,
+    cropping=None,
+    dynamic=(False, 0.5, 10),
+    print_rate=False,
+    display=False,
+    pcutoff=0.5,
+    display_radius=3,
+    cmap="bmy",
+    save_poses=False,
+    save_video=False,
+):
+    """Analyze videos using DeepLabCut-live exported models.
+    Analyze multiple videos and/or multiple options for the size of the video
+    by specifying a resizing factor or the number of pixels to use in the image (keeping aspect ratio constant).
+    Options to record inference times (to examine inference speed),
+    display keypoints to visually check the accuracy,
+    or save poses to an hdf5 file as in :function:`deeplabcut.benchmark_videos` and
+    create a labeled video as in :function:`deeplabcut.create_labeled_video`.
+
+    Parameters
+    ----------
+    model_path : str
+        path to exported DeepLabCut model
+    video_path : str or list
+        path to video file or list of paths to video files
+    output : str
+        path to directory to save results
+    tf_config : :class:`tensorflow.ConfigProto`
+        tensorflow session configuration
+    resize : int, optional
+        resize factor. Can only use one of resize or pixels. If both are provided, will use pixels. by default None
+    pixels : int, optional
+        downsize image to this number of pixels, maintaining aspect ratio. Can only use one of resize or pixels. If both are provided, will use pixels. by default None
+    cropping : list of int
+        cropping parameters in pixel number: [x1, x2, y1, y2]
+    dynamic: triple containing (state, detectiontreshold, margin)
+        If the state is true, then dynamic cropping will be performed. That means that if an object is detected (i.e. any body part > detectiontreshold),
+        then object boundaries are computed according to the smallest/largest x position and smallest/largest y position of all body parts. This  window is
+        expanded by the margin and from then on only the posture within this crop is analyzed (until the object is lost, i.e. <detectiontreshold). The
+        current position is utilized for updating the crop window for the next frame (this is why the margin is important and should be set large
+        enough given the movement of the animal)
+    n_frames : int, optional
+        number of frames to run inference on, by default 1000
+    print_rate : bool, optional
+        flat to print inference rate frame by frame, by default False
+    display : bool, optional
+        flag to display keypoints on images. Useful for checking the accuracy of exported models.
+    pcutoff : float, optional
+        likelihood threshold to display keypoints
+    display_radius : int, optional
+        size (radius in pixels) of keypoint to display
+    cmap : str, optional
+        a string indicating the :package:`colorcet` colormap, `options here <https://colorcet.holoviz.org/>`, by default "bmy"
+    save_poses : bool, optional
+        flag to save poses to an hdf5 file. If True, operates similar to :function:`DeepLabCut.benchmark_videos`, by default False
+    save_video : bool, optional
+        flag to save a labeled video. If True, operates similar to :function:`DeepLabCut.create_labeled_video`, by default False
+
+    Example
+    -------
+    Return a vector of inference times for 10000 frames on one video or two videos:
+    dlclive.benchmark_videos('/my/exported/model', 'my_video.avi', n_frames=10000)
+    dlclive.benchmark_videos('/my/exported/model', ['my_video1.avi', 'my_video2.avi'], n_frames=10000)
+
+    Return a vector of inference times, testing full size and resizing images to half the width and height for inference, for two videos
+    dlclive.benchmark_videos('/my/exported/model', ['my_video1.avi', 'my_video2.avi'], n_frames=10000, resize=[1.0, 0.5])
+
+    Display keypoints to check the accuracy of an exported model
+    dlclive.benchmark_videos('/my/exported/model', 'my_video.avi', display=True)
+
+    Analyze a video (save poses to hdf5) and create a labeled video, similar to :function:`DeepLabCut.benchmark_videos` and :function:`create_labeled_video`
+    dlclive.benchmark_videos('/my/exported/model', 'my_video.avi', save_poses=True, save_video=True)
+    """
+    # convert video_paths to list
+    video_path = video_path if type(video_path) is list else [video_path]
+
+    # fix resize
+    if pixels:
+        pixels = pixels if type(pixels) is list else [pixels]
+        resize = [None for p in pixels]
+    elif resize:
+        resize = resize if type(resize) is list else [resize]
+        pixels = [None for r in resize]
+    else:
+        resize = [None]
+        pixels = [None]
+
+    # loop over videos
+    for video in video_path:
+        # initialize full inference times
+        inf_times = []
+        im_size_out = []
+
+        for i in range(len(resize)):
+            print(f"\nRun {i+1} / {len(resize)}\n")
+
+            this_inf_times, this_im_size, meta = benchmark(
+                model_path=model_path,
+                model_type="base",
+                video_path=video,
+                tf_config=tf_config,
+                resize=resize[i],
+                pixels=pixels[i],
+                cropping=cropping,
+                dynamic=dynamic,
+                n_frames=n_frames,
+                print_rate=print_rate,
+                display=display,
+                pcutoff=pcutoff,
+                display_radius=display_radius,
+                cmap=cmap,
+                save_poses=save_poses,
+                save_video=save_video,
+                save_dir=output,
+            )
+
+            inf_times.append(this_inf_times)
+            im_size_out.append(this_im_size)
+
+        inf_times = np.array(inf_times)
+        im_size_out = np.array(im_size_out)
+
+        # save results
+        if output is not None:
+            sys_info = get_system_info()
+            save_inf_times(
+                sys_info,
+                inf_times,
+                im_size_out,
+                model=os.path.basename(model_path),
+                meta=meta,
+                output=output,
+            )
+
 
 def get_system_info() -> dict:
     """
@@ -127,6 +271,77 @@ def get_system_info() -> dict:
         "dlclive_version": VERSION,
     }
 
+
+def save_inf_times(
+    sys_info, inf_times, im_size, model=None, meta=None, output=None
+):
+    """Save inference time data collected using :function:`benchmark` with system information to a pickle file.
+    This is primarily used through :function:`benchmark_videos`
+
+
+    Parameters
+    ----------
+    sys_info : tuple
+        system information generated by :func:`get_system_info`
+    inf_times : :class:`numpy.ndarray`
+        array of inference times generated by :func:`benchmark`
+    im_size : tuple or :class:`numpy.ndarray`
+        image size (width, height) for each benchmark run. If an array, each row corresponds to a row in inf_times
+    model: str, optional
+        name of model
+    meta : dict, optional
+        metadata returned by :func:`benchmark`
+    output : str, optional
+        path to directory to save data. If None, uses pwd, by default None
+
+    Returns
+    -------
+    bool
+        flag indicating successful save
+    """
+
+    output = output if output is not None else os.getcwd()
+    model_type = None
+    if model is not None:
+        if "resnet" in model:
+            model_type = "resnet"
+        elif "mobilenet" in model:
+            model_type = "mobilenet"
+        else:
+            model_type = None
+
+    fn_ind = 0
+    base_name = (
+        f"benchmark_{sys_info['host_name']}_{sys_info['device_type']}_{fn_ind}.pickle"
+    )
+    out_file = os.path.normpath(f"{output}/{base_name}")
+    while os.path.isfile(out_file):
+        fn_ind += 1
+        base_name = f"benchmark_{sys_info['host_name']}_{sys_info['device_type']}_{fn_ind}.pickle"
+        out_file = os.path.normpath(f"{output}/{base_name}")
+
+    # summary stats (mean inference time & standard error of mean)
+    stats = zip(
+        np.mean(inf_times, 1),
+        np.std(inf_times, 1) * 1.0 / np.sqrt(np.shape(inf_times)[1]),
+    )
+
+    data = {
+        "model": model,
+        "model_type": model_type,
+        "im_size": im_size,
+        "inference_times": inf_times,
+        "stats": stats,
+    }
+
+    data.update(sys_info)
+    if meta:
+        data.update(meta)
+
+    os.makedirs(os.path.normpath(output), exist_ok=True)
+    pickle.dump(data, open(out_file, "wb"))
+
+    return True
 
 def benchmark(
     model_path: str,
