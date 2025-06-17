@@ -35,7 +35,9 @@ py-cpuinfo = ">=5.0.0"
 tqdm = "^4.62.3"
 pandas = ">=1.0.1,!=1.5.0"
 tables = "^3.8"
+pytest = "^8.0"
 dlclibrary = ">=0.0.6"
+
 # PyTorch models
 scipy = ">=1.9"
 timm = { version = ">=1.0.7", optional = true }

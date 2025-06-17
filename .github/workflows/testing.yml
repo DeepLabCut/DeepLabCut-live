@@ -53,6 +53,23 @@ jobs:
       - name: Install and test
         shell: bash -el {0}  # Important: activates the conda environment
         run: |
-          python -m pip install --upgrade pip wheel poetry
-          python -m poetry install --extras "tf" --extras "pytorch"
-          python -m poetry run dlc-live-test --nodisplay
+          conda install pytables==3.8.0 "numpy<2"
+          
+      - name: Install dependencies via Conda
+        shell: bash -el {0}
+        run: conda install -y "numpy>=1.26,<2.0"
+
+      - name: Install Poetry
+        run: pip install --upgrade pip wheel poetry
+
+      - name: Regenerate Poetry lock
+        run: poetry lock --no-cache
+
+      - name: Install project dependencies
+        run: poetry install --with dev --extras "tf" --extras "pytorch"
+          
+      - name: Run DLC Live Tests
+        run: poetry run dlc-live-test --nodisplay
+
+      - name: Run Functional Benchmark Test
+        run: poetry run pytest tests/test_benchmark_script.py
