@@ -19,18 +19,12 @@ import numpy as np
 from PIL import ImageColor
 from pip._internal.operations import freeze
 import torch
-
-try:
-    import pandas as pd
-
-    has_pandas = True
-except ModuleNotFoundError as err:
-    has_pandas = False
+from tqdm import tqdm
 
 from dlclive import DLCLive
 from dlclive import VERSION
 from dlclive import __file__ as dlcfile
-
+from dlclive.factory import Engine
 from dlclive.utils import decode_fourcc
 
 
@@ -43,7 +37,6 @@ def download_benchmarking_data(
     """
     import os
     import urllib.request
-    from tqdm import tqdm
     import zipfile
 
     # Avoid nested folder issue
@@ -135,7 +128,347 @@ def get_system_info() -> dict:
     }
 
 
-def save_poses_to_files(video_path, save_dir, bodyparts, poses, timestamp):
+def benchmark(
+    model_path: str,
+    model_type: str,
+    video_path: str,
+    tf_config=None,
+    device: str | None = None,
+    resize: float | None = None,
+    pixels: int | None = None,
+    single_animal: bool = True,
+    cropping=None,
+    dynamic=(False, 0.5, 10),
+    n_frames=1000,
+    print_rate=False,
+    precision: str = "FP32",
+    display=True,
+    pcutoff=0.5,
+    display_radius=3,
+    cmap="bmy",
+    save_dir=None,
+    save_poses=False,
+    save_video=False,
+    draw_keypoint_names=False,
+):
+    """
+    Analyzes a video to track keypoints using a DeepLabCut model, and optionally saves the keypoint data and the labeled video.
+
+    Parameters
+    ----------
+    model_path : str
+        Path to the DeepLabCut model.
+    model_type : str
+        Which model to use. For the PyTorch engine, options are [`pytorch`]. For the
+    video_path : str
+        Path to the video file to be analyzed.
+        TensorFlow engine, options are [`base`, `tensorrt`, `lite`].
+    tf_config : :class:`tensorflow.ConfigProto`
+        Tensorflow only. Tensorflow session configuration
+    device : str
+        Pytorch only. Device to run the model on ('cpu' or 'cuda').
+    resize : float or None, optional
+        Resize dimensions for video frames. e.g. if resize = 0.5, the video will be processed in half the original size. If None, no resizing is applied.
+    pixels : int, optional
+        downsize image to this number of pixels, maintaining aspect ratio.
+        Can only use one of resize or pixels. If both are provided, will use pixels.
+    single_animal: bool, optional, default=True
+        Whether the video contains only one animal (True) or multiple animals (False).
+    cropping : list of int or None, optional
+        Cropping parameters [x1, x2, y1, y2] in pixels. If None, no cropping is applied.
+    dynamic : tuple, optional, default=(False, 0.5, 10) (True/false), p cutoff, margin)
+        Parameters for dynamic cropping. If the state is true, then dynamic cropping will be performed. That means that if an object is detected (i.e. any body part > detectiontreshold), then object boundaries are computed according to the smallest/largest x position and smallest/largest y position of all body parts. This window is expanded by the margin and from then on only the posture within this crop is analyzed (until the object is lost, i.e. <detection treshold). The current position is utilized for updating the crop window for the next frame (this is why the margin is important and should be set large enough given the movement of the animal).
+    n_frames : int, optional
+        Number of frames to run inference on, by default 1000
+    print_rate: bool, optional, default=False
+        Print the rate
+    precision : str, optional, default='FP32'
+        Precision type for the model ('FP32' or 'FP16').
+    display : bool, optional, default=True
+        Whether to display frame with labelled key points.
+    pcutoff : float, optional, default=0.5
+        Probability cutoff below which keypoints are not visualized.
+    display_radius : int, optional, default=5
+        Radius of circles drawn for keypoints on video frames.
+    cmap : str, optional, default='bmy'
+        Colormap from the colorcet library for keypoint visualization.
+    save_dir : str, optional
+        Directory to save output data and labeled video.
+        If not specified, will use the directory of video_path, by default None
+    save_poses : bool, optional, default=False
+        Whether to save the detected poses to CSV and HDF5 files.
+    save_video : bool, optional, default=False
+        Whether to save the labeled video.
+    draw_keypoint_names : bool, optional, default=False
+        Whether to display keypoint names on video frames in the saved video.
+
+    Returns
+    -------
+    tuple
+        A tuple containing:
+        - times (list of float): List of inference times for each frame.
+        - im_size: tuple of two ints, corresponding to image size
+        - metadata: dict
+    """
+    # Load video
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        print(f"Error: Could not open video file {video_path}")
+        return
+    im_size = (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+
+    if pixels is not None:
+        resize = np.sqrt(pixels / (im_size[0] * im_size[1]))
+    if resize is not None:
+        im_size = (int(im_size[0] * resize), int(im_size[1] * resize))
+
+    # Create the DLCLive object with cropping
+    dlc_live = DLCLive(
+        model_path=model_path,
+        model_type=model_type,
+        precision=precision,
+        tf_config=tf_config,
+        single_animal=single_animal,
+        device=device,
+        display=display,
+        resize=resize,
+        cropping=cropping,  # Pass the cropping parameter
+        dynamic=dynamic,
+        pcutoff=pcutoff,
+        display_radius=display_radius,
+        display_cmap=cmap,
+    )
+
+    if save_dir is None:
+        save_dir = Path(video_path).resolve().parent
+    else:
+        save_dir = Path(save_dir)
+    # Ensure save directory exists
+    save_dir.mkdir(parents=True, exist_ok=True)
+
+    # Get the current date and time as a string
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+
+    # Retrieve bodypart names and number of keypoints
+    engine = Engine.from_model_type(model_type)
+    if engine == Engine.PYTORCH:
+        bodyparts = dlc_live.read_config()["metadata"]["bodyparts"]
+    else:
+        bodyparts = dlc_live.read_config()["all_joints_names"]
+
+    if save_video:
+        colors, vwriter = setup_video_writer(
+            video_path=video_path,
+            save_dir=save_dir,
+            timestamp=timestamp,
+            num_keypoints=len(bodyparts),
+            cmap=cmap,
+            fps=cap.get(cv2.CAP_PROP_FPS),
+            frame_size=im_size,
+        )
+
+    # Start empty dict to save poses to for each frame
+    poses, times = [], []
+    frame_index = 0
+
+    total_n_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+    n_frames = int(
+        n_frames
+        if (n_frames > 0) and n_frames < total_n_frames
+        else total_n_frames
+    )
+    iterator = range(n_frames) if print_rate or display else tqdm(range(n_frames))
+    for _ in iterator:
+        ret, frame = cap.read()
+        if not ret:
+            warnings.warn(
+                (
+                    "Did not complete {:d} frames. "
+                    "There probably were not enough frames in the video {}."
+                ).format(n_frames, video_path)
+            )
+            break
+
+        start_time = time.perf_counter()
+        if frame_index == 0:
+            pose = dlc_live.init_inference(frame) # Loads model
+        else:
+            pose = dlc_live.get_pose(frame)
+
+        inf_time = time.perf_counter() - start_time
+        poses.append({"frame": frame_index, "pose": pose})
+        times.append(inf_time)
+
+        if print_rate:
+            print("Inference rate = {:.3f} FPS".format(1 / inf_time), end="\r", flush=True)
+
+        if save_video:
+            draw_pose_and_write(
+                frame=frame,
+                pose=pose,
+                resize=resize,
+                colors=colors,
+                bodyparts=bodyparts,
+                pcutoff=pcutoff,
+                display_radius=display_radius,
+                draw_keypoint_names=draw_keypoint_names,
+                vwriter=vwriter
+            )
+
+        frame_index += 1
+
+    if print_rate:
+        print("Mean inference rate: {:.3f} FPS".format(np.mean(1 / np.array(times)[1:])))
+
+    metadata = _get_metadata(
+        video_path=video_path,
+        cap=cap,
+        dlc_live=dlc_live
+    )
+
+    cap.release()
+
+    dlc_live.close()
+
+    if save_video:
+        vwriter.release()
+
+    if save_poses:
+        if engine == Engine.PYTORCH:
+            individuals = dlc_live.read_config()["metadata"].get("individuals", [])
+        else:
+            individuals = []
+        n_individuals = len(individuals) or 1
+        save_poses_to_files(video_path, save_dir, n_individuals, bodyparts, poses, timestamp=timestamp)
+
+    return times, im_size, metadata
+
+
+def setup_video_writer(
+    video_path:str,
+    save_dir:str,
+    timestamp:str,
+    num_keypoints:int,
+    cmap:str,
+    fps:float,
+    frame_size:tuple[int, int],
+):
+    # Set colors and convert to RGB
+    cmap_colors = getattr(cc, cmap)
+    colors = [
+        ImageColor.getrgb(color)
+        for color in cmap_colors[:: int(len(cmap_colors) / num_keypoints)]
+    ]
+
+    # Define output video path
+    video_path = Path(video_path)
+    video_name = video_path.stem  # filename without extension
+    output_video_path = Path(save_dir) / f"{video_name}_DLCLIVE_LABELLED_{timestamp}.mp4"
+
+    # Get video writer setup
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+    vwriter = cv2.VideoWriter(
+        filename=output_video_path,
+        fourcc=fourcc,
+        fps=fps,
+        frameSize=frame_size,
+    )
+
+    return colors, vwriter
+
+def draw_pose_and_write(
+    frame: np.ndarray,
+    pose: np.ndarray,
+    resize: float,
+    colors: list[tuple[int, int, int]],
+    bodyparts: list[str],
+    pcutoff: float,
+    display_radius: int,
+    draw_keypoint_names: bool,
+    vwriter: cv2.VideoWriter,
+):
+    if len(pose.shape) == 2:
+        pose = pose[None]
+
+    if resize is not None and resize != 1.0:
+        # Resize the frame
+        frame = cv2.resize(frame, None, fx=resize, fy=resize, interpolation=cv2.INTER_LINEAR)
+
+        # Scale pose coordinates
+        pose = pose.copy()
+        pose[..., :2] *= resize
+
+    # Visualize keypoints
+    for i in range(pose.shape[0]):
+        for j in range(pose.shape[1]):
+            if pose[i, j, 2] > pcutoff:
+                x, y = map(int, pose[i, j, :2])
+                cv2.circle(
+                    frame,
+                    center=(x, y),
+                    radius=display_radius,
+                    color=colors[j],
+                    thickness=-1,
+                )
+
+                if draw_keypoint_names:
+                    cv2.putText(
+                        frame,
+                        text=bodyparts[j],
+                        org=(x + 10, y),
+                        fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                        fontScale=0.5,
+                        color=colors[j],
+                        thickness=1,
+                        lineType=cv2.LINE_AA,
+                    )
+
+
+    vwriter.write(image=frame)
+
+
+def _get_metadata(
+    video_path: str,
+    cap: cv2.VideoCapture,
+    dlc_live: DLCLive
+):
+    try:
+        fourcc = decode_fourcc(cap.get(cv2.CAP_PROP_FOURCC))
+    except:
+        fourcc = ""
+    try:
+        fps = round(cap.get(cv2.CAP_PROP_FPS))
+    except:
+        fps = None
+    try:
+        pix_fmt = decode_fourcc(cap.get(cv2.CAP_PROP_CODEC_PIXEL_FORMAT))
+    except:
+        pix_fmt = ""
+    try:
+        frame_count = round(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    except:
+        frame_count = None
+    try:
+        orig_im_size = (
+            round(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
+            round(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+        )
+    except:
+        orig_im_size = None
+
+    meta = {
+        "video_path": video_path,
+        "video_codec": fourcc,
+        "video_pixel_format": pix_fmt,
+        "video_fps": fps,
+        "video_total_frames": frame_count,
+        "original_frame_size": orig_im_size,
+        "dlclive_params": dlc_live.parameterization,
+    }
+    return meta
+
+
+def save_poses_to_files(video_path, save_dir, n_individuals, bodyparts, poses, timestamp):
     """
     Saves the detected keypoint poses from the video to CSV and HDF5 files.
 
@@ -145,6 +478,8 @@ def save_poses_to_files(video_path, save_dir, bodyparts, poses, timestamp):
         Path to the analyzed video file.
     save_dir : str
         Directory where the pose data files will be saved.
+    n_individuals: int
+        Number of individuals
     bodyparts : list of str
         List of body part names corresponding to the keypoints.
     poses : list of dict
@@ -154,27 +489,48 @@ def save_poses_to_files(video_path, save_dir, bodyparts, poses, timestamp):
     -------
     None
     """
+    import pandas as pd
 
-    base_filename = os.path.splitext(os.path.basename(video_path))[0]
-    csv_save_path = os.path.join(save_dir, f"{base_filename}_poses_{timestamp}.csv")
-    h5_save_path = os.path.join(save_dir, f"{base_filename}_poses_{timestamp}.h5")
+    base_filename = Path(video_path).stem
+    save_dir = Path(save_dir)
+    h5_save_path = save_dir / f"{base_filename}_poses_{timestamp}.h5"
+    csv_save_path = save_dir / f"{base_filename}_poses_{timestamp}.csv"
 
-    # Save to CSV
-    with open(csv_save_path, mode="w", newline="") as file:
-        writer = csv.writer(file)
-        header = ["frame"] + [
-            f"{bp}_{axis}" for bp in bodyparts for axis in ["x", "y", "confidence"]
-        ]
-        writer.writerow(header)
-        for entry in poses:
-            frame_num = entry["frame"]
-            pose = entry["pose"]["poses"][0][0]
-            row = [frame_num] + [
-                item.item() if isinstance(item, torch.Tensor) else item
-                for kp in pose
-                for item in kp
-            ]
-            writer.writerow(row)
+    poses_array = _create_poses_np_array(n_individuals, bodyparts, poses)
+    flattened_poses = poses_array.reshape(poses_array.shape[0], -1)
+
+    if n_individuals == 1:
+        pdindex = pd.MultiIndex.from_product(
+            [bodyparts, ["x", "y", "likelihood"]], names=["bodyparts", "coords"]
+        )
+    else:
+        individuals = [f"individual_{i}" for i in range(n_individuals)]
+        pdindex = pd.MultiIndex.from_product(
+            [individuals, bodyparts, ["x", "y", "likelihood"]], names=["individuals", "bodyparts", "coords"]
+        )
+
+    pose_df = pd.DataFrame(flattened_poses, columns=pdindex)
+
+    pose_df.to_hdf(h5_save_path, key="df_with_missing", mode="w")
+    pose_df.to_csv(csv_save_path, index=False)
+
+def _create_poses_np_array(n_individuals: int, bodyparts: list, poses: list):
+    # Create numpy array with poses:
+    max_frame = max(p["frame"] for p in poses)
+    pose_target_shape = (n_individuals, len(bodyparts), 3)
+    poses_array = np.full((max_frame + 1, *pose_target_shape), np.nan)
+
+    for item in poses:
+        frame = item["frame"]
+        pose = item["pose"]
+        if pose.ndim == 2:
+            pose = pose[np.newaxis, :, :]
+        padded_pose = np.full(pose_target_shape, np.nan)
+        slices = tuple(slice(0, min(pose.shape[i], pose_target_shape[i])) for i in range(3))
+        padded_pose[slices] = pose[slices]
+        poses_array[frame] = padded_pose
+
+    return poses_array
 
 
 import argparse
