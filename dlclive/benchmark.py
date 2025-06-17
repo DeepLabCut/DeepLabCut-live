@@ -66,6 +66,7 @@ def download_benchmarking_data(
 
 def benchmark_videos(
     model_path,
+    model_type,
     video_path,
     output=None,
     n_frames=1000,
@@ -94,6 +95,9 @@ def benchmark_videos(
     ----------
     model_path : str
         path to exported DeepLabCut model
+    model_type: string, optional
+        Which model to use. For the PyTorch engine, options are [`pytorch`]. For the
+        TensorFlow engine, options are [`base`, `tensorrt`, `lite`].
     video_path : str or list
         path to video file or list of paths to video files
     output : str
@@ -169,7 +173,7 @@ def benchmark_videos(
 
             this_inf_times, this_im_size, meta = benchmark(
                 model_path=model_path,
-                model_type="base",
+                model_type=model_type,
                 video_path=video,
                 tf_config=tf_config,
                 resize=resize[i],
@@ -375,6 +379,7 @@ def benchmark(
         Path to the DeepLabCut model.
     model_type : str
         Which model to use. For the PyTorch engine, options are [`pytorch`]. For the
+        TensorFlow engine, options are [`base`, `tensorrt`, `lite`].
     video_path : str
         Path to the video file to be analyzed.
         TensorFlow engine, options are [`base`, `tensorrt`, `lite`].

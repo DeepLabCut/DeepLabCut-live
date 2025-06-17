@@ -16,7 +16,8 @@ from pathlib import Path
 
 from dlclibrary.dlcmodelzoo.modelzoo_download import download_huggingface_model
 
-from dlclive.benchmark_tf import benchmark_videos
+from dlclive.benchmark import benchmark_videos
+from dlclive.engine import Engine
 
 MODEL_NAME = "superanimal_quadruped"
 SNAPSHOT_NAME = "snapshot-700000.pb"
@@ -77,7 +78,12 @@ def main():
     # run benchmark videos
     print("\n Running inference...\n")
     benchmark_videos(
-        str(model_dir), video_file, display=display, resize=0.5, pcutoff=0.25
+        model_path=str(model_dir),
+        model_type="base" if Engine.from_model_path(model_dir) == Engine.TENSORFLOW else "pytorch",
+        video_path=video_file,
+        display=display,
+        resize=0.5,
+        pcutoff=0.25
     )
 
     # deleting temporary files
