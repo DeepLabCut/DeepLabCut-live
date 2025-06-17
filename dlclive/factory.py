@@ -16,7 +16,7 @@ def build_runner(
 
     Parameters
     ----------
-    model_type: str, optional
+    model_type: str
         Which model to use. For the PyTorch engine, options are [`pytorch`]. For the
         TensorFlow engine, options are [`base`, `tensorrt`, `lite`].
     model_path: str, Path
@@ -33,13 +33,13 @@ def build_runner(
     -------
 
     """
-    if model_type.lower() == "pytorch":
+    if Engine.from_model_type(model_type) == Engine.PYTORCH:
         from dlclive.pose_estimation_pytorch.runner import PyTorchRunner
 
         valid = {"device", "precision", "single_animal", "dynamic", "top_down_config"}
         return PyTorchRunner(model_path, **filter_keys(valid, kwargs))
 
-    elif model_type.lower() in ("tensorflow", "base", "tensorrt", "lite"):
+    elif Engine.from_model_type(model_type) == Engine.TENSORFLOW:
         from dlclive.pose_estimation_tensorflow.runner import TensorFlowRunner
 
         if model_type.lower() == "tensorflow":
@@ -54,3 +54,19 @@ def build_runner(
 def filter_keys(valid: set[str], kwargs: dict) -> dict:
     """Filters the keys in kwargs, only keeping those in valid."""
     return {k: v for k, v in kwargs.items() if k in valid}
+
+
+from enum import Enum
+
+class Engine(Enum):
+    TENSORFLOW = "tensorflow"
+    PYTORCH = "pytorch"
+
+    @classmethod
+    def from_model_type(cls, model_type: str) -> "Engine":
+        if model_type.lower() == "pytorch":
+            return cls.PYTORCH
+        elif model_type.lower() in ("tensorflow", "base", "tensorrt", "lite"):
+            return cls.TENSORFLOW
+        else:
+            raise ValueError(f"Unknown model type: {model_type}")
