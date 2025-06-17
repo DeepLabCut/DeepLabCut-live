@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Literal
 
 from dlclive.core.runner import BaseRunner
+from dlclive.engine import Engine
 
 
 def build_runner(
@@ -54,19 +55,3 @@ def build_runner(
 def filter_keys(valid: set[str], kwargs: dict) -> dict:
     """Filters the keys in kwargs, only keeping those in valid."""
     return {k: v for k, v in kwargs.items() if k in valid}
-
-
-from enum import Enum
-
-class Engine(Enum):
-    TENSORFLOW = "tensorflow"
-    PYTORCH = "pytorch"
-
-    @classmethod
-    def from_model_type(cls, model_type: str) -> "Engine":
-        if model_type.lower() == "pytorch":
-            return cls.PYTORCH
-        elif model_type.lower() in ("tensorflow", "base", "tensorrt", "lite"):
-            return cls.TENSORFLOW
-        else:
-            raise ValueError(f"Unknown model type: {model_type}")

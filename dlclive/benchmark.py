@@ -25,7 +25,7 @@ from tqdm import tqdm
 from dlclive import DLCLive
 from dlclive import VERSION
 from dlclive import __file__ as dlcfile
-from dlclive.factory import Engine
+from dlclive.engine import Engine
 from dlclive.utils import decode_fourcc
 
 
