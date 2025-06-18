@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Literal
 
 from dlclive.core.runner import BaseRunner
+from dlclive.engine import Engine
 
 
 def build_runner(
@@ -16,7 +17,7 @@ def build_runner(
 
     Parameters
     ----------
-    model_type: str, optional
+    model_type: str
         Which model to use. For the PyTorch engine, options are [`pytorch`]. For the
         TensorFlow engine, options are [`base`, `tensorrt`, `lite`].
     model_path: str, Path
@@ -33,13 +34,13 @@ def build_runner(
     -------
 
     """
-    if model_type.lower() == "pytorch":
+    if Engine.from_model_type(model_type) == Engine.PYTORCH:
         from dlclive.pose_estimation_pytorch.runner import PyTorchRunner
 
         valid = {"device", "precision", "single_animal", "dynamic", "top_down_config"}
         return PyTorchRunner(model_path, **filter_keys(valid, kwargs))
 
-    elif model_type.lower() in ("tensorflow", "base", "tensorrt", "lite"):
+    elif Engine.from_model_type(model_type) == Engine.TENSORFLOW:
         from dlclive.pose_estimation_tensorflow.runner import TensorFlowRunner
 
         if model_type.lower() == "tensorflow":

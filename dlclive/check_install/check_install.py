@@ -5,6 +5,8 @@ DeepLabCut Toolbox (deeplabcut.org)
 Licensed under GNU Lesser General Public License v3.0
 """
 
+import os
+import urllib.request
 import argparse
 import shutil
 import sys
@@ -14,7 +16,8 @@ from pathlib import Path
 
 from dlclibrary.dlcmodelzoo.modelzoo_download import download_huggingface_model
 
-from dlclive.benchmark_tf import benchmark_videos
+from dlclive.benchmark import benchmark_videos
+from dlclive.engine import Engine
 
 MODEL_NAME = "superanimal_quadruped"
 SNAPSHOT_NAME = "snapshot-700000.pb"
@@ -43,8 +46,7 @@ def main():
     if not display:
         print("Running without displaying video")
 
-    # make temporary directory in $HOME
-    # TODO: why create this temp directory in $HOME?
+    # make temporary directory in $current
     print("\nCreating temporary directory...\n")
     tmp_dir = Path().home() / "dlc-live-tmp"
     tmp_dir.mkdir(mode=0o775, exist_ok=True)
@@ -53,16 +55,18 @@ def main():
     model_dir = tmp_dir / "DLC_Dog_resnet_50_iteration-0_shuffle-0"
 
     # download dog test video from github:
-    # TODO: Should check if the video's already there before downloading it (should have been cloned with the files)
-    print(f"Downloading Video to {video_file}")
-    url_link = "https://github.com/DeepLabCut/DeepLabCut-live/blob/master/check_install/dog_clip.avi?raw=True"
-    urllib.request.urlretrieve(url_link, video_file, reporthook=urllib_pbar)
+    if not os.path.exists(video_file):
+        print(f"Downloading Video to {video_file}")
+        url_link = "https://github.com/DeepLabCut/DeepLabCut-live/blob/main/check_install/dog_clip.avi?raw=True"
+        urllib.request.urlretrieve(url_link, video_file, reporthook=urllib_pbar)
+    else:
+        print(f"Video already exists at {video_file}")
 
     # download model from the DeepLabCut Model Zoo
     if Path(model_dir / SNAPSHOT_NAME).exists():
         print("Model already downloaded, using cached version")
     else:
-        print("Downloading full_dog model from the DeepLabCut Model Zoo...")
+        print("Downloading a test model from the DeepLabCut Model Zoo...")
         download_huggingface_model(MODEL_NAME, model_dir)
 
     # assert these things exist so we can give informative error messages
@@ -74,7 +78,12 @@ def main():
     # run benchmark videos
     print("\n Running inference...\n")
     benchmark_videos(
-        str(model_dir), video_file, display=display, resize=0.5, pcutoff=0.25
+        model_path=str(model_dir),
+        model_type="base" if Engine.from_model_path(model_dir) == Engine.TENSORFLOW else "pytorch",
+        video_path=video_file,
+        display=display,
+        resize=0.5,
+        pcutoff=0.25
     )
 
     # deleting temporary files

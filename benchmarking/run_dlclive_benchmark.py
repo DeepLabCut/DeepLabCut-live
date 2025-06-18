@@ -12,6 +12,7 @@ import os, pathlib
 import glob
 
 from dlclive import benchmark_videos, download_benchmarking_data
+from dlclive.engine import Engine
 
 datafolder = os.path.join(
     pathlib.Path(__file__).parent.absolute(), "Data-DLC-live-benchmark"
@@ -36,8 +37,22 @@ out_dir = os.path.normpath(this_dir + "/results")
 if not os.path.isdir(out_dir):
     os.mkdir(out_dir)
 
-for m in dog_models:
-    benchmark_videos(m, dog_video, output=out_dir, n_frames=n_frames, pixels=pixels)
+for model_path in dog_models:
+    benchmark_videos(
+        model_path=model_path,
+        model_type="base" if Engine.from_model_path(model_path) == Engine.TENSORFLOW else "pytorch",
+        video_path=dog_video,
+        output=out_dir,
+        n_frames=n_frames,
+        pixels=pixels
+    )
 
-for m in mouse_models:
-    benchmark_videos(m, mouse_video, output=out_dir, n_frames=n_frames, pixels=pixels)
+for model_path in mouse_models:
+    benchmark_videos(
+        model_path=model_path,
+        model_type="base" if Engine.from_model_path(model_path) == Engine.TENSORFLOW else "pytorch",
+        video_path=mouse_video,
+        output=out_dir,
+        n_frames=n_frames,
+        pixels=pixels
+    )

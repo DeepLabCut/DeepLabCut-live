@@ -8,6 +8,8 @@ benchmarking/results*
 **DS_Store*
 *vscode*
 
+**/__MACOSX/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
