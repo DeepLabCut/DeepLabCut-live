@@ -191,9 +191,8 @@ class PyTorchRunner(BaseRunner):
 
             frame_batch, offsets_and_scales = self._prepare_top_down(tensor, detections)
             if len(frame_batch) == 0:
-                offsets_and_scales = [(0, 0), 1]
-            else:
-                tensor = frame_batch  # still CHW, batched
+                offsets_and_scales = [(0, 0), 1]            
+            tensor = frame_batch  # still CHW, batched
 
         if self.dynamic is not None:
             tensor = self.dynamic.crop(tensor)
@@ -356,7 +355,7 @@ class PyTorchRunner(BaseRunner):
             frame_batch = torch.stack(crops, dim=0)
         else:
             crop_w, crop_h = self.top_down_config.crop_size
-            frame_batch = torch.zeros((0, 3, crop_h, crop_w), device=frame.device)
+            frame_batch = torch.zeros((1, 3, crop_h, crop_w), device=frame.device)
             offsets_and_scales = [(0, 0), 1]
 
         return frame_batch, offsets_and_scales
