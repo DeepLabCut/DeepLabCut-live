@@ -202,9 +202,14 @@ class PyTorchRunner(BaseRunner):
 
             frame_batch, offsets_and_scales = self._prepare_top_down(tensor, detections)
             if len(frame_batch) == 0:
-                offsets_and_scales = [(0, 0), 1]
-            else:
-                tensor = frame_batch  # still CHW, batched
+                zero_pose = (
+                    np.zeros((self.n_bodyparts, 3)) 
+                    if self.n_individuals < 2 else 
+                    np.zeros((self.n_individuals, self.n_bodyparts, 3))
+                )
+                return zero_pose
+            
+            tensor = frame_batch  # still CHW, batched
 
         if self.dynamic is not None:
             tensor = self.dynamic.crop(tensor)
