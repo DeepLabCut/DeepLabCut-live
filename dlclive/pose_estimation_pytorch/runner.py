@@ -24,92 +24,12 @@ import dlclive.pose_estimation_pytorch.models as models
 import dlclive.pose_estimation_pytorch.dynamic_cropping as dynamic_cropping
 from dlclive.core.runner import BaseRunner
 from dlclive.pose_estimation_pytorch.data.image import AutoPadToDivisor
-
-
-@dataclass
-class SkipFrames:
-    """Configuration for skip frames.
-
-    Skip-frames can be used for top-down models running with a detector. If skip > 0,
-    then the detector will only be run every `skip` frames. Between frames where the
-    detector is run, bounding boxes will be computed from the pose estimated in the
-    previous frame.
-
-    Every `N` frames, the detector will be run to detect bounding boxes for individuals.
-    In the "skipped" frames between the frames where the object detector is run, the
-    bounding boxes will be computed from the poses estimated in the previous frame (with
-    some margin added around the poses).
-
-    Attributes:
-        skip: The number of frames to skip between each run of the detector.
-        margin: The margin (in pixels) to use when generating bboxes
-    """
-
-    skip: int
-    margin: int
-    _age: int = 0
-    _detections: dict[str, torch.Tensor] | None = None
-
-    def get_detections(self) -> dict[str, torch.Tensor] | None:
-        return self._detections
-
-    def update(self, pose: torch.Tensor, w: int, h: int) -> None:
-        """Generates bounding boxes from a pose.
-
-        Args:
-            pose: The pose from which to generate bounding boxes.
-            w: The width of the image.
-            h: The height of the image.
-
-        Returns:
-            A dictionary containing the bounding boxes and scores for each detection.
-        """
-        if self._age >= self.skip:
-            self._age = 0
-            self._detections = None
-            return
-
-        num_det, num_kpts = pose.shape[:2]
-        size = max(w, h)
-
-        bboxes = torch.zeros((num_det, 4))
-        bboxes[:, :2] = (
-            torch.min(torch.nan_to_num(pose, size)[..., :2], dim=1)[0] - self.margin
-        )
-        bboxes[:, 2:4] = (
-            torch.max(torch.nan_to_num(pose, 0)[..., :2], dim=1)[0] + self.margin
-        )
-        bboxes = torch.clip(bboxes, min=torch.zeros(4), max=torch.tensor([w, h, w, h]))
-        self._detections = dict(boxes=bboxes, scores=torch.ones(num_det))
-        self._age += 1
-
-
-@dataclass
-class TopDownConfig:
-    """Configuration for top-down models.
-
-    Attributes:
-        bbox_cutoff: The minimum score required for a bounding box to be considered.
-        max_detections: The maximum number of detections to keep in a frame. If None,
-            the `max_detections` will be set to the number of individuals in the model
-            configuration file when `read_config` is called.
-        skip_frames: If defined, the detector will only be run every
-            `skip_frames.skip` frames.
-    """
-
-    bbox_cutoff: float = 0.6
-    max_detections: int | None = 30
-    crop_size: tuple[int, int] = (256, 256)
-    skip_frames: SkipFrames | None = None
-
-    def read_config(self, model_cfg: dict) -> None:
-        crop = model_cfg.get("data", {}).get("inference", {}).get("top_down_crop")
-        if crop is not None:
-            self.crop_size = (crop["width"], crop["height"])
-
-        if self.max_detections is None:
-            individuals = model_cfg.get("metadata", {}).get("individuals", [])
-            self.max_detections = len(individuals)
+from dlclive.pose_estimation_pytorch.config import (
+    load_exported_model,
+    SkipFrames,
+    TopDownConfig,
+    BaseConfig
+)
 
 
 class PyTorchRunner(BaseRunner):
@@ -273,10 +193,11 @@ class PyTorchRunner(BaseRunner):
 
     def load_model(self) -> None:
         """Loads the model from the provided path."""
-        raw_data = torch.load(self.path, map_location="cpu", weights_only=True)
+        # Load the model from the provided path and get the base config + 
+        # state dictionaries. Validation takes place in `runner_config.py`.
+        base_cfg, pose_state_dict, detector_state_dict = load_exported_model(self.path)
+        self.cfg = base_cfg.to_dict() 
 
-        self.cfg = raw_data["config"]
-        
         # Infer single animal mode and n_bodyparts from model configuration
         individuals = self.cfg.get("metadata", {}).get("individuals", ['idv1'])
         bodyparts = self.cfg.get("metadata", {}).get("bodyparts", [])
@@ -286,7 +207,7 @@ class PyTorchRunner(BaseRunner):
             self.single_animal = self.n_individuals == 1
 
         self.model = models.PoseModel.build(self.cfg["model"])
-        self.model.load_state_dict(raw_data["pose"])
+        self.model.load_state_dict(pose_state_dict)
         self.model = self.model.to(self.device)
         self.model.eval()
 
@@ -294,10 +215,10 @@ class PyTorchRunner(BaseRunner):
             self.model = self.model.half()
 
         self.detector = None
-        if self.dynamic is None and raw_data.get("detector") is not None:
+        if self.dynamic is None and detector_state_dict is not None:
             self.detector = models.DETECTORS.build(self.cfg["detector"]["model"])
             self.detector.to(self.device)
-            self.detector.load_state_dict(raw_data["detector"])
+            self.detector.load_state_dict(detector_state_dict)
             self.detector.eval()
             if self.precision == "FP16":
                 self.detector = self.detector.half()
