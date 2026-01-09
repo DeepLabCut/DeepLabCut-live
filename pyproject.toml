@@ -54,6 +54,20 @@ tf = [
     "tensorflow-io-gcs-filesystem; platform_system != 'Windows'",
 ]
 
+[dependency-groups]
+dev = [
+    "pytest",
+    "black",
+    "ruff",
+]
+
+# Keep compatibility with Poetry 
+# (without this section, Poetry assumes the wrong root directory of the project)
+[tool.poetry]
+packages = [
+    { include = "dlclive" }
+]
+
 [project.scripts]
 dlc-live-test = "dlclive.check_install.check_install:main"
 dlc-live-benchmark = "dlclive.benchmark:main"
