@@ -46,8 +46,10 @@ pytorch = [
 ]
 
 tf = [
-    "tensorflow>=2.7.0,<=2.12; platform_system != 'Darwin'",
-    "tensorflow-macos>=2.7.0,<=2.12; platform_system == 'Darwin'",
+    "tensorflow>=2.7.0,<2.12; platform_system != 'Darwin' and python_version < '3.11'",
+    "tensorflow>=2.12.0,<=2.12; platform_system != 'Darwin' and python_version >= '3.11'",
+    "tensorflow-macos>=2.7.0,<2.12; platform_system == 'Darwin' and python_version < '3.11'",
+    "tensorflow-macos>=2.12.0,<=2.12; platform_system == 'Darwin' and python_version >= '3.11'",
     "tensorflow-io-gcs-filesystem==0.27; platform_system == 'Windows' and python_version < '3.11'",
     "tensorflow-io-gcs-filesystem; platform_system != 'Windows'",
 ]
