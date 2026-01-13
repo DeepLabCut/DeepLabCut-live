@@ -3,10 +3,7 @@ import glob
 import pathlib
 import pytest
 from dlclive import benchmark_videos, download_benchmarking_data
-<<<<<<< HEAD
 from dlclive.engine import Engine
-=======
->>>>>>> 13f5ef6f9fd7937d7170b32ae7d1fa9f15a5e10b
 
 @pytest.mark.functional
 def test_benchmark_script_runs(tmp_path):
@@ -24,7 +21,6 @@ def test_benchmark_script_runs(tmp_path):
     pixels = [100, 400] #[2500, 10000]
     n_frames = 5
 
-<<<<<<< HEAD
     for model_path in dog_models:
         print(f"Running dog model: {model_path}")
         result = benchmark_videos(
@@ -47,16 +43,6 @@ def test_benchmark_script_runs(tmp_path):
             n_frames=n_frames,
             pixels=pixels
         )
-=======
-    for m in dog_models:
-        print(f"Running dog model: {m}")
-        result = benchmark_videos(m, dog_video, output=str(out_dir), n_frames=n_frames, pixels=pixels)
-        print("Dog model result:", result)
-
-    for m in mouse_models:
-        print(f"Running mouse model: {m}")
-        result = benchmark_videos(m, mouse_video, output=str(out_dir), n_frames=n_frames, pixels=pixels)
->>>>>>> 13f5ef6f9fd7937d7170b32ae7d1fa9f15a5e10b
         print("Mouse model result:", result)
 
     assert any(out_dir.iterdir())
