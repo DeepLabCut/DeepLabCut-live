@@ -77,6 +77,7 @@ then use TF1.13 with DlC-Live; export with TF2.3, then use TF2.3 with DLC-live).
 
 Note, you can then test your installation by installing poetry (`pip install poetry`), then running:
 
+<<<<<<< HEAD
 ```python
 poetry run dlc-live-test
 ```
@@ -85,6 +86,15 @@ If installed properly, this script will i) create a temporary folder ii) downloa
 full_dog model from the [DeepLabCut Model Zoo](
 http://www.mousemotorlab.org/dlc-modelzoo), iii) download a short video clip of
 a dog, and iv) run inference while displaying keypoints. v) remove the temporary folder.
+=======
+
+
+```python
+poetry run dlc-live-test
+```
+
+If installed properly, this script will i) create a temporary folder ii) download the SuperAnimal-Quadruped model from the [DeepLabCut Model Zoo](http://www.mousemotorlab.org/dlc-modelzoo), iii) download a short video clip of a dog, and iv) run inference while displaying keypoints. v) remove the temporary folder.
+>>>>>>> 13f5ef6f9fd7937d7170b32ae7d1fa9f15a5e10b
 
 <img src="https://images.squarespace-cdn.com/content/v1/57f6d51c9f74566f55ecf271/1606081086014-TG9GWH63ZGGOO7K779G3/ke17ZwdGBToddI8pDm48kHiSoSToKfKUI9t99vKErWoUqsxRUqqbr1mOJYKfIPR7LoDQ9mXPOjoJoqy81S2I8N_N4V1vUb5AoIIIbLZhVYxCRW4BPu10St3TBAUQYVKcOoIGycwr1shdgJWzLuxyzjLbSRGBFFxjYMBr42yCvRK5HHsLZWtMlAHzDU294nCd/dlclivetest.png?format=1000w" width="650" title="DLC-live-test" alt="DLC LIVE TEST" align="center" vspace = "50">
 
