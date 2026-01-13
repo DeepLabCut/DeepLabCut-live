@@ -68,7 +68,10 @@ jobs:
         run: poetry lock --no-cache
 
       - name: Install project dependencies
-        run: poetry install --no-root
+        run: poetry install --with dev
           
       - name: Run DLC Live Tests
         run: poetry run dlc-live-test --nodisplay
+
+      - name: Run Functional Benchmark Test
+        run: poetry run pytest tests/test_benchmark_script.py
