@@ -25,17 +25,19 @@ dlc-live-benchmark = "dlclive.benchmark:main"
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.12"
-numpy = ">=1.20,<2"
+numpy = ">=1.26,<2.0"
 "ruamel.yaml" = "^0.17.20"
 colorcet = "^3.0.0"
 einops = ">=0.6.1"
 Pillow = ">=8.0.0"
+opencv-python-headless = ">=4.5.0,<5.0.0"
 py-cpuinfo = ">=5.0.0"
 tqdm = "^4.62.3"
 pandas = ">=1.0.1,!=1.5.0"
 tables = "^3.8"
-opencv-python-headless = "^4.5"
+pytest = "^8.0"
 dlclibrary = ">=0.0.6"
+
 # PyTorch models
 scipy = ">=1.9"
 timm = { version = ">=1.0.7", optional = true }

@@ -73,10 +73,13 @@ same version (i.e., export a PyTorch model, then install PyTorch, export with TF
 then use TF1.13 with DlC-Live; export with TF2.3, then use TF2.3 with DLC-live).
 
 - available on pypi as: `pip install deeplabcut-live`
+  
 
-Note, you can then test your installation by running:
+Note, you can then test your installation by installing poetry (`pip install poetry`), then running:
 
-`dlc-live-test`
+```python
+poetry run dlc-live-test
+```
 
 If installed properly, this script will i) create a temporary folder ii) download the
 full_dog model from the [DeepLabCut Model Zoo](
