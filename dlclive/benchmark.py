@@ -6,12 +6,14 @@ Licensed under GNU Lesser General Public License v3.0
 """
 
 import csv
+import os
 import platform
 import subprocess
 import sys
 import time
 import warnings
 from pathlib import Path
+from typing import List, Optional, Tuple, Union
 
 import colorcet as cc
 import cv2
@@ -65,23 +67,27 @@ def download_benchmarking_data(
 
 
 def benchmark_videos(
-    model_path,
-    model_type,
-    video_path,
-    output=None,
-    n_frames=1000,
+    model_path: str,
+    model_type: str,
+    video_path: Union[str, List[str]],
+    output: Optional[str] = None,
+    n_frames: int = 1000,
     tf_config=None,
-    resize=None,
-    pixels=None,
-    cropping=None,
-    dynamic=(False, 0.5, 10),
-    print_rate=False,
-    display=False,
-    pcutoff=0.5,
-    display_radius=3,
-    cmap="bmy",
-    save_poses=False,
-    save_video=False,
+    device: str | None = None,
+    resize: Optional[Union[float, List[float]]] = None,
+    pixels: Optional[Union[int, List[int]]] = None,
+    cropping: Optional[List[int]] = None,
+    dynamic: Tuple[bool, float, int] = (False, 0.5, 10),
+    print_rate: bool = False,
+    precision: str = "FP32",
+    display: bool = False,
+    pcutoff: float = 0.5,
+    display_radius: int = 3,
+    cmap: str = "bmy",
+    save_poses: bool = False,
+    save_video: bool = False,
+    single_animal: bool = True,
+    draw_keypoint_names: bool = False,
 ):
     """Analyze videos using DeepLabCut-live exported models.
     Analyze multiple videos and/or multiple options for the size of the video
