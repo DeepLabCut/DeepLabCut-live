@@ -6,8 +6,10 @@ Licensed under GNU Lesser General Public License v3.0
 """
 
 import warnings
-
+from pathlib import Path
 import numpy as np
+import urllib.request
+import urllib.error
 
 from dlclive.exceptions import DLCLiveWarning
 
@@ -30,6 +32,13 @@ except ImportError as e:
         "OpenCV is not installed. Using pillow for image processing, which is slower.",
         DLCLiveWarning,
     )
+
+try:
+    from tqdm import tqdm
+
+    has_tqdm = True
+except ImportError:
+    has_tqdm = False
 
 
 def convert_to_ubyte(frame: np.ndarray) -> np.ndarray:
@@ -203,3 +212,68 @@ def decode_fourcc(cc):
         decoded = ""
 
     return decoded
+
+
+def download_file(url: str, filepath: str, chunk_size: int = 8192) -> None:
+    """
+    Download a file from a URL with progress bar and error handling.
+    
+    Args:
+        url: URL to download from
+        filepath: Local path to save the file
+        chunk_size: Size of chunks to read (default: 8192 bytes)
+    
+    Raises:
+        urllib.error.URLError: If the download fails
+        IOError: If the file cannot be written
+    """
+    filepath = Path(filepath)
+    
+    # Check if file already exists
+    if filepath.exists():
+        print(f"File already exists at {filepath}, skipping download.")
+        return
+    
+    # Ensure parent directory exists
+    filepath.parent.mkdir(parents=True, exist_ok=True)
+    
+    try:
+        # Open the URL
+        with urllib.request.urlopen(url) as response:
+            # Get file size if available
+            total_size = int(response.headers.get('Content-Length', 0))
+            
+            # Create progress bar if tqdm is available
+            if has_tqdm and total_size > 0:
+                pbar = tqdm(total=total_size, unit='B', unit_scale=True, desc="Downloading")
+            else:
+                pbar = None
+                print("Downloading...")
+            
+            # Download and write file
+            downloaded = 0
+            with open(filepath, 'wb') as f:
+                while True:
+                    chunk = response.read(chunk_size)
+                    if not chunk:
+                        break
+                    f.write(chunk)
+                    downloaded += len(chunk)
+                    if pbar:
+                        pbar.update(len(chunk))
+            
+            if pbar:
+                pbar.close()
+            
+            # Verify file was written
+            if not filepath.exists() or filepath.stat().st_size == 0:
+                raise IOError(f"Downloaded file is empty or was not written to {filepath}")
+            
+            print(f"Successfully downloaded to {filepath}")
+            
+    except urllib.error.HTTPError as e:
+        raise urllib.error.URLError(f"HTTP error {e.code}: {e.reason} when downloading from {url}")
+    except urllib.error.URLError as e:
+        raise urllib.error.URLError(f"Failed to download from {url}: {e.reason}")
+    except IOError as e:
+        raise IOError(f"Failed to write file to {filepath}: {e}")

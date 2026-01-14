@@ -9,26 +9,20 @@ import os
 import urllib.request
 import argparse
 import shutil
-import sys
+
 import urllib.request
 import warnings
 from pathlib import Path
 
+from dlclive.utils import download_file
 from dlclibrary.dlcmodelzoo.modelzoo_download import download_huggingface_model
 
+import dlclive
 from dlclive.benchmark import benchmark_videos
 from dlclive.engine import Engine
 
 MODEL_NAME = "superanimal_quadruped"
 SNAPSHOT_NAME = "snapshot-700000.pb"
-
-
-def urllib_pbar(count, blockSize, totalSize):
-    percent = int(count * blockSize * 100 / totalSize)
-    outstr = f"{round(percent)}%"
-    sys.stdout.write(outstr)
-    sys.stdout.write("\b" * len(outstr))
-    sys.stdout.flush()
 
 
 def main():
@@ -46,22 +40,25 @@ def main():
     if not display:
         print("Running without displaying video")
 
-    # make temporary directory in $HOME
-    # TODO: why create this temp directory in $HOME?
+    # make temporary directory
     print("\nCreating temporary directory...\n")
-    tmp_dir = Path().home() / "dlc-live-tmp"
+    tmp_dir = Path(dlclive.__file__).parent / "check_install" / "dlc-live-tmp"
     tmp_dir.mkdir(mode=0o775, exist_ok=True)
 
     video_file = str(tmp_dir / "dog_clip.avi")
     model_dir = tmp_dir / "DLC_Dog_resnet_50_iteration-0_shuffle-0"
 
     # download dog test video from github:
-    if not os.path.exists(video_file):
+    # Use raw.githubusercontent.com for direct file access
+    if not Path(video_file).exists():
         print(f"Downloading Video to {video_file}")
-        url_link = "https://github.com/DeepLabCut/DeepLabCut-live/blob/main/check_install/dog_clip.avi?raw=True"
-        urllib.request.urlretrieve(url_link, video_file, reporthook=urllib_pbar)
+        url_link = "https://raw.githubusercontent.com/DeepLabCut/DeepLabCut-live/master/check_install/dog_clip.avi"
+        try:
+            download_file(url_link, video_file)
+        except (urllib.error.URLError, IOError) as e:
+            raise RuntimeError(f"Failed to download video file: {e}") from e
     else:
-        print(f"Video already exists at {video_file}")
+        print(f"Video file already exists at {video_file}, skipping download.")
 
     # download model from the DeepLabCut Model Zoo
     if Path(model_dir / SNAPSHOT_NAME).exists():
