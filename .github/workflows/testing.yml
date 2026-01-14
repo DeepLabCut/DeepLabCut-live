@@ -34,17 +34,12 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v6
         with:
-          enable-cache: "true" 
+          enable-cache: true
           version: "0.9.5"
           python-version: ${{ matrix.python-version }}
 
       - name: Install the project
-        run: |
-          if [ "$RUNNER_OS" == "Windows" ] && [ "${{ matrix.python-version }}" != "3.10" ]; then
-            uv sync --all-extras --no-extra tf --dev
-          else
-            uv sync --all-extras --dev
-          fi
+        run: uv sync --all-extras --dev
         shell: bash
         
       - name: Install ffmpeg
