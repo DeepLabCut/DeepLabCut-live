@@ -46,7 +46,8 @@ def main():
     if not display:
         print("Running without displaying video")
 
-    # make temporary directory in $current
+    # make temporary directory in $HOME
+    # TODO: why create this temp directory in $HOME?
     print("\nCreating temporary directory...\n")
     tmp_dir = Path().home() / "dlc-live-tmp"
     tmp_dir.mkdir(mode=0o775, exist_ok=True)
@@ -66,7 +67,7 @@ def main():
     if Path(model_dir / SNAPSHOT_NAME).exists():
         print("Model already downloaded, using cached version")
     else:
-        print("Downloading a test model from the DeepLabCut Model Zoo...")
+        print("Downloading superanimal_quadruped model from the DeepLabCut Model Zoo...")
         download_huggingface_model(MODEL_NAME, model_dir)
 
     # assert these things exist so we can give informative error messages

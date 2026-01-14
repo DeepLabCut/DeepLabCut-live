@@ -5,7 +5,6 @@ DeepLabCut Toolbox (deeplabcut.org)
 Licensed under GNU Lesser General Public License v3.0
 """
 
-import csv
 import platform
 import subprocess
 import sys
@@ -261,7 +260,7 @@ def get_system_info() -> dict:
         from cpuinfo import get_cpu_info
 
         dev_type = "CPU"
-        dev = [get_cpu_info()["brand_raw"]]
+        dev = get_cpu_info()
 
     return {
         "host_name": host_name,
@@ -351,24 +350,24 @@ def benchmark(
     model_path: str,
     model_type: str,
     video_path: str,
-    tf_config=None,
+    tf_config: "tensorflow.ConfigProto | None" = None,
     device: str | None = None,
     resize: float | None = None,
     pixels: int | None = None,
     single_animal: bool = True,
-    cropping=None,
-    dynamic=(False, 0.5, 10),
-    n_frames=1000,
-    print_rate=False,
+    cropping: list[int] | None = None,
+    dynamic: tuple[bool, float, int] = (False, 0.5, 10),
+    n_frames: int =1000,
+    print_rate: bool=False,
     precision: str = "FP32",
-    display=True,
-    pcutoff=0.5,
-    display_radius=3,
-    cmap="bmy",
-    save_dir=None,
-    save_poses=False,
-    save_video=False,
-    draw_keypoint_names=False,
+    display: bool = True,
+    pcutoff: float = 0.5,
+    display_radius: int = 3,
+    cmap: str = "bmy",
+    save_dir: str | None = None,
+    save_poses: bool = False,
+    save_video: bool = False,
+    draw_keypoint_names: bool = False,
 ):
     """
     Analyzes a video to track keypoints using a DeepLabCut model, and optionally saves the keypoint data and the labeled video.
