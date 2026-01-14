@@ -103,7 +103,7 @@ class Assembly:
 
     def __add__(self, other):
         if other in self:
-            raise ValueError("Assemblies contain shared joints.")
+            raise ArithmeticError("Assemblies contain shared joints.")
 
         assembly = Assembly(self.data.shape[0])
         for link in self._links + other._links:
@@ -340,6 +340,7 @@ class Assembler:
         try:
             df.drop("single", level="individuals", axis=1, inplace=True)
         except KeyError:
+            # The "single" individual column may be absent in some training datasets; ignore if missing.
             pass
         n_bpts = len(df.columns.get_level_values("bodyparts").unique())
         if n_bpts == 1:
@@ -547,11 +548,9 @@ class Assembler:
                 d = self.calc_assembly_mahalanobis_dist(assembly, nan_policy=nan_policy)
                 if d < d_old:
                     push_to_stack(new_ind)
-                    try:
-                        _, _, link = heapq.heappop(tabu)
-                        heapq.heappush(stack, (-link.affinity, next(counter), link))
-                    except IndexError:
-                        pass
+                    if tabu:  
+                        _, _, link = heapq.heappop(tabu)  
+                        heapq.heappush(stack, (-link.affinity, next(counter), link)) 
                 else:
                     heapq.heappush(tabu, (d - d_old, next(counter), best))
                     assembly.__dict__.update(assembly._dict)
@@ -597,8 +596,8 @@ class Assembler:
             self._fill_assembly(
                 assembly, lookup, assembled, self.safe_edge, self.nan_policy
             )
-            for link in assembly._links:
-                i, j = link.idx
+            for assembly_link in assembly._links:
+                i, j = assembly_link.idx
                 lookup[i].pop(j)
                 lookup[j].pop(i)
             assembled.update(assembly._idx)
@@ -666,6 +665,8 @@ class Assembler:
                             for idx in store[j]._idx:
                                 store[idx] = store[i]
                     except KeyError:
+                        # Some links may reference indices that were never added to `store`;  
+                        # in that case we intentionally skip merging for this link
                         pass
 
         # Second pass without edge safety
@@ -1086,6 +1087,7 @@ def parse_ground_truth_data_file(h5_file):
     try:
         df.drop("single", axis=1, level="individuals", inplace=True)
     except KeyError:
+        # Ignore if the "single" individual column is absent 
         pass
     # Cast columns of dtype 'object' to float to avoid TypeError
     # further down in _parse_ground_truth_data.

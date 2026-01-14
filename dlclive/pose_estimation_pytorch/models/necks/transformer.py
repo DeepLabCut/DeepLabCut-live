@@ -171,7 +171,6 @@ class Transformer(BaseNeck):
         with torch.no_grad():
             self.pe_h = h
             self.pe_w = w
-            length = h * w
         if pe_type != "learnable":
             self.pos_embedding = torch.nn.Parameter(
                 make_sine_position_embedding(h, w, d_model), requires_grad=False

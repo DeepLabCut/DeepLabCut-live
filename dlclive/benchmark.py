@@ -653,26 +653,26 @@ def _get_metadata(
 ):
     try:
         fourcc = decode_fourcc(cap.get(cv2.CAP_PROP_FOURCC))
-    except:
+    except Exception:
         fourcc = ""
     try:
         fps = round(cap.get(cv2.CAP_PROP_FPS))
-    except:
+    except Exception:
         fps = None
     try:
         pix_fmt = decode_fourcc(cap.get(cv2.CAP_PROP_CODEC_PIXEL_FORMAT))
-    except:
+    except Exception:
         pix_fmt = ""
     try:
         frame_count = round(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    except:
+    except Exception:
         frame_count = None
     try:
         orig_im_size = (
             round(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
             round(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
         )
-    except:
+    except Exception:
         orig_im_size = None
 
     meta = {

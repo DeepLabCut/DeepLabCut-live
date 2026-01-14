@@ -5,19 +5,15 @@ DeepLabCut Toolbox (deeplabcut.org)
 Licensed under GNU Lesser General Public License v3.0
 """
 
-import os
-import urllib.request
 import argparse
 import shutil
-
-import urllib.request
 import warnings
 from pathlib import Path
 
-from dlclive.utils import download_file
 from dlclibrary.dlcmodelzoo.modelzoo_download import download_huggingface_model
 
 import dlclive
+from dlclive.utils import download_file
 from dlclive.benchmark import benchmark_videos
 from dlclive.engine import Engine
 

@@ -114,7 +114,6 @@ class DLCRNetHead(HeatmapHead):
             features = self.convt4(x)
             stage2_in = torch.cat((stage1_hm_out, stage1_paf_out, features), dim=1)
             stage_in = stage2_in
-            stage_paf_out = stage1_paf_out
             stage_hm_out = stage1_hm_out
             for i, (hm_ref_layer, paf_ref_layer) in enumerate(
                 zip(self.hm_ref_layers, self.paf_ref_layers)
