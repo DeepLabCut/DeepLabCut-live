@@ -5,10 +5,18 @@ DeepLabCut Toolbox (deeplabcut.org)
 Licensed under GNU Lesser General Public License v3.0
 """
 
-from tkinter import Label, Tk
+try:
+    from tkinter import Label, Tk
+    from PIL import ImageTk
+    _TKINTER_AVAILABLE = True
+except ImportError:
+    _TKINTER_AVAILABLE = False
+    Label = None
+    Tk = None
+    ImageTk = None
 
 import colorcet as cc
-from PIL import Image, ImageDraw, ImageTk
+from PIL import Image, ImageDraw
 
 
 class Display:
@@ -24,6 +32,10 @@ class Display:
     """
 
     def __init__(self, cmap="bmy", radius=3, pcutoff=0.5):
+        if not _TKINTER_AVAILABLE:
+            raise ImportError(
+                "tkinter is not available. Display functionality requires tkinter. "
+            )
         self.cmap = cmap
         self.colors = None
         self.radius = radius
@@ -61,6 +73,9 @@ class Display:
         pose :class:`numpy.ndarray`
             the pose estimated by DeepLabCut for the image
         """
+        if not _TKINTER_AVAILABLE:
+            raise ImportError("tkinter is not available. Cannot display frames.")
+        
         im_size = (frame.shape[1], frame.shape[0])
         if pose is not None:
             img = Image.fromarray(frame)
