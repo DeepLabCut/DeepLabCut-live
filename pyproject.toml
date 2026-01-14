@@ -1,66 +1,90 @@
-[tool.poetry]
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
 name = "deeplabcut-live"
 version = "1.1.0"
 description = "Class to load exported DeepLabCut networks and perform pose estimation on single frames (from a camera feed)"
-authors = ["A. & M. Mathis Labs <admin@deeplabcut.org>"]
-license = "AGPL-3.0-or-later"
 readme = "README.md"
-homepage = "https://github.com/DeepLabCut/DeepLabCut-live"
-repository = "https://github.com/DeepLabCut/DeepLabCut-live"
+requires-python = ">=3.10,<=3.12"
+license = { text = "GNU Affero General Public License v3 or later (AGPLv3+)" }
+authors = [
+    { name = "A. & M. Mathis Labs", email = "admin@deeplabcut.org" }
+]
+
+keywords = ["deeplabcut", "pose-estimation", "real-time", "deep-learning"]
+
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
-    "Operating System :: OS Independent"
+    "Operating System :: OS Independent",
 ]
+
+dependencies = [
+    "numpy>=1.20,<2",
+    "ruamel.yaml>=0.17.20",
+    "colorcet>=3.0.0",
+    "einops>=0.6.1",
+    "Pillow>=8.0.0",
+    "py-cpuinfo>=5.0.0",
+    "tqdm>=4.62.3",
+    "pandas>=1.0.1,!=1.5.0",
+    "tables>=3.8",
+    "opencv-python-headless>=4.5",
+    "dlclibrary>=0.0.6",
+    "scipy>=1.9",
+]
+
+[project.optional-dependencies]
+pytorch = [
+    "timm>=1.0.7",
+    "torch>=2.0.0",
+    "torchvision>=0.15",
+]
+
+tf = [
+    "tensorflow>=2.7.0,<2.12; platform_system == 'Linux' and python_version < '3.11'",
+    "tensorflow>=2.12.0,<2.13; platform_system == 'Linux' and python_version >= '3.11'",
+    "tensorflow-macos>=2.7.0,<2.12; platform_system == 'Darwin' and python_version < '3.11'",
+    "tensorflow-macos>=2.12.0,<2.13; platform_system == 'Darwin' and python_version >= '3.11'",
+    "tensorflow-io-gcs-filesystem; platform_system != 'Darwin'",
+    # Tensorflow is not supported on Windows with Python >= 3.11
+    "tensorflow>=2.7,<=2.10; platform_system == 'Windows' and python_version < '3.11'",
+    "tensorflow-io-gcs-filesystem==0.27; platform_system == 'Windows' and python_version < '3.11'",
+    "tensorflow-io-gcs-filesystem; platform_system != 'Windows'",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "black",
+    "ruff",
+]
+
+# Keep only for backward compatibility with Poetry 
+# (without this section, Poetry assumes the wrong root directory of the project)
+[tool.poetry]
 packages = [
     { include = "dlclive" }
 ]
-include = ["dlclive/check_install/*"]
 
-[tool.poetry.scripts]
+[project.scripts]
 dlc-live-test = "dlclive.check_install.check_install:main"
 dlc-live-benchmark = "dlclive.benchmark:main"
 
-[tool.poetry.dependencies]
-python = ">=3.10,<3.12"
-numpy = ">=1.26,<2.0"
-"ruamel.yaml" = "^0.17.20"
-colorcet = "^3.0.0"
-einops = ">=0.6.1"
-Pillow = ">=8.0.0"
-opencv-python-headless = ">=4.5.0,<5.0.0"
-py-cpuinfo = ">=5.0.0"
-tqdm = "^4.62.3"
-pandas = ">=1.0.1,!=1.5.0"
-tables = "^3.8"
-pytest = "^8.0"
-dlclibrary = ">=0.0.6"
+[project.urls]
+Homepage = "https://github.com/DeepLabCut/DeepLabCut-live"
+Repository = "https://github.com/DeepLabCut/DeepLabCut-live"
 
-# PyTorch models
-scipy = ">=1.9"
-timm = { version = ">=1.0.7", optional = true }
-torch = { version = ">=2.0.0", optional = true }
-torchvision = { version = ">=0.15", optional = true }
-# TensorFlow models
-tensorflow = [
-    { version = "^2.7.0,<=2.10", optional = true, platform = "win32" },
-    { version = "^2.7.0,<=2.12", optional = true, platform = "linux" },
-]
-tensorflow-macos = { version = "^2.7.0,<=2.12", optional = true, markers = "sys_platform == 'darwin'" }
-tensorflow-io-gcs-filesystem = [
-    { version = "==0.27", optional = true, platform = "win32", python = ">=3.10,<3.11" },
-    { version = "*", optional = true, platform = "linux" },
-    { version = "*", optional = true, markers = "sys_platform == 'darwin'" }
-]
+[tool.setuptools]
+include-package-data = true
 
-[tool.poetry.extras]
-tf = [ "tensorflow", "tensorflow-macos", "tensorflow-io-gcs-filesystem"]
-pytorch = ["scipy", "timm", "torch", "torchvision"]
+[tool.setuptools.packages.find]
+include = ["dlclive*"]
 
-[tool.poetry.group.dev.dependencies]
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+[tool.setuptools.package-data]
+dlclive = ["check_install/*"]
