@@ -7,7 +7,7 @@ name = "deeplabcut-live"
 version = "1.1.0"
 description = "Class to load exported DeepLabCut networks and perform pose estimation on single frames (from a camera feed)"
 readme = "README.md"
-requires-python = ">=3.10,<=3.12"
+requires-python = ">=3.10,<3.13"
 license = { text = "GNU Affero General Public License v3 or later (AGPLv3+)" }
 authors = [
     { name = "A. & M. Mathis Labs", email = "admin@deeplabcut.org" }
