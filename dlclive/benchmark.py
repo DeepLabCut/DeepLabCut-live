@@ -847,23 +847,19 @@ def main():
 
     # Call the benchmark_videos function with the parsed arguments
     benchmark_videos(
-        video_path=args.video_path,
         model_path=args.model_path,
         model_type=args.model_type,
-        device=args.device,
-        precision=args.precision,
+        video_path=args.video_path,
+        output=args.save_dir,
         display=args.display,
         pcutoff=args.pcutoff,
         display_radius=args.display_radius,
-        resize=tuple(args.resize) if args.resize else None,
+        resize=args.resize,
         cropping=args.cropping,
         dynamic=tuple(args.dynamic),
         save_poses=args.save_poses,
-        save_dir=args.save_dir,
-        draw_keypoint_names=args.draw_keypoint_names,
-        cmap=args.cmap,
-        get_sys_info=args.get_sys_info,
         save_video=args.save_video,
+        cmap=args.cmap,
     )
 
 
