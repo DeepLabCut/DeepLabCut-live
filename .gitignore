@@ -18,6 +18,10 @@ __pycache__/
 # C extensions
 *.so
 
+# uv or poetry lock files
+poetry.lock
+uv.lock
+
 # Distribution / packaging
 .Python
 build/
