@@ -65,20 +65,29 @@ https://www.rts.ch/play/radio/cqfd/audio/capturer-les-mouvements-des-animaux-en-
 
 ### Installation
 
-Please see our instruction manual to install on a [Windows or Linux machine](
+DeepLabCut-live can be installed from PyPI with PyTorch or Tensorflow directly: 
+   ```bash
+   # With PyTorch (recommended)
+   pip install deeplabcut-live[pytorch]
+   
+   # Or with TensorFlow
+   pip install deeplabcut-live[tf]
+   
+   # Or using uv
+   uv pip install deeplabcut-live[pytorch] # or [tf]
+   ```
+
+Please see our instruction manual for more elaborate information on how to install on a [Windows or Linux machine](
 docs/install_desktop.md) or on a [NVIDIA Jetson Development Board](
 docs/install_jetson.md). Note, this code works with PyTorch, TensorFlow 1 or TensorFlow
 2 models, but whatever engine you exported your model with, you must import with the 
 same version (i.e., export a PyTorch model, then install PyTorch, export with TF1.13, 
 then use TF1.13 with DlC-Live; export with TF2.3, then use TF2.3 with DLC-live).
 
-- available on pypi as: `pip install deeplabcut-live`
-  
+Note, you can test your installation by running:
 
-Note, you can then test your installation by installing poetry (`pip install poetry`), then running:
-
-```python
-poetry run dlc-live-test
+```bash
+dlc-live-test
 ```
 
 If installed properly, this script will i) create a temporary folder ii) download the
