@@ -58,4 +58,4 @@ jobs:
         run: uv run dlc-live-test --nodisplay
 
       - name: Run Functional Benchmark Test
-        run: uv run pytest tests/test_benchmark_script.py
+        run: uv run pytest
