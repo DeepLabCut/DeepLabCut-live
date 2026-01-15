@@ -5,23 +5,26 @@ DeepLabCut Toolbox (deeplabcut.org)
 Licensed under GNU Lesser General Public License v3.0
 """
 
-
-import numpy as np
 import warnings
+from pathlib import Path
+import numpy as np
+import urllib.request
+import urllib.error
+
 from dlclive.exceptions import DLCLiveWarning
 
 try:
     import skimage
 
     SK_IM = True
-except Exception:
+except ImportError as e:
     SK_IM = False
 
 try:
     import cv2
 
     OPEN_CV = True
-except Exception:
+except ImportError as e:
     from PIL import Image
 
     OPEN_CV = False
@@ -30,19 +33,26 @@ except Exception:
         DLCLiveWarning,
     )
 
+try:
+    from tqdm import tqdm
 
-def convert_to_ubyte(frame):
-    """ Converts an image to unsigned 8-bit integer numpy array. 
+    has_tqdm = True
+except ImportError:
+    has_tqdm = False
+
+
+def convert_to_ubyte(frame: np.ndarray) -> np.ndarray:
+    """Converts an image to unsigned 8-bit integer numpy array.
         If scikit-image is installed, uses skimage.img_as_ubyte, otherwise, uses a similar custom function.
 
     Parameters
     ----------
-    image : :class:`numpy.ndarray`
+    frame:
         an image as a numpy array
 
     Returns
     -------
-    :class:`numpy.ndarray`
+    :class: `numpy.ndarray`
         image converted to uint8
     """
 
@@ -52,36 +62,33 @@ def convert_to_ubyte(frame):
         return _img_as_ubyte_np(frame)
 
 
-def resize_frame(frame, resize=None):
-    """ Resizes an image. Uses OpenCV if installed, otherwise, uses pillow
+def resize_frame(frame: np.ndarray, resize=None) -> np.ndarray:
+    """Resizes an image. Uses OpenCV if installed, otherwise, uses pillow
 
     Parameters
     ----------
-    image : :class:`numpy.ndarray`
+    frame:
         an image as a numpy array
     """
 
     if (resize is not None) and (resize != 1):
+        new_x = int(frame.shape[0] * resize)
+        new_y = int(frame.shape[1] * resize)
 
         if OPEN_CV:
-
-            new_x = int(frame.shape[0] * resize)
-            new_y = int(frame.shape[1] * resize)
             return cv2.resize(frame, (new_y, new_x))
 
         else:
-
             img = Image.fromarray(frame)
             img = img.resize((new_y, new_x))
             return np.asarray(img)
 
     else:
-
         return frame
 
 
-def img_to_rgb(frame):
-    """ Convert an image to RGB. Uses OpenCV is installed, otherwise uses pillow.
+def img_to_rgb(frame: np.ndarray) -> np.ndarray:
+    """Convert an image to RGB. Uses OpenCV is installed, otherwise uses pillow.
 
     Parameters
     ----------
@@ -90,15 +97,12 @@ def img_to_rgb(frame):
     """
 
     if frame.ndim == 2:
-
         return gray_to_rgb(frame)
 
     elif frame.ndim == 3:
-
         return bgr_to_rgb(frame)
 
     else:
-
         warnings.warn(
             f"Image has {frame.ndim} dimensions. Must be 2 or 3 dimensions to convert to RGB",
             DLCLiveWarning,
@@ -106,8 +110,8 @@ def img_to_rgb(frame):
         return frame
 
 
-def gray_to_rgb(frame):
-    """ Convert an image from grayscale to RGB. Uses OpenCV is installed, otherwise uses pillow.
+def gray_to_rgb(frame: np.ndarray) -> np.ndarray:
+    """Convert an image from grayscale to RGB. Uses OpenCV is installed, otherwise uses pillow.
 
     Parameters
     ----------
@@ -116,18 +120,16 @@ def gray_to_rgb(frame):
     """
 
     if OPEN_CV:
-
         return cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
 
     else:
-
         img = Image.fromarray(frame)
         img = img.convert("RGB")
         return np.asarray(img)
 
 
-def bgr_to_rgb(frame):
-    """ Convert an image from BGR to RGB. Uses OpenCV is installed, otherwise uses pillow.
+def bgr_to_rgb(frame: np.ndarray) -> np.ndarray:
+    """Convert an image from BGR to RGB. Uses OpenCV is installed, otherwise uses pillow.
 
     Parameters
     ----------
@@ -136,18 +138,16 @@ def bgr_to_rgb(frame):
     """
 
     if OPEN_CV:
-
         return cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
     else:
-
         img = Image.fromarray(frame)
         img = img.convert("RGB")
         return np.asarray(img)
 
 
-def _img_as_ubyte_np(frame):
-    """ Converts an image as a numpy array to unsinged 8-bit integer.
+def _img_as_ubyte_np(frame: np.ndarray) -> np.ndarray:
+    """Converts an image as a numpy array to unsinged 8-bit integer.
         As in scikit-image img_as_ubyte, converts negative pixels to 0 and converts range to [0, 255]
 
     Parameters
@@ -166,12 +166,10 @@ def _img_as_ubyte_np(frame):
 
     # check if already ubyte
     if np.issubdtype(im_type, np.uint8):
-
         return frame
 
     # if floating
     elif np.issubdtype(im_type, np.floating):
-
         if (np.min(frame) < -1) or (np.max(frame) > 1):
             raise ValueError("Images of type float must be between -1 and 1.")
 
@@ -182,14 +180,12 @@ def _img_as_ubyte_np(frame):
 
     # if integer
     elif np.issubdtype(im_type, np.integer):
-
         im_type_info = np.iinfo(im_type)
         frame *= 255 / im_type_info.max
         frame[frame < 0] = 0
         return frame.astype(np.uint8)
 
     else:
-
         raise TypeError(
             "image of type {} could not be converted to ubyte".format(im_type)
         )
@@ -216,3 +212,68 @@ def decode_fourcc(cc):
         decoded = ""
 
     return decoded
+
+
+def download_file(url: str, filepath: str, chunk_size: int = 8192) -> None:
+    """
+    Download a file from a URL with progress bar and error handling.
+    
+    Args:
+        url: URL to download from
+        filepath: Local path to save the file
+        chunk_size: Size of chunks to read (default: 8192 bytes)
+    
+    Raises:
+        urllib.error.URLError: If the download fails
+        IOError: If the file cannot be written
+    """
+    filepath = Path(filepath)
+    
+    # Check if file already exists
+    if filepath.exists():
+        print(f"File already exists at {filepath}, skipping download.")
+        return
+    
+    # Ensure parent directory exists
+    filepath.parent.mkdir(parents=True, exist_ok=True)
+    
+    try:
+        # Open the URL
+        with urllib.request.urlopen(url) as response:
+            # Get file size if available
+            total_size = int(response.headers.get('Content-Length', 0))
+            
+            # Create progress bar if tqdm is available
+            if has_tqdm and total_size > 0:
+                pbar = tqdm(total=total_size, unit='B', unit_scale=True, desc="Downloading")
+            else:
+                pbar = None
+                print("Downloading...")
+            
+            # Download and write file
+            downloaded = 0
+            with open(filepath, 'wb') as f:
+                while True:
+                    chunk = response.read(chunk_size)
+                    if not chunk:
+                        break
+                    f.write(chunk)
+                    downloaded += len(chunk)
+                    if pbar:
+                        pbar.update(len(chunk))
+            
+            if pbar:
+                pbar.close()
+            
+            # Verify file was written
+            if not filepath.exists() or filepath.stat().st_size == 0:
+                raise IOError(f"Downloaded file is empty or was not written to {filepath}")
+            
+            print(f"Successfully downloaded to {filepath}")
+            
+    except urllib.error.HTTPError as e:
+        raise urllib.error.URLError(f"HTTP error {e.code}: {e.reason} when downloading from {url}")
+    except urllib.error.URLError as e:
+        raise urllib.error.URLError(f"Failed to download from {url}: {e.reason}")
+    except IOError as e:
+        raise IOError(f"Failed to write file to {filepath}: {e}")
