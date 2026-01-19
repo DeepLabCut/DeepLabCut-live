@@ -1,8 +1,8 @@
 """
 Tests for the Engine class - engine detection and model type handling
 """
+
 import pytest
-from pathlib import Path
 from dlclive.engine import Engine
 
 
@@ -33,14 +33,14 @@ class TestEngine:
         model_dir.mkdir()
         (model_dir / "pose_cfg.yaml").write_text("test")
         (model_dir / "snapshot-100.pb").write_text("test")
-        
+
         assert Engine.from_model_path(model_dir) == Engine.TENSORFLOW
 
     def test_engine_from_model_path_pytorch_file(self, tmp_path):
         """Test detecting PyTorch engine from .pt file"""
         model_file = tmp_path / "model.pt"
         model_file.write_text("test")
-        
+
         assert Engine.from_model_path(model_file) == Engine.PYTORCH
 
     def test_engine_from_model_path_nonexistent(self, tmp_path):
@@ -56,11 +56,9 @@ class TestEngine:
         invalid_dir.mkdir()
         with pytest.raises(ValueError, match="Could not determine engine"):
             Engine.from_model_path(invalid_dir)
-        
+
         # File with wrong extension
         wrong_ext = tmp_path / "model.txt"
         wrong_ext.write_text("test")
         with pytest.raises(ValueError, match="Could not determine engine"):
             Engine.from_model_path(wrong_ext)
-
-

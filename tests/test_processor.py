@@ -1,7 +1,7 @@
 """
 Tests for Processor base class
 """
-import pytest
+
 import numpy as np
 from dlclive.processor import Processor
 
@@ -18,18 +18,18 @@ class TestProcessor:
         """Test default process method returns pose unchanged"""
         processor = Processor()
         pose = np.array([[100, 200, 0.9], [150, 250, 0.8]])
-        
+
         result = processor.process(pose)
-        
+
         np.testing.assert_array_equal(result, pose)
 
     def test_processor_process_with_kwargs(self):
         """Test process method accepts kwargs"""
         processor = Processor()
         pose = np.array([[100, 200, 0.9]])
-        
+
         result = processor.process(pose, frame_number=1, timestamp=0.5)
-        
+
         np.testing.assert_array_equal(result, pose)
 
     def test_processor_save_default(self):
@@ -43,5 +43,3 @@ class TestProcessor:
         processor = Processor()
         result = processor.save(file="test.txt")
         assert result == 0
-
-

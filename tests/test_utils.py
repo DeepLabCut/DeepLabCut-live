@@ -1,9 +1,9 @@
 """
 Tests for utility functions - image processing and file operations
 """
+
 import pytest
 import numpy as np
-from pathlib import Path
 from unittest.mock import patch, MagicMock
 from dlclive import utils
 
@@ -31,7 +31,7 @@ class TestImageUtils:
         frame = np.random.randint(0, 255, (100, 200, 3), dtype=np.uint8)
         result = utils.resize_frame(frame, resize=None)
         np.testing.assert_array_equal(result, frame)
-        
+
         result = utils.resize_frame(frame, resize=1)
         np.testing.assert_array_equal(result, frame)
 
@@ -101,30 +101,29 @@ class TestImageUtils:
 class TestDownloadUtils:
     """Test file download utilities"""
 
-    @patch('urllib.request.urlopen')
+    @patch("urllib.request.urlopen")
     def test_download_file_success(self, mock_urlopen, tmp_path):
         """Test successful file download"""
         filepath = tmp_path / "downloaded_file.txt"
-        
+
         # Mock URL response
         mock_response = MagicMock()
-        mock_response.headers.get.return_value = '12'  # Total size of 'chunk1chunk2'
-        mock_response.read.side_effect = [b'chunk1', b'chunk2', b'']
+        mock_response.headers.get.return_value = "12"  # Total size of 'chunk1chunk2'
+        mock_response.read.side_effect = [b"chunk1", b"chunk2", b""]
         mock_urlopen.return_value.__enter__.return_value = mock_response
-        
+
         utils.download_file("http://example.com/file.txt", str(filepath))
-        
+
         mock_urlopen.assert_called_once()
         # Verify file was actually written
         assert filepath.exists()
-        assert filepath.read_bytes() == b'chunk1chunk2'
+        assert filepath.read_bytes() == b"chunk1chunk2"
 
     def test_download_file_already_exists(self, tmp_path):
         """Test that existing files are skipped"""
         filepath = tmp_path / "existing_file.txt"
         filepath.write_text("existing content")
-        
-        with patch('urllib.request.urlopen') as mock_urlopen:
+
+        with patch("urllib.request.urlopen") as mock_urlopen:
             utils.download_file("http://example.com/file.txt", str(filepath))
             mock_urlopen.assert_not_called()
-
