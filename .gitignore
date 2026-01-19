@@ -3,12 +3,16 @@
 # Data related to benchmark!
 benchmarking/Data*
 benchmarking/results*
-
+dlclive/check_install/dlc-live-tmp*
 *test*
 **DS_Store*
 *vscode*
 
 **/__MACOSX/
+
+# Include tests directory (negate the *test* pattern for tests/)
+!tests/
+!tests/**
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -17,6 +21,10 @@ __pycache__/
 
 # C extensions
 *.so
+
+# uv or poetry lock files
+poetry.lock
+uv.lock
 
 # Distribution / packaging
 .Python

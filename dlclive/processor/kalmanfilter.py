@@ -5,9 +5,10 @@ DeepLabCut Toolbox (deeplabcut.org)
 Licensed under GNU Lesser General Public License v3.0
 """
 
-
 import time
+
 import numpy as np
+
 from dlclive.processor import Processor
 
 
@@ -25,7 +26,6 @@ class KalmanFilterPredictor(Processor):
         lik_thresh=0,
         **kwargs,
     ):
-
         super().__init__(**kwargs)
 
         self.adapt = adapt
@@ -41,16 +41,14 @@ class KalmanFilterPredictor(Processor):
         self.last_pose_time = 0
 
     def _get_forward_model(self, dt):
-
         F = np.zeros((self.n_states, self.n_states))
         for d in range(self.nderiv + 1):
             for i in range(self.n_states - (d * self.bp * 2)):
-                F[i, i + (2 * self.bp * d)] = (dt ** d) / max(1, d)
+                F[i, i + (2 * self.bp * d)] = (dt**d) / max(1, d)
 
         return F
 
     def _init_kf(self, pose):
-
         # get number of body parts
         self.bp = pose.shape[0]
         self.n_states = self.bp * 2 * (self.nderiv + 1)
@@ -75,7 +73,6 @@ class KalmanFilterPredictor(Processor):
         self.is_initialized = True
 
     def _predict(self):
-
         F = self._get_forward_model(time.time() - self.last_pose_time)
 
         Pd = np.diag(self.P).reshape(self.P.shape[0], 1)
@@ -85,7 +82,6 @@ class KalmanFilterPredictor(Processor):
         self.Pp = np.dot(np.dot(F, self.P), F.T) + self.Q
 
     def _get_residuals(self, pose):
-
         z = np.zeros((self.n_states, 1))
         z[: (self.bp * 2)] = pose[: self.bp, :2].reshape(self.bp * 2, 1)
         for i in range(self.bp * 2, self.n_states):
@@ -93,7 +89,6 @@ class KalmanFilterPredictor(Processor):
         self.y = z - np.dot(self.H, self.Xp)
 
     def _update(self, liks):
-
         S = np.dot(self.H, np.dot(self.Pp, self.H.T)) + self.R
         K = np.dot(np.dot(self.Pp, self.H.T), np.linalg.inv(S))
         self.X = self.Xp + np.dot(K, self.y)
@@ -101,7 +96,6 @@ class KalmanFilterPredictor(Processor):
         self.P = np.dot(self.I - np.dot(K, self.H), self.Pp)
 
     def _get_future_pose(self, dt):
-
         Ff = self._get_forward_model(dt)
         Xf = np.dot(Ff, self.X)
         future_pose = Xf[: (self.bp * 2)].reshape(self.bp, 2)
@@ -109,7 +103,6 @@ class KalmanFilterPredictor(Processor):
         return future_pose
 
     def _get_state_likelihood(self, pose):
-
         liks = pose[:, 2]
         liks_xy = np.repeat(liks, 2)
         liks_xy_deriv = np.tile(liks_xy, self.nderiv + 1)
@@ -117,15 +110,12 @@ class KalmanFilterPredictor(Processor):
         return liks_state
 
     def process(self, pose, **kwargs):
-
         if not self.is_initialized:
-
             self._init_kf(pose)
             self.last_pose_time = time.time()
             return pose
 
         else:
-
             self._predict()
             self._get_residuals(pose)
             liks = self._get_state_likelihood(pose)
