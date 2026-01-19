@@ -7,39 +7,15 @@ Licensed under GNU Lesser General Public License v3.0
 
 import warnings
 from pathlib import Path
-import numpy as np
-import urllib.request
 import urllib.error
+import urllib.request
 
-from dlclive.exceptions import DLCLiveWarning
+import cv2
+import numpy as np
+from tqdm import tqdm
+
 from dlclive.engine import Engine
-
-try:
-    import skimage
-
-    SK_IM = True
-except ImportError as e:
-    SK_IM = False
-
-try:
-    import cv2
-
-    OPEN_CV = True
-except ImportError as e:
-    from PIL import Image
-
-    OPEN_CV = False
-    warnings.warn(
-        "OpenCV is not installed. Using pillow for image processing, which is slower.",
-        DLCLiveWarning,
-    )
-
-try:
-    from tqdm import tqdm
-
-    has_tqdm = True
-except ImportError:
-    has_tqdm = False
+from dlclive.exceptions import DLCLiveWarning
 
 
 def convert_to_ubyte(frame: np.ndarray) -> np.ndarray:
@@ -56,15 +32,11 @@ def convert_to_ubyte(frame: np.ndarray) -> np.ndarray:
     :class: `numpy.ndarray`
         image converted to uint8
     """
-
-    if SK_IM:
-        return skimage.img_as_ubyte(frame)
-    else:
-        return _img_as_ubyte_np(frame)
+    return _img_as_ubyte_np(frame)
 
 
 def resize_frame(frame: np.ndarray, resize=None) -> np.ndarray:
-    """Resizes an image. Uses OpenCV if installed, otherwise, uses pillow
+    """Resizes an image using OpenCV.
 
     Parameters
     ----------
@@ -75,21 +47,14 @@ def resize_frame(frame: np.ndarray, resize=None) -> np.ndarray:
     if (resize is not None) and (resize != 1):
         new_x = int(frame.shape[0] * resize)
         new_y = int(frame.shape[1] * resize)
-
-        if OPEN_CV:
-            return cv2.resize(frame, (new_y, new_x))
-
-        else:
-            img = Image.fromarray(frame)
-            img = img.resize((new_y, new_x))
-            return np.asarray(img)
+        return cv2.resize(frame, (new_y, new_x))
 
     else:
         return frame
 
 
 def img_to_rgb(frame: np.ndarray) -> np.ndarray:
-    """Convert an image to RGB. Uses OpenCV is installed, otherwise uses pillow.
+    """Convert an image to RGB using OpenCV.
 
     Parameters
     ----------
@@ -112,7 +77,7 @@ def img_to_rgb(frame: np.ndarray) -> np.ndarray:
 
 
 def gray_to_rgb(frame: np.ndarray) -> np.ndarray:
-    """Convert an image from grayscale to RGB. Uses OpenCV is installed, otherwise uses pillow.
+    """Convert an image from grayscale to RGB using OpenCV.
 
     Parameters
     ----------
@@ -120,17 +85,11 @@ def gray_to_rgb(frame: np.ndarray) -> np.ndarray:
         an image as a numpy array
     """
 
-    if OPEN_CV:
-        return cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
-
-    else:
-        img = Image.fromarray(frame)
-        img = img.convert("RGB")
-        return np.asarray(img)
+    return cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
 
 
 def bgr_to_rgb(frame: np.ndarray) -> np.ndarray:
-    """Convert an image from BGR to RGB. Uses OpenCV is installed, otherwise uses pillow.
+    """Convert an image from BGR to RGB using OpenCV.
 
     Parameters
     ----------
@@ -138,13 +97,7 @@ def bgr_to_rgb(frame: np.ndarray) -> np.ndarray:
         an image as a numpy array
     """
 
-    if OPEN_CV:
-        return cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-    else:
-        img = Image.fromarray(frame)
-        img = img.convert("RGB")
-        return np.asarray(img)
+    return cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
 
 def _img_as_ubyte_np(frame: np.ndarray) -> np.ndarray:
@@ -279,8 +232,8 @@ def download_file(url: str, filepath: str, chunk_size: int = 8192) -> None:
             # Get file size if available
             total_size = int(response.headers.get('Content-Length', 0))
             
-            # Create progress bar if tqdm is available
-            if has_tqdm and total_size > 0:
+            # Create progress bar if file size is known
+            if total_size > 0:
                 pbar = tqdm(total=total_size, unit='B', unit_scale=True, desc="Downloading")
             else:
                 pbar = None
