@@ -4,6 +4,7 @@ from dlclive import benchmark_videos, download_benchmarking_data
 from dlclive.engine import Engine
 
 
+# TODO: JR include separate functional tests for torch and tf backends
 @pytest.mark.functional
 def test_benchmark_script_runs(tmp_path):
     datafolder = tmp_path / "Data-DLC-live-benchmark"

@@ -12,6 +12,7 @@ import urllib.request
 import urllib.error
 
 from dlclive.exceptions import DLCLiveWarning
+from dlclive.engine import Engine
 
 try:
     import skimage
@@ -212,6 +213,41 @@ def decode_fourcc(cc):
         decoded = ""
 
     return decoded
+
+
+def get_available_backends() -> list[Engine]:
+    """
+    Check which backends (TensorFlow or PyTorch) are installed.
+    
+    Returns:
+        list[str]: List of installed backends. Possible values: ["tensorflow"], ["pytorch"], 
+                   or ["tensorflow", "pytorch"]. Returns an empty list if neither is installed.
+    
+    Warns:
+        DLCLiveWarning: If neither TensorFlow nor PyTorch is installed.
+    """
+    backends = []
+    
+    try:
+        import tensorflow
+        backends.append(Engine.TENSORFLOW)
+    except (ImportError, ModuleNotFoundError):
+        pass
+    
+    try:
+        import torch
+        backends.append(Engine.PYTORCH)
+    except (ImportError, ModuleNotFoundError):
+        pass
+    
+    if not backends:
+        warnings.warn(
+            "Neither TensorFlow nor PyTorch is installed. One of these is required to use DLCLive!"
+            "Install with: pip install deeplabcut-live[tf] or pip install deeplabcut-live[pytorch]",
+            DLCLiveWarning,
+        )
+    
+    return backends
 
 
 def download_file(url: str, filepath: str, chunk_size: int = 8192) -> None:

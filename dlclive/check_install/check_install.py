@@ -16,6 +16,7 @@ import dlclive
 from dlclive.utils import download_file
 from dlclive.benchmark import benchmark_videos
 from dlclive.engine import Engine
+from dlclive.utils import get_available_backends
 
 MODEL_NAME = "superanimal_quadruped"
 SNAPSHOT_NAME = "snapshot-700000.pb"
@@ -93,4 +94,15 @@ def main():
 
 
 if __name__ == "__main__":
+
+    # Get available backends (emits a warning if neither TensorFlow nor PyTorch is installed)
+    available_backends: list[Engine] = get_available_backends()
+    print(f"Available backends: {[b.value for b in available_backends]}")
+
+    # TODO: JR add support for PyTorch in check_install.py (requires some exported pytorch model to be downloaded)
+    if not Engine.TENSORFLOW in available_backends:
+        raise NotImplementedError(
+            "TensorFlow is not installed. Currently check_install.py only supports testing the TensorFlow installation."
+        )
+
     main()
