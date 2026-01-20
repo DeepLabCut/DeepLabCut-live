@@ -61,11 +61,12 @@ tf = [
 [dependency-groups]
 dev = [
     "pytest",
+    "pytest-cov",
     "black",
     "ruff",
 ]
 
-# Keep only for backward compatibility with Poetry 
+# Keep only for backward compatibility with Poetry
 # (without this section, Poetry assumes the wrong root directory of the project)
 [tool.poetry]
 packages = [
@@ -88,3 +89,10 @@ include = ["dlclive*"]
 
 [tool.setuptools.package-data]
 dlclive = ["check_install/*"]
+
+[tool.ruff]
+lint.select = ["E", "F", "B", "I", "UP"]
+lint.ignore = ["E741"]
+target-version = "py310"
+fix = true
+line-length = 120
