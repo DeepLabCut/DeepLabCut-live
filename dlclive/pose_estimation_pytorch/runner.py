@@ -132,6 +132,16 @@ class PyTorchRunner(BaseRunner):
             Processors that were implemented.
         dynamic: Whether to use dynamic cropping.
         top_down_config: Only for top-down models running with a detector.
+
+    returns:
+        pose: The pose of the animal(s) in the frame.
+        shape:
+            (n_bodyparts, 3) if single_animal is True
+            (n_individuals, n_bodyparts, 3) if single_animal is False.
+            If no detections are found, the pose consists of zeros.
+    
+    Raises:
+        ValueError: If the model is not loaded. Call load_model() or init_inference() before calling get_pose().
     """
 
     def __init__(
@@ -182,6 +192,10 @@ class PyTorchRunner(BaseRunner):
 
     @torch.inference_mode()
     def get_pose(self, frame: np.ndarray) -> np.ndarray:
+        if self.model is None:
+            raise ValueError(
+                "Model not loaded. Call load_model() or init_inference() before calling get_pose()."
+            )
         c, h, w = frame.shape
         tensor = torch.from_numpy(frame).permute(2, 0, 1) # CHW, still on CPU
 
