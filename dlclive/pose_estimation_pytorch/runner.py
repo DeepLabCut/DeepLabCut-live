@@ -118,7 +118,10 @@ class PyTorchRunner(BaseRunner):
         path: The path to the model to run inference with.
         device: The device on which to run inference, e.g. "cpu", "cuda", "cuda:0"
         precision: The precision of the model. One of "FP16" or "FP32".
-        single_animal: This option is only available for single-animal pose estimation
+        single_animal: bool | None, default=True
+            Set to True if the model is a single-animal model, False if it is a multi-animal model.
+            If set to None, single_animal mode will be inferred from the model configuration.
+            This option is introduced for single-animal pose estimation
             models. It makes the code behave in exactly the same way as DeepLabCut-Live
             with version < 3.0.0. This ensures backwards compatibility with any
             Processors that were implemented.
@@ -131,7 +134,7 @@ class PyTorchRunner(BaseRunner):
         path: str | Path,
         device: str = "auto",
         precision: Literal["FP16", "FP32"] = "FP32",
-        single_animal: bool = True,
+        single_animal: bool | None = None,
         dynamic: dict | dynamic_cropping.DynamicCropper | None = None,
         top_down_config: dict | TopDownConfig | None = None,
     ) -> None:
@@ -139,7 +142,8 @@ class PyTorchRunner(BaseRunner):
         self.device = _parse_device(device)
         self.precision = precision
         self.single_animal = single_animal
-
+        self.n_individuals = None
+        self.n_bodyparts = None
         self.cfg = None
         self.detector = None
         self.model = None
@@ -259,6 +263,16 @@ class PyTorchRunner(BaseRunner):
         raw_data = torch.load(self.path, map_location="cpu", weights_only=True)
 
         self.cfg = raw_data["config"]
+        
+        # Infer n_bodyparts and n_individuals from model configuration
+        individuals = self.cfg.get("metadata", {}).get("individuals", ['idv1'])
+        bodyparts = self.cfg.get("metadata", {}).get("bodyparts", [])
+        self.n_individuals = len(individuals)
+        self.n_bodyparts = len(bodyparts)
+        # If single_animal is not set, infer it from n_individuals in model configuration
+        if self.single_animal is None:
+            self.single_animal = self.n_individuals == 1
+
         self.model = models.PoseModel.build(self.cfg["model"])
         self.model.load_state_dict(raw_data["pose"])
         self.model = self.model.to(self.device)
