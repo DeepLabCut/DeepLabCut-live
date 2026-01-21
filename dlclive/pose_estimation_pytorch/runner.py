@@ -195,7 +195,13 @@ class PyTorchRunner(BaseRunner):
 
             frame_batch, offsets_and_scales = self._prepare_top_down(tensor, detections)
             if len(frame_batch) == 0:
-                offsets_and_scales = [(0, 0), 1]            
+                # Determine output shape based on single_animal parameter and n_individuals
+                if self.single_animal or self.n_individuals == 1:
+                    zero_pose = np.zeros((self.n_bodyparts, 3))
+                else:
+                    zero_pose = np.zeros((self.n_individuals, self.n_bodyparts, 3))              
+                return zero_pose
+            
             tensor = frame_batch  # still CHW, batched
 
         if self.dynamic is not None:
