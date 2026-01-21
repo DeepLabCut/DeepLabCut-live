@@ -91,7 +91,7 @@ include = ["dlclive*"]
 dlclive = ["check_install/*"]
 
 [tool.ruff]
-lint.select = ["D", "E", "F", "B", "I", "UP"]
+lint.select = ["E", "F", "B", "I", "UP"]
 lint.ignore = ["E741"]
 target-version = "py310"
 fix = true
