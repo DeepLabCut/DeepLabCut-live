@@ -82,6 +82,11 @@ class SkipFrames:
         self._detections = dict(boxes=bboxes, scores=torch.ones(num_det))
         self._age += 1
 
+    def next_frame(self) -> None:
+        """Increment the frame counter and set detections to None (to handle no detections)"""
+        self._detections = None
+        self._age += 1
+
 
 @dataclass
 class TopDownConfig:
@@ -199,7 +204,10 @@ class PyTorchRunner(BaseRunner):
                 if self.single_animal or self.n_individuals == 1:
                     zero_pose = np.zeros((self.n_bodyparts, 3))
                 else:
-                    zero_pose = np.zeros((self.n_individuals, self.n_bodyparts, 3))              
+                    zero_pose = np.zeros((self.n_individuals, self.n_bodyparts, 3))
+                # Update skip_frames even when returning early to maintain frame counter
+                if self.top_down_config.skip_frames is not None:
+                    self.top_down_config.skip_frames.next_frame()
                 return zero_pose
             
             tensor = frame_batch  # still CHW, batched
