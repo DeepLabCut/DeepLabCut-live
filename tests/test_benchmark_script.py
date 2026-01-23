@@ -62,7 +62,7 @@ def test_benchmark_script_with_torch_modelzoo(tmp_path, datafolder, model_name):
     from dlclive import modelzoo
 
     # Test configuration
-    pixels = [100, 400]
+    pixels = 4096  # approximately 64x64 pixels, keeping aspect ratio
     n_frames = 5
     out_dir = tmp_path / "results"
     out_dir.mkdir(exist_ok=True)
@@ -92,8 +92,9 @@ def test_benchmark_script_with_torch_modelzoo(tmp_path, datafolder, model_name):
 
     # Get video paths and run benchmarks
     for config in model_configs:
-        video_path = glob.glob(str(datafolder / config["video_dir"] / "*.avi"))[0]
-        print(f"Running {config['model_display_name']}")
+        video_dir = datafolder / config["video_dir"]
+        video_path = list(video_dir.glob("*.avi"))[0]
+        print(f"Running {config['checkpoint'].stem}")
         benchmark_videos(
             model_path=config["checkpoint"],
             model_type="pytorch",
