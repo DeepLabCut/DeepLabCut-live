@@ -5,7 +5,10 @@ DeepLabCut Toolbox (deeplabcut.org)
 Licensed under GNU Lesser General Public License v3.0
 """
 
-
+# NOTE DUPLICATED @C-Achard 2026-26-01: Duplication between this file
+# and dlclive/pose_estimation_tensorflow/pose.py
+# As this is tensorflow-specific and only the other pose.py is used, 
+# this one is candidate for deletion.
 import numpy as np
 
 
