@@ -10,7 +10,8 @@
 #
 
 
-# NOTE DUPLICATED from deeplabcut/core/inferenceutils.py
+# NOTE - DUPLICATED @C-Achard 2026-26-01: Copied from the original DeepLabCut codebase
+# from deeplabcut/core/inferenceutils.py
 from __future__ import annotations
 
 import heapq
