@@ -28,6 +28,20 @@ jobs:
             python-version: "3.12"
 
     steps:
+      - name: Free up disk space
+        if: runner.os == 'Linux'
+        run: |
+          echo "Disk space before cleanup:"
+          df -h
+          # Remove unnecessary software to free up disk space
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+          echo "Disk space after cleanup:"
+          df -h
+
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -39,7 +53,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install the project
-        run: uv sync --all-extras --dev
+        run: uv sync --no-cache --all-extras --dev
         shell: bash
         
       - name: Install ffmpeg
