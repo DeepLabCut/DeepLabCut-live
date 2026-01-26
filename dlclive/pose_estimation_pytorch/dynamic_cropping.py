@@ -7,13 +7,16 @@
 # https://github.com/DeepLabCut/DeepLabCut/blob/main/AUTHORS
 #
 # Licensed under GNU Lesser General Public License v3.0
-#
+
+# NOTE DUPLICATED @C-Achard 2026-26-01: Duplication between this file
+# and deeplabcut/pose_estimation_pytorch/runners/dynamic_cropping.py
+# NOTE Testing already exists at deeplabcut/tests/pose_estimation_pytorch/runners/test_dynamic_cropper.py
 """Modules to dynamically crop individuals out of videos to improve video analysis"""
+
 from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import Optional
 
 import torch
 import torchvision.transforms.functional as F
@@ -79,10 +82,7 @@ class DynamicCropper:
                 height.
         """
         if len(image) != 1:
-            raise RuntimeError(
-                "DynamicCropper can only be used with batch size 1 (found image "
-                f"shape: {image.shape})"
-            )
+            raise RuntimeError(f"DynamicCropper can only be used with batch size 1 (found image shape: {image.shape})")
 
         if self._shape is None:
             self._shape = image.shape[3], image.shape[2]
@@ -114,7 +114,7 @@ class DynamicCropper:
             The pose, with coordinates updated to the full image space.
         """
         if self._shape is None:
-            raise RuntimeError(f"You must call `crop` before calling `update`.")
+            raise RuntimeError("You must call `crop` before calling `update`.")
 
         # offset the pose to the original image space
         offset_x, offset_y = 0, 0
@@ -153,9 +153,7 @@ class DynamicCropper:
         self._crop = None
 
     @staticmethod
-    def build(
-        dynamic: bool, threshold: float, margin: int
-    ) -> Optional["DynamicCropper"]:
+    def build(dynamic: bool, threshold: float, margin: int) -> DynamicCropper | None:
         """Builds the DynamicCropper based on the given parameters
 
         Args:
@@ -309,10 +307,7 @@ class TopDownDynamicCropper(DynamicCropper):
                 `crop` was previously called with an image of a different W or H.
         """
         if len(image) != 1:
-            raise RuntimeError(
-                "DynamicCropper can only be used with batch size 1 (found image "
-                f"shape: {image.shape})"
-            )
+            raise RuntimeError(f"DynamicCropper can only be used with batch size 1 (found image shape: {image.shape})")
 
         if self._shape is None:
             self._shape = image.shape[3], image.shape[2]
@@ -349,7 +344,7 @@ class TopDownDynamicCropper(DynamicCropper):
             The pose, with coordinates updated to the full image space.
         """
         if self._shape is None:
-            raise RuntimeError(f"You must call `crop` before calling `update`.")
+            raise RuntimeError("You must call `crop` before calling `update`.")
 
         # check whether this was a patched crop
         batch_size = pose.shape[0]
@@ -399,9 +394,7 @@ class TopDownDynamicCropper(DynamicCropper):
 
         return pose
 
-    def _prepare_bounding_box(
-        self, x1: int, y1: int, x2: int, y2: int
-    ) -> tuple[int, int, int, int]:
+    def _prepare_bounding_box(self, x1: int, y1: int, x2: int, y2: int) -> tuple[int, int, int, int]:
         """Prepares the bounding box for cropping.
 
         Adds a margin around the bounding box, then transforms it into the target aspect
@@ -498,12 +491,8 @@ class TopDownDynamicCropper(DynamicCropper):
         Returns:
             A list of patch coordinates as tuples (x0, y0, x1, y1).
         """
-        patch_xs = self.split_array(
-            self._shape[0], self._patch_counts[0], self._patch_overlap
-        )
-        patch_ys = self.split_array(
-            self._shape[1], self._patch_counts[1], self._patch_overlap
-        )
+        patch_xs = self.split_array(self._shape[0], self._patch_counts[0], self._patch_overlap)
+        patch_ys = self.split_array(self._shape[1], self._patch_counts[1], self._patch_overlap)
 
         patches = []
         for y0, y1 in patch_ys:
@@ -534,7 +523,7 @@ class TopDownDynamicCropper(DynamicCropper):
         segment_size = (padded_size // n) + (padded_size % n > 0)
         segments = []
         end = overlap
-        for i in range(n):
+        for _i in range(n):
             start = end - overlap
             end = start + segment_size
             if end > size:

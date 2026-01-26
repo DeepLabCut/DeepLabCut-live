@@ -53,7 +53,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install the project
-        run: uv sync --no-cache --all-extras --dev
+        run: uv sync --all-extras --dev
         shell: bash
 
       - name: Install ffmpeg
@@ -72,9 +72,20 @@ jobs:
         run: uv run dlc-live-test --nodisplay
 
       - name: Run DLC Live Unit Tests
-        run: uv run pytest --cov=dlclive --cov-report=xml
+        run: uv run pytest --cov=dlclive --cov-report=xml --cov-report=term-missing
 
       - name: Coverage Report
         uses: codecov/codecov-action@v5
         with:
           files: ./coverage.xml
+          flags: ${{ matrix.os }}-py${{ matrix.python-version }}
+          name: codecov-${{ matrix.os }}-py${{ matrix.python-version }}
+      - name: Add coverage to job summary
+        if: always()
+        shell: bash
+        run: |
+          uv run python -m coverage report -m > coverage.txt
+          echo "## Coverage (dlclive)" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cat coverage.txt >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
