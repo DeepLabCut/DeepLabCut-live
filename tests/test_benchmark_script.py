@@ -1,5 +1,7 @@
 import glob
+
 import pytest
+
 from dlclive import benchmark_videos, download_benchmarking_data
 from dlclive.engine import Engine
 
@@ -10,7 +12,9 @@ def datafolder(tmp_path):
     download_benchmarking_data(str(datafolder))
     return datafolder
 
+
 @pytest.mark.functional
+@pytest.mark.slow
 def test_benchmark_script_runs_tf_backend(tmp_path, datafolder):
     dog_models = glob.glob(str(datafolder / "dog" / "*[!avi]"))
     dog_video = glob.glob(str(datafolder / "dog" / "*.avi"))[0]
@@ -27,11 +31,7 @@ def test_benchmark_script_runs_tf_backend(tmp_path, datafolder):
         print(f"Running dog model: {model_path}")
         benchmark_videos(
             model_path=model_path,
-            model_type=(
-                "base"
-                if Engine.from_model_path(model_path) == Engine.TENSORFLOW
-                else "pytorch"
-            ),
+            model_type=("base" if Engine.from_model_path(model_path) == Engine.TENSORFLOW else "pytorch"),
             video_path=dog_video,
             output=str(out_dir),
             n_frames=n_frames,
@@ -42,11 +42,7 @@ def test_benchmark_script_runs_tf_backend(tmp_path, datafolder):
         print(f"Running mouse model: {model_path}")
         benchmark_videos(
             model_path=model_path,
-            model_type=(
-                "base"
-                if Engine.from_model_path(model_path) == Engine.TENSORFLOW
-                else "pytorch"
-            ),
+            model_type=("base" if Engine.from_model_path(model_path) == Engine.TENSORFLOW else "pytorch"),
             video_path=mouse_video,
             output=str(out_dir),
             n_frames=n_frames,
@@ -58,6 +54,7 @@ def test_benchmark_script_runs_tf_backend(tmp_path, datafolder):
 
 @pytest.mark.parametrize("model_name", ["hrnet_w32", "resnet_50"])
 @pytest.mark.functional
+@pytest.mark.slow
 def test_benchmark_script_with_torch_modelzoo(tmp_path, datafolder, model_name):
     from dlclive import modelzoo
 
