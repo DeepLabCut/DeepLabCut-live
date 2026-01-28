@@ -8,6 +8,9 @@ dlclive/check_install/dlc-live-tmp*
 **DS_Store*
 *vscode*
 
+# Model zoo snapshots
+dlclive/modelzoo/snapshots/*
+
 **/__MACOSX/
 
 # Include tests directory (negate the *test* pattern for tests/)
