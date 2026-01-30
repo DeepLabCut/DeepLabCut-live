@@ -5,55 +5,53 @@ Utils for the DLC-Live Model Zoo
 # This should be removed once a solution is found to address duplicate code.
 
 import copy
-from pathlib import Path
 import logging
-
-from ruamel.yaml import YAML
+from pathlib import Path
 
 from dlclibrary.dlcmodelzoo.modelzoo_download import download_huggingface_model
+from ruamel.yaml import YAML
+
 from dlclive.modelzoo.resolve_config import update_config
 
-_MODELZOO_PATH = Path(__file__).parent 
+_MODELZOO_PATH = Path(__file__).parent
 
 
 def get_super_animal_model_config_path(model_name: str) -> Path:
     """Get the path to the model configuration file for a model and validate choice of model"""
-    cfg_path = _MODELZOO_PATH / 'model_configs' / f"{model_name}.yaml"
+    cfg_path = _MODELZOO_PATH / "model_configs" / f"{model_name}.yaml"
     if not cfg_path.exists():
         raise FileNotFoundError(
-            f"Modelzoo model configuration file not found: {cfg_path} "
-            f"Available models: {list_available_models()}"
+            f"Modelzoo model configuration file not found: {cfg_path} Available models: {list_available_models()}"
         )
     return cfg_path
 
 
 def get_super_animal_project_config_path(super_animal: str) -> Path:
     """Get the path to the project configuration file for a project and validate choice of project"""
-    cfg_path = _MODELZOO_PATH / 'project_configs' / f"{super_animal}.yaml"
+    cfg_path = _MODELZOO_PATH / "project_configs" / f"{super_animal}.yaml"
     if not cfg_path.exists():
         raise FileNotFoundError(
-            f"Modelzoo project configuration file not found: {cfg_path}"
-            f"Available projects: {list_available_projects()}"
+            f"Modelzoo project configuration file not found: {cfg_path}Available projects: {list_available_projects()}"
         )
     return cfg_path
 
 
 def get_snapshot_folder_path() -> Path:
-    return _MODELZOO_PATH / 'snapshots'
+    return _MODELZOO_PATH / "snapshots"
 
 
 def list_available_models() -> list[str]:
-    return [p.stem for p in _MODELZOO_PATH.glob('model_configs/*.yaml')]
+    return [p.stem for p in _MODELZOO_PATH.glob("model_configs/*.yaml")]
 
 
 def list_available_projects() -> list[str]:
-    return [p.stem for p in _MODELZOO_PATH.glob('project_configs/*.yaml')]
+    return [p.stem for p in _MODELZOO_PATH.glob("project_configs/*.yaml")]
 
 
 def list_available_combinations() -> list[str]:
     models = list_available_models()
     projects = list_available_projects()
-    combinations = ['_'.join([p, m]) for p in projects for m in models]
+    combinations = ["_".join([p, m]) for p in projects for m in models]
     return combinations
 
 
@@ -65,14 +63,18 @@ def read_config_as_dict(config_path: str | Path) -> dict:
     Returns:
         The configuration file with pure Python classes
     """
-    with open(config_path, "r") as f:
-        cfg = YAML(typ='safe', pure=True).load(f)
+    with open(config_path) as f:
+        cfg = YAML(typ="safe", pure=True).load(f)
 
     return cfg
 
 
-# NOTE JR 2026-23-01: This is duplicate code, copied from the original DeepLabCut-Live codebase.
-def add_metadata(project_config: dict, config: dict,) -> dict:
+# NOTE - DUPLICATED @deruyter92 2026-23-01: Copied from the original DeepLabCut codebase
+# from deeplabcut/pose_estimation_pytorch/config/make_pose_config.py
+def add_metadata(
+    project_config: dict,
+    config: dict,
+) -> dict:
     """Adds metadata to a pytorch pose configuration
 
     Args:
@@ -95,7 +97,8 @@ def add_metadata(project_config: dict, config: dict,) -> dict:
     return config
 
 
-# NOTE JR 2026-23-01: This is duplicate code, copied from the original DeepLabCut-Live codebase.
+# NOTE - DUPLICATED @deruyter92 2026-23-01: Copied from the original DeepLabCut codebase
+# from deeplabcut/pose_estimation_pytorch/modelzoo/utils.py
 def load_super_animal_config(
     super_animal: str,
     model_name: str,
@@ -128,9 +131,7 @@ def load_super_animal_config(
     else:
         model_config["method"] = "TD"
         if super_animal != "superanimal_humanbody":
-            detector_cfg_path = get_super_animal_model_config_path(
-                model_name=detector_name
-            )
+            detector_cfg_path = get_super_animal_model_config_path(model_name=detector_name)
             detector_cfg = read_config_as_dict(detector_cfg_path)
             model_config["detector"] = detector_cfg
     return model_config
@@ -159,9 +160,7 @@ def download_super_animal_snapshot(dataset: str, model_name: str) -> Path:
         return model_path
 
     try:
-        download_huggingface_model(
-            model_name, target_dir=str(snapshot_dir), rename_mapping=model_filename
-        )
+        download_huggingface_model(model_name, target_dir=str(snapshot_dir), rename_mapping=model_filename)
 
         if not model_path.exists():
             raise RuntimeError(f"Failed to download {model_name} to {model_path}")
@@ -171,5 +170,3 @@ def download_super_animal_snapshot(dataset: str, model_name: str) -> Path:
         raise e
 
     return model_path
-
-

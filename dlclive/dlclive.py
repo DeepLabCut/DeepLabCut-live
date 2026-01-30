@@ -4,6 +4,7 @@ DeepLabCut Toolbox (deeplabcut.org)
 
 Licensed under GNU Lesser General Public License v3.0
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -197,12 +198,12 @@ class DLCLive:
         self.processor = processor
         self.convert2rgb = convert2rgb
 
+        self.pose: np.ndarray | None = None
+
         if isinstance(display, Display):
             self.display = display
         elif display:
-            self.display = Display(
-                pcutoff=pcutoff, radius=display_radius, cmap=display_cmap
-            )
+            self.display = Display(pcutoff=pcutoff, radius=display_radius, cmap=display_cmap)
         else:
             self.display = None
 
@@ -250,9 +251,7 @@ class DLCLive:
             processed frame: convert type, crop, convert color
         """
         if self.cropping:
-            frame = frame[
-                self.cropping[2] : self.cropping[3], self.cropping[0] : self.cropping[1]
-            ]
+            frame = frame[self.cropping[2] : self.cropping[3], self.cropping[0] : self.cropping[1]]
 
         if self.dynamic[0]:
             if self.pose is not None:
@@ -263,9 +262,7 @@ class DLCLive:
                     elif len(self.pose) == 1:
                         pose = self.pose[0]
                     else:
-                        raise ValueError(
-                            "Cannot use Dynamic Cropping - more than 1 individual found"
-                        )
+                        raise ValueError("Cannot use Dynamic Cropping - more than 1 individual found")
 
                 else:
                     pose = self.pose
