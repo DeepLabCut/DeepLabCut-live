@@ -106,6 +106,9 @@ def test_assembly_from_array_with_nans():
 )
 def test_extent_matches_visible_points(coords):
     xy = coords.copy()
+    # Ensure rows with any NaN are fully NaN,
+    # matching Assembly's from_array behavior
+    xy[np.isnan(xy).any(axis=1)] = np.nan
     a = Assembly(size=xy.shape[0])
     a.data[:] = np.nan
     a.data[:, :2] = xy

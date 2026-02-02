@@ -5,8 +5,13 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 import pytest
+from hypothesis import given, settings
+from hypothesis import strategies as st
+from hypothesis.extra.numpy import arrays
 
-from dlclive.core.inferenceutils import Assembler, Assembly, Joint, Link
+from dlclive.core.inferenceutils import Assembler, Assembly, Joint, Link, _conv_square_to_condensed_indices
+
+HYPOTHESIS_SETTINGS = settings(max_examples=300, deadline=None)
 
 
 def _bag_from_frame(frame: dict) -> dict[int, list]:
@@ -15,6 +20,29 @@ def _bag_from_frame(frame: dict) -> dict[int, list]:
     for j in Assembler._flatten_detections(frame):
         bag.setdefault(j.label, []).append(j)
     return bag
+
+
+# _conv_square_to_condensed_indices
+@HYPOTHESIS_SETTINGS
+@given(
+    n=st.integers(min_value=2, max_value=50),
+    i=st.integers(min_value=0, max_value=49),
+    j=st.integers(min_value=0, max_value=49),
+)
+def test_condensed_index_properties(n, i, j):
+    i = i % n
+    j = j % n
+
+    if i == j:
+        with pytest.raises(ValueError):
+            _conv_square_to_condensed_indices(i, j, n)
+        return
+
+    k1 = _conv_square_to_condensed_indices(i, j, n)
+    k2 = _conv_square_to_condensed_indices(j, i, n)
+
+    assert k1 == k2
+    assert 0 <= k1 < (n * (n - 1)) // 2
 
 
 # --------------------------------------------------------------------------------------
@@ -57,8 +85,6 @@ def test_empty_classmethod(assembler_graph_and_pafs):
 # --------------------------------------------------------------------------------------
 # _flatten_detections
 # --------------------------------------------------------------------------------------
-
-
 def test_flatten_detections_no_identity(simple_two_label_scene):
     frame = simple_two_label_scene
     joints = list(Assembler._flatten_detections(frame))
@@ -82,11 +108,52 @@ def test_flatten_detections_with_identity(scene_copy):
     assert groups.count(1) == 2
 
 
+@st.composite
+def coords_and_conf(draw, max_n=5):
+    n = draw(st.integers(1, max_n))
+    coords = draw(
+        arrays(
+            dtype=np.float64,
+            shape=(n, 2),
+            elements=st.floats(min_value=0.1, max_value=1000, allow_nan=False, allow_infinity=False),
+        )
+    )
+    conf = draw(
+        arrays(
+            dtype=np.float64,
+            shape=(n,),
+            elements=st.floats(min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False),
+        )
+    )
+    return coords, conf
+
+
+@HYPOTHESIS_SETTINGS
+@given(
+    c0=coords_and_conf(),
+    c1=coords_and_conf(),
+)
+def test_flatten_detections_counts(c0, c1):
+    coords0, conf0 = c0
+    coords1, conf1 = c1
+
+    frame = {
+        "coordinates": [[coords0, coords1]],
+        "confidence": [conf0, conf1],
+        "costs": {},
+    }
+
+    joints = list(Assembler._flatten_detections(frame))
+
+    # Should yield exactly one Joint per detection
+    assert len(joints) == (len(coords0) + len(coords1))
+    assert sum(j.label == 0 for j in joints) == len(coords0)
+    assert sum(j.label == 1 for j in joints) == len(coords1)
+
+
 # --------------------------------------------------------------------------------------
 # extract_best_links
 # --------------------------------------------------------------------------------------
-
-
 def test_extract_best_links_optimal_assignment(assembler_data_single_frame, make_assembler):
     sframe_data = assembler_data_single_frame
     asm = make_assembler(
@@ -132,6 +199,74 @@ def test_extract_best_links_greedy_with_thresholds(assembler_data_single_frame, 
         {(0.0, 0.0), (5.0, 0.0)},
         {(100.0, 100.0), (110.0, 100.0)},
     )
+
+
+@HYPOTHESIS_SETTINGS
+@given(
+    n=st.integers(min_value=1, max_value=4),
+    pcutoff=st.floats(min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False),
+    min_aff=st.floats(min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False),
+    conf0=st.lists(st.floats(0.0, 1.0, allow_nan=False, allow_infinity=False), min_size=1, max_size=4),
+    conf1=st.lists(st.floats(0.0, 1.0, allow_nan=False, allow_infinity=False), min_size=1, max_size=4),
+)
+def test_extract_best_links_greedy_invariants_with_threshold_gates(n, pcutoff, min_aff, conf0, conf1):
+    # Normalize confidences to exactly n items
+    conf0 = (conf0 + [0.0] * n)[:n]
+    conf1 = (conf1 + [0.0] * n)[:n]
+    conf0 = np.array(conf0, dtype=float)
+    conf1 = np.array(conf1, dtype=float)
+
+    # Random-ish affinity matrix (still stable), in [0,1]
+    rng = np.random.default_rng(0)  # deterministic noise
+    aff = rng.random((n, n))  # uniform [0,1)
+    # Ensure at least one "good" candidate sometimes; otherwise test is vacuously true.
+    # We'll only assert gated properties on returned links anyway.
+    # But for better coverage, bias the diagonal upward a bit:
+    np.fill_diagonal(aff, np.maximum(np.diag(aff), 0.8))
+    dist = np.ones((n, n), dtype=float)
+
+    graph = [(0, 1)]
+    paf_inds = [0]
+    data = {
+        "metadata": {"all_joints_names": ["b0", "b1"], "PAFgraph": graph, "PAFinds": paf_inds},
+        "0": {},
+    }
+
+    asm = Assembler(
+        data,
+        max_n_individuals=n,
+        n_multibodyparts=2,
+        greedy=True,
+        pcutoff=pcutoff,
+        min_affinity=min_aff,
+        min_n_links=1,
+        method="m1",
+    )
+
+    dets0 = [Joint((float(i), 0.0), float(conf0[i]), label=0, idx=i) for i in range(n)]
+    dets1 = [Joint((float(i), 1.0), float(conf1[i]), label=1, idx=100 + i) for i in range(n)]
+    joints_dict = {0: dets0, 1: dets1}
+    costs = {0: {"distance": dist, "m1": aff}}
+
+    links = asm.extract_best_links(joints_dict, costs, trees=None)
+
+    assert len(links) <= n
+
+    used_src = set()
+    used_tgt = set()
+
+    for link in links:
+        # Invariant 1: affinity gate
+        assert link.affinity >= min_aff
+
+        # Invariant 2: pcutoff gate (confidence product)
+        assert link.j1.confidence * link.j2.confidence >= pcutoff * pcutoff
+
+        # Invariant 3: disjointness in greedy selection
+        assert link.j1.idx not in used_src
+        assert link.j2.idx not in used_tgt
+        used_src.add(link.j1.idx)
+        used_tgt.add(link.j2.idx)
 
 
 # --------------------------------------------------------------------------------------
