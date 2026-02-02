@@ -67,9 +67,11 @@ def headless_display_env(monkeypatch):
 # Assembler/assembly test fixtures
 # --------------------------------------------------------------------------------------
 @pytest.fixture
-def assembler_graph_and_pafs() -> tuple[list[tuple[int, int]], list[int]]:
+def assembler_graph_and_pafs() -> SimpleNamespace:
     """Standard 2‑joint graph used throughout the test suite."""
-    return ([(0, 1)], [0])
+    graph = [(0, 1)]
+    paf_inds = [0]
+    return SimpleNamespace(graph=graph, paf_inds=paf_inds)
 
 
 @pytest.fixture
@@ -147,13 +149,13 @@ def assembler_data(
     assembler_graph_and_pafs,
     make_assembler_metadata,
     simple_two_label_scene,
-) -> tuple[dict[str, Any], list[tuple[int, int]], list[int]]:
+) -> SimpleNamespace:
     """Full metadata + two identical frames ('0', '1')."""
-    graph, paf_inds = assembler_graph_and_pafs
-    data = make_assembler_metadata(graph, paf_inds, n_bodyparts=2, frame_keys=["0", "1"])
+    paf = assembler_graph_and_pafs
+    data = make_assembler_metadata(paf.graph, paf.paf_inds, n_bodyparts=2, frame_keys=["0", "1"])
     data["0"] = simple_two_label_scene
     data["1"] = simple_two_label_scene
-    return data, graph, paf_inds
+    return SimpleNamespace(data=data, graph=paf.graph, paf_inds=paf.paf_inds)
 
 
 @pytest.fixture
@@ -161,12 +163,12 @@ def assembler_data_single_frame(
     assembler_graph_and_pafs,
     make_assembler_metadata,
     simple_two_label_scene,
-) -> tuple[dict[str, Any], list[tuple[int, int]], list[int]]:
+) -> SimpleNamespace:
     """Metadata + a single frame ('0'). Used by most tests."""
-    graph, paf_inds = assembler_graph_and_pafs
-    data = make_assembler_metadata(graph, paf_inds, n_bodyparts=2, frame_keys=["0"])
+    paf = assembler_graph_and_pafs
+    data = make_assembler_metadata(paf.graph, paf.paf_inds, n_bodyparts=2, frame_keys=["0"])
     data["0"] = simple_two_label_scene
-    return data, graph, paf_inds
+    return SimpleNamespace(data=data, graph=paf.graph, paf_inds=paf.paf_inds)
 
 
 @pytest.fixture
@@ -174,10 +176,10 @@ def assembler_data_two_frames_nudged(
     assembler_graph_and_pafs,
     make_assembler_metadata,
     simple_two_label_scene,
-) -> tuple[dict[str, Any], list[tuple[int, int]], list[int]]:
+) -> SimpleNamespace:
     """Two frames where frame '1' is a nudged copy of frame '0'."""
-    graph, paf_inds = assembler_graph_and_pafs
-    data = make_assembler_metadata(graph, paf_inds, n_bodyparts=2, frame_keys=["0", "1"])
+    paf = assembler_graph_and_pafs
+    data = make_assembler_metadata(paf.graph, paf.paf_inds, n_bodyparts=2, frame_keys=["0", "1"])
 
     frame0 = simple_two_label_scene
     frame1 = copy.deepcopy(simple_two_label_scene)
@@ -186,7 +188,7 @@ def assembler_data_two_frames_nudged(
 
     data["0"] = frame0
     data["1"] = frame1
-    return data, graph, paf_inds
+    return SimpleNamespace(data=data, graph=paf.graph, paf_inds=paf.paf_inds)
 
 
 @pytest.fixture
@@ -194,10 +196,10 @@ def assembler_data_no_detections(
     assembler_graph_and_pafs,
     make_assembler_metadata,
     make_assembler_frame,
-) -> tuple[dict[str, Any], list[tuple[int, int]], list[int]]:
+) -> SimpleNamespace:
     """Metadata + a single frame ('0') with zero detections for both labels."""
-    graph, paf_inds = assembler_graph_and_pafs
-    data = make_assembler_metadata(graph, paf_inds, n_bodyparts=2, frame_keys=["0"])
+    paf = assembler_graph_and_pafs
+    data = make_assembler_metadata(paf.graph, paf.paf_inds, n_bodyparts=2, frame_keys=["0"])
 
     frame = make_assembler_frame(
         coordinates_per_label=[np.zeros((0, 2)), np.zeros((0, 2))],
@@ -206,7 +208,8 @@ def assembler_data_no_detections(
         costs={},
     )
     data["0"] = frame
-    return data, graph, paf_inds
+    # return data, graph, paf_inds
+    return SimpleNamespace(data=data, graph=paf.graph, paf_inds=paf.paf_inds)
 
 
 @pytest.fixture
@@ -275,16 +278,16 @@ def make_link() -> Callable[..., Link]:
 @pytest.fixture
 def two_overlap_assemblies(make_assembly) -> tuple[Assembly, Assembly]:
     """Two assemblies with partial overlap used by intersection tests."""
-    ass1 = make_assembly(2)
-    ass1.data[0, :2] = [0, 0]
-    ass1.data[1, :2] = [10, 10]
-    ass1._visible.update({0, 1})
+    assemb1 = make_assembly(2)
+    assemb1.data[0, :2] = [0, 0]
+    assemb1.data[1, :2] = [10, 10]
+    assemb1._visible.update({0, 1})
 
-    ass2 = make_assembly(2)
-    ass2.data[0, :2] = [5, 5]
-    ass2.data[1, :2] = [15, 15]
-    ass2._visible.update({0, 1})
-    return ass1, ass2
+    assemb2 = make_assembly(2)
+    assemb2.data[0, :2] = [5, 5]
+    assemb2.data[1, :2] = [15, 15]
+    assemb2._visible.update({0, 1})
+    return assemb1, assemb2
 
 
 @pytest.fixture
@@ -300,7 +303,7 @@ def soft_identity_assembly(make_assembly) -> Assembly:
 
 
 @pytest.fixture
-def four_joint_chain(make_joint, make_link) -> tuple[Joint, Joint, Joint, Joint, Link, Link]:
+def four_joint_chain(make_joint, make_link) -> SimpleNamespace:
     """Four joints and two links: (0-1) and (2-3)."""
     j0 = make_joint((0, 0), 1.0, label=0, idx=10)
     j1 = make_joint((1, 0), 1.0, label=1, idx=11)
@@ -308,4 +311,4 @@ def four_joint_chain(make_joint, make_link) -> tuple[Joint, Joint, Joint, Joint,
     j3 = make_joint((3, 0), 1.0, label=3, idx=13)
     l01 = make_link(j0, j1, affinity=0.5)
     l23 = make_link(j2, j3, affinity=0.8)
-    return j0, j1, j2, j3, l01, l23
+    return SimpleNamespace(j0=j0, j1=j1, j2=j2, j3=j3, l01=l01, l23=l23)

@@ -1,7 +1,12 @@
 import numpy as np
 import pytest
+from hypothesis import assume, given, settings
+from hypothesis import strategies as st
+from hypothesis.extra.numpy import arrays
 
 from dlclive.core.inferenceutils import Assembly
+
+HYPOTHESIS_SETTINGS = settings(max_examples=200, deadline=None)
 
 
 # ---------------------------
@@ -28,26 +33,48 @@ def test_assembly_init(make_assembly):
 # ---------------------------
 # from_array
 # ---------------------------
-def test_assembly_from_array_basic_xy_only():
-    arr = np.array(
-        [
-            [10.0, 20.0],
-            [30.0, 40.0],
-        ]
+@HYPOTHESIS_SETTINGS
+@given(
+    st.integers(min_value=1, max_value=30).flatmap(
+        lambda n_rows: st.sampled_from([2, 3]).flatmap(
+            lambda n_cols: arrays(
+                dtype=np.float64,
+                shape=(n_rows, n_cols),
+                elements=st.floats(allow_infinity=False, allow_nan=True, width=32),
+            )
+        )
     )
+)
+def test_from_array_invariants(arr):
+    n_rows, n_cols = arr.shape
+
     assemb = Assembly.from_array(arr.copy())
+    assert assemb.data.shape == (n_rows, 4)
 
-    # full shape (n_bodyparts, 4)
-    assert assemb.data.shape == (2, 4)
+    # Row is "valid" iff it has no NaN among the provided columns
+    row_valid = ~np.isnan(arr).any(axis=1)
+    visible = set(np.flatnonzero(row_valid).tolist())
+    assert assemb._visible == visible
 
-    # xy preserved
-    assert np.allclose(assemb.data[:, :2], arr)
+    out = assemb.data
 
-    # confidence auto-set to 1 where xy is present
-    assert np.allclose(assemb.data[:, 2], np.array([1.0, 1.0]))
+    # For invalid rows: x/y must be NaN
+    assert np.all(np.isnan(out[~row_valid, 0]))
+    assert np.all(np.isnan(out[~row_valid, 1]))
 
-    # labels visible
-    assert assemb._visible == {0, 1}
+    # Confidence behavior differs depending on number of columns
+    if n_cols == 2:
+        # XY-only input: confidence starts at 0 and is set to 1 for visible rows only
+        assert np.all(out[row_valid, 2] == pytest.approx(1.0))
+        assert np.all(out[~row_valid, 2] == pytest.approx(0.0))
+    else:
+        # XY+confidence input: confidence is preserved for visible rows
+        assert np.allclose(out[row_valid, 2], arr[row_valid, 2], equal_nan=False)
+        # Invalid rows become NaN in all provided columns, including confidence
+        assert np.all(np.isnan(out[~row_valid, 2]))
+
+    # Visible rows preserve xy
+    assert np.allclose(out[row_valid, :2], arr[row_valid, :2], equal_nan=False)
 
 
 def test_assembly_from_array_with_nans():
@@ -64,6 +91,39 @@ def test_assembly_from_array_with_nans():
 
     # visible only includes fully non-NaN rows
     assert assemb._visible == {0}
+
+
+# ---------------------------
+# extent, area, xy
+# ---------------------------
+@HYPOTHESIS_SETTINGS
+@given(
+    coords=arrays(
+        dtype=np.float64,
+        shape=st.tuples(st.integers(1, 30), st.just(2)),
+        elements=st.floats(allow_nan=True, allow_infinity=False, width=32),
+    )
+)
+def test_extent_matches_visible_points(coords):
+    xy = coords.copy()
+    a = Assembly(size=xy.shape[0])
+    a.data[:] = np.nan
+    a.data[:, :2] = xy
+    a._visible = set(np.flatnonzero(~np.isnan(xy).any(axis=1)).tolist())
+
+    visible_mask = ~np.isnan(coords).any(axis=1)
+    assume(visible_mask.any())
+
+    expected = np.array(
+        [
+            coords[visible_mask, 0].min(),
+            coords[visible_mask, 1].min(),
+            coords[visible_mask, 0].max(),
+            coords[visible_mask, 1].max(),
+        ]
+    )
+    assert np.allclose(a.extent, expected)
+    assert a.area >= 0
 
 
 # ---------------------------
@@ -124,45 +184,16 @@ def test_add_link_adds_joints_and_affinity(make_assembly, make_joint, make_link)
 
 
 # ---------------------------
-# extent, area, xy
-# ---------------------------
-
-
-def test_extent_and_area(make_assembly):
-    assemb = make_assembly(size=3)
-    # manually set data: [x, y, conf, group]
-    assemb.data[:] = np.nan
-    assemb.data[0, :2] = [10, 10]
-    assemb.data[1, :2] = [20, 40]
-    assemb._visible.update({0, 1})
-
-    # extent = (min_x, min_y, max_x, max_y)
-    assert np.allclose(assemb.extent, [10, 10, 20, 40])
-
-    # area = dx * dy = (20-10) * (40-10) = 10 * 30
-    assert assemb.area == pytest.approx(300)
-
-
-# ---------------------------
 # intersection_with
 # ---------------------------
-
-
 def test_intersection_with_partial_overlap(two_overlap_assemblies):
     ass1, ass2 = two_overlap_assemblies
-
-    # They overlap in a square of area 5x5 around (5,5)-(10,10).
-    # Each assembly has 2 points. Points inside overlap:
-    # ass1: both (0,0) no, (10,10) yes → 1 / 2 = 0.5
-    # ass2: (5,5) yes, (15,15) no → 1 / 2 = 0.5
     assert ass1.intersection_with(ass2) == pytest.approx(0.5)
 
 
 # ---------------------------
 # confidence property
 # ---------------------------
-
-
 def test_confidence_property(make_assembly):
     assemb = make_assembly(size=3)
     assemb.data[:] = np.nan
@@ -176,15 +207,8 @@ def test_confidence_property(make_assembly):
 # ---------------------------
 # soft_identity
 # ---------------------------
-
-
 def test_soft_identity_simple(soft_identity_assembly):
-    # data format: x, y, conf, group
     assemb = soft_identity_assembly
-
-    # groups: 0 → weights 1.0 and 0.5 (avg=0.75)
-    #          1 → weight 1.0
-    # softmax([0.75, 1.0]) ≈ [...]
     soft = assemb.soft_identity
     assert set(soft.keys()) == {0, 1}
     s0, s1 = soft[0], soft[1]
@@ -195,8 +219,6 @@ def test_soft_identity_simple(soft_identity_assembly):
 # ---------------------------
 # intersection operator: __contains__
 # ---------------------------
-
-
 def test_contains_checks_shared_idx(make_assembly, make_joint):
     ass1 = make_assembly(size=3)
     ass2 = make_assembly(size=3)
@@ -218,16 +240,14 @@ def test_contains_checks_shared_idx(make_assembly, make_joint):
 # ---------------------------
 # assembly addition (__add__)
 # ---------------------------
-
-
 def test_assembly_addition_combines_links(make_assembly, four_joint_chain):
     a1 = make_assembly(size=4)
     a2 = make_assembly(size=4)
 
-    j0, _, _, _, l01, l23 = four_joint_chain
+    chain = four_joint_chain
 
-    a1.add_link(l01)
-    a2.add_link(l23)
+    a1.add_link(chain.l01)
+    a2.add_link(chain.l23)
 
     # now they share NO joints → addition should succeed
     result = a1 + a2
@@ -240,6 +260,6 @@ def test_assembly_addition_combines_links(make_assembly, four_joint_chain):
     assert a2.n_links == 1
 
     # now purposely make them share a joint → should raise
-    a2.add_joint(j0)
+    a2.add_joint(chain.j0)
     with pytest.raises(ArithmeticError):
         _ = a1 + a2

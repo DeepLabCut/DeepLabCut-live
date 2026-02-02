@@ -23,17 +23,17 @@ def _bag_from_frame(frame: dict) -> dict[int, list]:
 
 
 def test_parse_metadata_and_getitem(assembler_data, make_assembler):
-    data, graph, paf_inds = assembler_data
+    adat = assembler_data
     # Parsing
     asm = make_assembler(
-        data,
+        adat.data,
         max_n_individuals=2,
         n_multibodyparts=2,
     )
 
     assert asm.metadata["num_joints"] == 2
-    assert asm.metadata["paf_graph"] == graph
-    assert list(asm.metadata["paf"]) == paf_inds
+    assert asm.metadata["paf_graph"] == adat.graph
+    assert list(asm.metadata["paf"]) == adat.paf_inds
     assert set(asm.metadata["imnames"]) == {"0", "1"}
     # __getitem__
     assert "coordinates" in asm[0]
@@ -42,13 +42,13 @@ def test_parse_metadata_and_getitem(assembler_data, make_assembler):
 
 
 def test_empty_classmethod(assembler_graph_and_pafs):
-    graph, paf_inds = assembler_graph_and_pafs
+    paf = assembler_graph_and_pafs
     empty = Assembler.empty(
         max_n_individuals=1,
         n_multibodyparts=1,
         n_uniquebodyparts=0,
-        graph=graph,
-        paf_inds=paf_inds,
+        graph=paf.graph,
+        paf_inds=paf.paf_inds,
     )
     assert isinstance(empty, Assembler)
     assert empty.n_keypoints == 1
@@ -88,14 +88,14 @@ def test_flatten_detections_with_identity(scene_copy):
 
 
 def test_extract_best_links_optimal_assignment(assembler_data_single_frame, make_assembler):
-    data, _, _ = assembler_data_single_frame
+    sframe_data = assembler_data_single_frame
     asm = make_assembler(
-        data,
+        sframe_data.data,
         greedy=False,  # use Hungarian (maximize)
         min_n_links=1,
     )
 
-    frame0 = data["0"]
+    frame0 = sframe_data.data["0"]
     bag = _bag_from_frame(frame0)
 
     links = asm.extract_best_links(bag, frame0["costs"], trees=None)
@@ -111,9 +111,9 @@ def test_extract_best_links_optimal_assignment(assembler_data_single_frame, make
 
 
 def test_extract_best_links_greedy_with_thresholds(assembler_data_single_frame, make_assembler):
-    data, _, _ = assembler_data_single_frame
+    sframe_data = assembler_data_single_frame
     asm = make_assembler(
-        data,
+        sframe_data.data,
         max_n_individuals=1,  # greedy will stop after 1 disjoint pair chosen
         greedy=True,
         pcutoff=0.5,  # conf product must exceed 0.25
@@ -121,7 +121,7 @@ def test_extract_best_links_greedy_with_thresholds(assembler_data_single_frame, 
         min_n_links=1,
     )
 
-    frame0 = data["0"]
+    frame0 = sframe_data.data["0"]
     bag = _bag_from_frame(frame0)
 
     links = asm.extract_best_links(bag, frame0["costs"], trees=None)
@@ -140,10 +140,10 @@ def test_extract_best_links_greedy_with_thresholds(assembler_data_single_frame, 
 
 
 def test_build_assemblies_from_links(assembler_data_single_frame, make_assembler):
-    data, _, _ = assembler_data_single_frame
-    asm = make_assembler(data, greedy=False, min_n_links=1)
+    sframe_data = assembler_data_single_frame
+    asm = make_assembler(sframe_data.data, greedy=False, min_n_links=1)
 
-    frame0 = data["0"]
+    frame0 = sframe_data.data["0"]
     bag = _bag_from_frame(frame0)
 
     links = asm.extract_best_links(bag, frame0["costs"])
@@ -162,26 +162,26 @@ def test_build_assemblies_from_links(assembler_data_single_frame, make_assembler
 
 
 def test__assemble_main_no_calibration_returns_two_assemblies(assembler_data_single_frame, make_assembler):
-    data, _, _ = assembler_data_single_frame
+    sframe_data = assembler_data_single_frame
     asm = make_assembler(
-        data,
+        sframe_data.data,
         greedy=False,
         min_n_links=1,
         max_overlap=0.99,
         window_size=0,
     )
 
-    assemblies, unique = asm._assemble(data["0"], 0)
+    assemblies, unique = asm._assemble(sframe_data.data["0"], 0)
     assert unique is None
     assert len(assemblies) == 2
     assert all(len(a) == 2 for a in assemblies)
 
 
 def test__assemble_returns_none_when_no_detections(assembler_data_no_detections, make_assembler):
-    data, _, _ = assembler_data_no_detections
-    asm = make_assembler(data, max_n_individuals=2, n_multibodyparts=2)
+    nodet_data = assembler_data_no_detections
+    asm = make_assembler(nodet_data.data, max_n_individuals=2, n_multibodyparts=2)
 
-    assemblies, unique = asm._assemble(data["0"], 0)
+    assemblies, unique = asm._assemble(nodet_data.data["0"], 0)
     assert assemblies is None and unique is None
 
 
@@ -191,9 +191,9 @@ def test__assemble_returns_none_when_no_detections(assembler_data_no_detections,
 
 
 def test_assemble_across_frames_updates_temporal_trees(assembler_data_two_frames_nudged, make_assembler):
-    data, _, _ = assembler_data_two_frames_nudged
+    twofr_data = assembler_data_two_frames_nudged
     asm = make_assembler(
-        data,
+        twofr_data.data,
         window_size=1,  # enable temporal memory
         min_n_links=1,
     )
@@ -211,22 +211,22 @@ def test_assemble_across_frames_updates_temporal_trees(assembler_data_two_frames
 
 
 def test_identity_only_branch_groups_by_identity(assembler_data_single_frame, scene_copy, make_assembler):
-    data, _, _ = assembler_data_single_frame
+    sframe_data = assembler_data_single_frame
 
     base = scene_copy
     id0 = np.array([[4.0, 1.0], [1.0, 4.0]])
     id1 = np.array([[4.0, 1.0], [1.0, 4.0]])
     base["identity"] = [id0, id1]
-    data["0"] = base
+    sframe_data.data["0"] = base
 
     asm = make_assembler(
-        data,
+        sframe_data.data,
         max_n_individuals=3,
         identity_only=True,
         pcutoff=0.1,
     )
 
-    assemblies, _ = asm._assemble(data["0"], 0)
+    assemblies, _ = asm._assemble(sframe_data.data["0"], 0)
     assert assemblies is not None
     assert all(len(a) >= 1 for a in assemblies)
 
@@ -245,8 +245,8 @@ class _FakeKDE:
 
 
 def test_calc_assembly_mahalanobis_and_link_probability_with_fake_kde(assembler_data_single_frame, make_assembler):
-    data, _, _ = assembler_data_single_frame
-    asm = make_assembler(data, min_n_links=1)
+    sframe_data = assembler_data_single_frame
+    asm = make_assembler(sframe_data.data, min_n_links=1)
 
     j0 = Joint((0.0, 0.0), 1.0, 0, 0)
     j1 = Joint((3.0, 4.0), 1.0, 1, 1)
@@ -277,11 +277,9 @@ def test_calc_assembly_mahalanobis_and_link_probability_with_fake_kde(assembler_
 
 
 def test_to_pickle_and_from_pickle(tmp_path, assembler_data_single_frame, make_assembler, assembler_graph_and_pafs):
-    data, _, _ = assembler_data_single_frame
-    graph, paf_inds = assembler_graph_and_pafs
-
-    asm = make_assembler(data, min_n_links=1)
-    assemblies, _ = asm._assemble(data["0"], 0)
+    sframe_data = assembler_data_single_frame
+    asm = make_assembler(sframe_data.data, min_n_links=1)
+    assemblies, _ = asm._assemble(sframe_data.data["0"], 0)
     asm.assemblies = {0: assemblies}
 
     pkl = tmp_path / "assemb.pkl"
@@ -291,8 +289,8 @@ def test_to_pickle_and_from_pickle(tmp_path, assembler_data_single_frame, make_a
         max_n_individuals=2,
         n_multibodyparts=2,
         n_uniquebodyparts=0,
-        graph=graph,
-        paf_inds=paf_inds,
+        graph=sframe_data.graph,
+        paf_inds=sframe_data.paf_inds,
     )
     new_asm.from_pickle(str(pkl))
 
@@ -305,10 +303,10 @@ def test_to_pickle_and_from_pickle(tmp_path, assembler_data_single_frame, make_a
     reason="requires PyTables",
 )
 def test_to_h5_roundtrip(tmp_path, assembler_data_single_frame, make_assembler):
-    data, _, _ = assembler_data_single_frame
+    sframe_data = assembler_data_single_frame
 
-    asm = make_assembler(data, min_n_links=1)
-    assemblies, _ = asm._assemble(data["0"], 0)
+    asm = make_assembler(sframe_data.data, min_n_links=1)
+    assemblies, _ = asm._assemble(sframe_data.data["0"], 0)
     asm.assemblies = {0: assemblies}
 
     h5 = tmp_path / "assemb.h5"
