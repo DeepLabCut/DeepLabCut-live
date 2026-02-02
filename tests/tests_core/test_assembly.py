@@ -1,15 +1,14 @@
 import numpy as np
 import pytest
 
-from dlclive.core.inferenceutils import Assembly, Joint, Link
+from dlclive.core.inferenceutils import Assembly
+
 
 # ---------------------------
 # Basic construction
 # ---------------------------
-
-
-def test_assembly_init():
-    assemb = Assembly(size=5)
+def test_assembly_init(make_assembly):
+    assemb = make_assembly(size=5)
     assert assemb.data.shape == (5, 4)
 
     # col 0,1,3 are NaN, col 2 is confidence=0
@@ -29,8 +28,6 @@ def test_assembly_init():
 # ---------------------------
 # from_array
 # ---------------------------
-
-
 def test_assembly_from_array_basic_xy_only():
     arr = np.array(
         [
@@ -72,12 +69,10 @@ def test_assembly_from_array_with_nans():
 # ---------------------------
 # add_joint / remove_joint
 # ---------------------------
-
-
-def test_add_joint_and_remove_joint():
-    assemb = Assembly(size=3)
-    j0 = Joint(pos=(1.0, 2.0), confidence=0.5, label=0, idx=10)
-    j1 = Joint(pos=(3.0, 4.0), confidence=0.8, label=1, idx=11)
+def test_add_joint_and_remove_joint(make_assembly, make_joint):
+    assemb = make_assembly(size=3)
+    j0 = make_joint(pos=(1.0, 2.0), confidence=0.5, label=0, idx=10)
+    j1 = make_joint(pos=(3.0, 4.0), confidence=0.8, label=1, idx=11)
 
     # adding first joint
     assert assemb.add_joint(j0) is True
@@ -106,14 +101,12 @@ def test_add_joint_and_remove_joint():
 # ---------------------------
 # add_link (simple)
 # ---------------------------
+def test_add_link_adds_joints_and_affinity(make_assembly, make_joint, make_link):
+    assemb = make_assembly(size=3)
 
-
-def test_add_link_adds_joints_and_affinity():
-    assemb = Assembly(size=3)
-
-    j0 = Joint(pos=(0.0, 0.0), confidence=1.0, label=0, idx=100)
-    j1 = Joint(pos=(1.0, 0.0), confidence=1.0, label=1, idx=101)
-    link = Link(j0, j1, affinity=0.7)
+    j0 = make_joint(pos=(0.0, 0.0), confidence=1.0, label=0, idx=100)
+    j1 = make_joint(pos=(1.0, 0.0), confidence=1.0, label=1, idx=101)
+    link = make_link(j0, j1, affinity=0.7)
 
     # New link → adds both joints
     result = assemb.add_link(link)
@@ -135,8 +128,8 @@ def test_add_link_adds_joints_and_affinity():
 # ---------------------------
 
 
-def test_extent_and_area():
-    assemb = Assembly(size=3)
+def test_extent_and_area(make_assembly):
+    assemb = make_assembly(size=3)
     # manually set data: [x, y, conf, group]
     assemb.data[:] = np.nan
     assemb.data[0, :2] = [10, 10]
@@ -155,16 +148,8 @@ def test_extent_and_area():
 # ---------------------------
 
 
-def test_intersection_with_partial_overlap():
-    ass1 = Assembly(size=2)
-    ass1.data[0, :2] = [0, 0]
-    ass1.data[1, :2] = [10, 10]
-    ass1._visible.update({0, 1})
-
-    ass2 = Assembly(size=2)
-    ass2.data[0, :2] = [5, 5]
-    ass2.data[1, :2] = [15, 15]
-    ass2._visible.update({0, 1})
+def test_intersection_with_partial_overlap(two_overlap_assemblies):
+    ass1, ass2 = two_overlap_assemblies
 
     # They overlap in a square of area 5x5 around (5,5)-(10,10).
     # Each assembly has 2 points. Points inside overlap:
@@ -178,8 +163,8 @@ def test_intersection_with_partial_overlap():
 # ---------------------------
 
 
-def test_confidence_property():
-    assemb = Assembly(size=3)
+def test_confidence_property(make_assembly):
+    assemb = make_assembly(size=3)
     assemb.data[:] = np.nan
     assemb.data[:, 2] = [0.2, 0.4, np.nan]  # mean of finite = (0.2+0.4)/2 = 0.3
     assert assemb.confidence == pytest.approx(0.3)
@@ -193,14 +178,9 @@ def test_confidence_property():
 # ---------------------------
 
 
-def test_soft_identity_simple():
+def test_soft_identity_simple(soft_identity_assembly):
     # data format: x, y, conf, group
-    assemb = Assembly(size=3)
-    assemb.data[:] = np.nan
-    assemb.data[0] = [0, 0, 1.0, 0]
-    assemb.data[1] = [5, 5, 0.5, 0]
-    assemb.data[2] = [10, 10, 1.0, 1]
-    assemb._visible = {0, 1, 2}
+    assemb = soft_identity_assembly
 
     # groups: 0 → weights 1.0 and 0.5 (avg=0.75)
     #          1 → weight 1.0
@@ -217,12 +197,12 @@ def test_soft_identity_simple():
 # ---------------------------
 
 
-def test_contains_checks_shared_idx():
-    ass1 = Assembly(size=3)
-    ass2 = Assembly(size=3)
+def test_contains_checks_shared_idx(make_assembly, make_joint):
+    ass1 = make_assembly(size=3)
+    ass2 = make_assembly(size=3)
 
-    j0 = Joint((0, 0), confidence=1.0, label=0, idx=10)
-    j1 = Joint((1, 1), confidence=1.0, label=1, idx=99)
+    j0 = make_joint((0, 0), confidence=1.0, label=0, idx=10)
+    j1 = make_joint((1, 1), confidence=1.0, label=1, idx=99)
 
     ass1.add_joint(j0)
     ass2.add_joint(j1)
@@ -240,17 +220,11 @@ def test_contains_checks_shared_idx():
 # ---------------------------
 
 
-def test_assembly_addition_combines_links():
-    a1 = Assembly(size=4)
-    a2 = Assembly(size=4)
+def test_assembly_addition_combines_links(make_assembly, four_joint_chain):
+    a1 = make_assembly(size=4)
+    a2 = make_assembly(size=4)
 
-    j0 = Joint((0, 0), 1.0, label=0, idx=10)
-    j1 = Joint((1, 0), 1.0, label=1, idx=11)
-    j2 = Joint((2, 0), 1.0, label=2, idx=12)
-    j3 = Joint((3, 0), 1.0, label=3, idx=13)
-
-    l01 = Link(j0, j1, affinity=0.5)
-    l23 = Link(j2, j3, affinity=0.8)
+    j0, _, _, _, l01, l23 = four_joint_chain
 
     a1.add_link(l01)
     a2.add_link(l23)
