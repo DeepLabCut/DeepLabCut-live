@@ -43,7 +43,7 @@ jobs:
           df -h
 
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4 # uses: actions/checkout@v6
 
       - name: Install uv
         uses: astral-sh/setup-uv@v6
@@ -72,20 +72,22 @@ jobs:
         run: uv run dlc-live-test --nodisplay
 
       - name: Run DLC Live Unit Tests
-        run: uv run pytest --cov=dlclive --cov-report=xml --cov-report=term-missing
+        run: uv run pytest
+        # - name: Run DLC Live Unit Tests
+      #   run: uv run pytest --cov=dlclive --cov-report=xml --cov-report=term-missing
 
-      - name: Coverage Report
-        uses: codecov/codecov-action@v5
-        with:
-          files: ./coverage.xml
-          flags: ${{ matrix.os }}-py${{ matrix.python-version }}
-          name: codecov-${{ matrix.os }}-py${{ matrix.python-version }}
-      - name: Add coverage to job summary
-        if: always()
-        shell: bash
-        run: |
-          uv run python -m coverage report -m > coverage.txt
-          echo "## Coverage (dlclive)" >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
-          cat coverage.txt >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
+      # - name: Coverage Report
+      #   uses: codecov/codecov-action@v5
+      #   with:
+      #     files: ./coverage.xml
+      #     flags: ${{ matrix.os }}-py${{ matrix.python-version }}
+      #     name: codecov-${{ matrix.os }}-py${{ matrix.python-version }}
+      # - name: Add coverage to job summary
+      #   if: always()
+      #   shell: bash
+      #   run: |
+      #     uv run python -m coverage report -m > coverage.txt
+      #     echo "## Coverage (dlclive)" >> "$GITHUB_STEP_SUMMARY"
+      #     echo '```' >> "$GITHUB_STEP_SUMMARY"
+      #     cat coverage.txt >> "$GITHUB_STEP_SUMMARY"
+      #     echo '```' >> "$GITHUB_STEP_SUMMARY"
