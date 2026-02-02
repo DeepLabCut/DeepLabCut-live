@@ -1,40 +1,7 @@
+from unittest.mock import ANY, MagicMock
+
 import numpy as np
 import pytest
-
-
-class FakeTk:
-    def __init__(self):
-        self.titles = []
-        self.updated = 0
-        self.destroyed = False
-
-    def title(self, text):
-        self.titles.append(text)
-
-    def update(self):
-        self.updated += 1
-
-    def destroy(self):
-        self.destroyed = True
-
-
-class FakeLabel:
-    def __init__(self, window):
-        self.window = window
-        self.packed = False
-        self.configured = {}
-
-    def pack(self):
-        self.packed = True
-
-    def configure(self, **kwargs):
-        self.configured.update(kwargs)
-
-
-class FakePhotoImage:
-    def __init__(self, image=None, master=None):
-        self.image = image
-        self.master = master
 
 
 def test_display_init_raises_when_tk_unavailable(monkeypatch):
@@ -47,7 +14,8 @@ def test_display_init_raises_when_tk_unavailable(monkeypatch):
 
 
 def test_display_frame_creates_window_and_updates(headless_display_env):
-    display_mod = headless_display_env
+    env = headless_display_env
+    display_mod = env.mod
     disp = display_mod.Display(radius=3, pcutoff=0.5)
 
     frame = np.zeros((100, 120, 3), dtype=np.uint8)
@@ -55,16 +23,32 @@ def test_display_frame_creates_window_and_updates(headless_display_env):
 
     disp.display_frame(frame, pose)
 
-    assert disp.window is not None
-    assert disp.lab is not None
-    assert disp.lab.packed is True
-    assert disp.window.updated == 1
-    assert "image" in disp.lab.configured  # configured with PhotoImage
+    # Window created and initialized
+    env.tk_ctor.assert_called_once_with()
+    env.tk.title.assert_called_once_with("DLC Live")
+
+    # Label created and packed
+    env.label_ctor.assert_called_once_with(env.tk)
+    env.label.pack.assert_called_once()
+
+    # PhotoImage created with correct master + image passed
+    env.photo_ctor.assert_called_once_with(image=ANY, master=env.tk)
+
+    # Image configured on label and window updated
+    env.label.configure.assert_called_once_with(image=env.photo)
+    env.tk.update.assert_called_once_with()
 
 
 def test_display_draws_only_points_above_cutoff(headless_display_env, monkeypatch):
-    display_mod = headless_display_env
+    env = headless_display_env
+    display_mod = env.mod
     disp = display_mod.Display(radius=3, pcutoff=0.5)
+
+    # Patch colormap so color sampling is deterministic and always long enough
+    class FakeCC:
+        bmy = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 0)]
+
+    monkeypatch.setattr(display_mod, "cc", FakeCC)
 
     frame = np.zeros((100, 100, 3), dtype=np.uint8)
     pose = np.array(
@@ -72,27 +56,24 @@ def test_display_draws_only_points_above_cutoff(headless_display_env, monkeypatc
             [
                 [10, 10, 0.9],  # draw
                 [20, 20, 0.49],  # don't draw
-                [30, 30, 0.5001],  # draw (>=)
+                [30, 30, 0.5001],  # draw (> pcutoff)
             ]
         ],
         dtype=float,
     )
 
-    ellipses = []
-
-    class DrawRecorder:
-        def ellipse(self, coords, fill=None, outline=None):
-            ellipses.append((coords, fill, outline))
-
-    monkeypatch.setattr(display_mod.ImageDraw, "Draw", lambda img: DrawRecorder())
+    draw = MagicMock(name="DrawInstance")
+    monkeypatch.setattr(display_mod.ImageDraw, "Draw", MagicMock(return_value=draw))
 
     disp.display_frame(frame, pose)
 
-    assert len(ellipses) == 2
+    # Two points above cutoff => two ellipse calls
+    assert draw.ellipse.call_count == 2
 
 
 def test_destroy_calls_window_destroy(headless_display_env):
-    display_mod = headless_display_env
+    env = headless_display_env
+    display_mod = env.mod
     disp = display_mod.Display()
 
     frame = np.zeros((10, 10, 3), dtype=np.uint8)
@@ -101,13 +82,13 @@ def test_destroy_calls_window_destroy(headless_display_env):
     disp.display_frame(frame, pose)
     disp.destroy()
 
-    assert disp.window.destroyed is True
+    env.tk.destroy.assert_called_once_with()
 
 
 def test_set_display_color_sampling_safe(headless_display_env, monkeypatch):
-    display_mod = headless_display_env
+    env = headless_display_env
+    display_mod = env.mod
 
-    # Provide a fixed colormap list
     class FakeCC:
         bmy = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 0), (0, 1, 1), (1, 0, 1)]
 
@@ -118,3 +99,9 @@ def test_set_display_color_sampling_safe(headless_display_env, monkeypatch):
 
     assert disp.colors is not None
     assert len(disp.colors) >= 3
+
+    # Also verify window setup calls happened
+    env.tk_ctor.assert_called_once_with()
+    env.tk.title.assert_called_once_with("DLC Live")
+    env.label_ctor.assert_called_once_with(env.tk)
+    env.label.pack.assert_called_once()

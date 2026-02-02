@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import copy
 from collections.abc import Callable
+from types import SimpleNamespace
 from typing import Any
+from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
@@ -15,20 +17,50 @@ from dlclive.core.inferenceutils import Assembler
 # --------------------------------------------------------------------------------------
 @pytest.fixture
 def headless_display_env(monkeypatch):
-    """Patch dlclive.display so tkinter is replaced with fake, non-GUI-safe objects."""
-    from test_display import FakeLabel, FakePhotoImage, FakeTk
+    """
+    Patch dlclive.display so tkinter + ImageTk are replaced by MagicMocks.
 
+    Returns an object with:
+      - mod: the imported dlclive.display module
+      - tk_ctor: MagicMock constructor for Tk
+      - tk: MagicMock instance for the window
+      - label_ctor: MagicMock constructor for Label
+      - label: MagicMock instance for the label widget
+      - photo_ctor: MagicMock function for ImageTk.PhotoImage
+      - photo: MagicMock instance representing created image
+    """
     import dlclive.display as display_mod
 
-    monkeypatch.setattr(display_mod, "_TKINTER_AVAILABLE", True)
-    monkeypatch.setattr(display_mod, "Tk", FakeTk)
-    monkeypatch.setattr(display_mod, "Label", FakeLabel)
+    # Ensure display path is enabled
+    monkeypatch.setattr(display_mod, "_TKINTER_AVAILABLE", True, raising=False)
+
+    # Tk / Label mocks
+    tk = MagicMock(name="TkInstance")
+    tk_ctor = MagicMock(name="Tk", return_value=tk)
+
+    label = MagicMock(name="LabelInstance")
+    label_ctor = MagicMock(name="Label", return_value=label)
+
+    # ImageTk.PhotoImage mock
+    photo = MagicMock(name="PhotoImageInstance")
+    photo_ctor = MagicMock(name="PhotoImage", return_value=photo)
 
     class FakeImageTkModule:
-        PhotoImage = FakePhotoImage
+        PhotoImage = photo_ctor
 
-    monkeypatch.setattr(display_mod, "ImageTk", FakeImageTkModule)
-    return display_mod
+    monkeypatch.setattr(display_mod, "Tk", tk_ctor, raising=False)
+    monkeypatch.setattr(display_mod, "Label", label_ctor, raising=False)
+    monkeypatch.setattr(display_mod, "ImageTk", FakeImageTkModule, raising=False)
+
+    return SimpleNamespace(
+        mod=display_mod,
+        tk_ctor=tk_ctor,
+        tk=tk,
+        label_ctor=label_ctor,
+        label=label,
+        photo_ctor=photo_ctor,
+        photo=photo,
+    )
 
 
 # --------------------------------------------------------------------------------------
