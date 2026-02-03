@@ -69,7 +69,7 @@ def read_config_as_dict(config_path: str | Path) -> dict:
     return cfg
 
 
-# NOTE - DUPLICATED @deruyter92 2026-23-01: Copied from the original DeepLabCut codebase
+# NOTE - DUPLICATED @deruyter92 2026-01-23: Copied from the original DeepLabCut codebase
 # from deeplabcut/pose_estimation_pytorch/config/make_pose_config.py
 def add_metadata(
     project_config: dict,
@@ -98,7 +98,7 @@ def add_metadata(
     return config
 
 
-# NOTE - DUPLICATED @deruyter92 2026-23-01: Copied from the original DeepLabCut codebase
+# NOTE - DUPLICATED @deruyter92 2026-01-23: Copied from the original DeepLabCut codebase
 # from deeplabcut/pose_estimation_pytorch/modelzoo/utils.py
 def load_super_animal_config(
     super_animal: str,

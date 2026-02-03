@@ -8,7 +8,7 @@
 #
 # Licensed under GNU Lesser General Public License v3.0
 
-# NOTE DUPLICATED @C-Achard 2026-26-01: Duplication between this file
+# NOTE DUPLICATED @C-Achard 2026-01-26: Duplication between this file
 # and deeplabcut/pose_estimation_pytorch/runners/dynamic_cropping.py
 # NOTE Testing already exists at deeplabcut/tests/pose_estimation_pytorch/runners/test_dynamic_cropper.py
 """Modules to dynamically crop individuals out of videos to improve video analysis"""
@@ -82,7 +82,9 @@ class DynamicCropper:
                 height.
         """
         if len(image) != 1:
-            raise RuntimeError(f"DynamicCropper can only be used with batch size 1 (found image shape: {image.shape})")
+            raise RuntimeError(
+                f"DynamicCropper can only be used with batch size 1 (found image shape: {image.shape})"
+            )
 
         if self._shape is None:
             self._shape = image.shape[3], image.shape[2]
@@ -307,7 +309,9 @@ class TopDownDynamicCropper(DynamicCropper):
                 `crop` was previously called with an image of a different W or H.
         """
         if len(image) != 1:
-            raise RuntimeError(f"DynamicCropper can only be used with batch size 1 (found image shape: {image.shape})")
+            raise RuntimeError(
+                f"DynamicCropper can only be used with batch size 1 (found image shape: {image.shape})"
+            )
 
         if self._shape is None:
             self._shape = image.shape[3], image.shape[2]
@@ -394,7 +398,9 @@ class TopDownDynamicCropper(DynamicCropper):
 
         return pose
 
-    def _prepare_bounding_box(self, x1: int, y1: int, x2: int, y2: int) -> tuple[int, int, int, int]:
+    def _prepare_bounding_box(
+        self, x1: int, y1: int, x2: int, y2: int
+    ) -> tuple[int, int, int, int]:
         """Prepares the bounding box for cropping.
 
         Adds a margin around the bounding box, then transforms it into the target aspect
@@ -491,8 +497,12 @@ class TopDownDynamicCropper(DynamicCropper):
         Returns:
             A list of patch coordinates as tuples (x0, y0, x1, y1).
         """
-        patch_xs = self.split_array(self._shape[0], self._patch_counts[0], self._patch_overlap)
-        patch_ys = self.split_array(self._shape[1], self._patch_counts[1], self._patch_overlap)
+        patch_xs = self.split_array(
+            self._shape[0], self._patch_counts[0], self._patch_overlap
+        )
+        patch_ys = self.split_array(
+            self._shape[1], self._patch_counts[1], self._patch_overlap
+        )
 
         patches = []
         for y0, y1 in patch_ys:
