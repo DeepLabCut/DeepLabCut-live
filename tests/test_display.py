@@ -39,36 +39,55 @@ def test_display_frame_creates_window_and_updates(headless_display_env):
     env.tk.update.assert_called_once_with()
 
 
-def test_display_draws_only_points_above_cutoff(headless_display_env, monkeypatch):
+def test_display_draws_only_points_above_cutoff_with_clamping(
+    headless_display_env, monkeypatch
+):
     env = headless_display_env
     display_mod = env.mod
     disp = display_mod.Display(radius=3, pcutoff=0.5)
+    r = disp.radius
 
-    # Patch colormap so color sampling is deterministic and always long enough
+    # Fake colors
     class FakeCC:
-        bmy = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 0)]
+        bmy = [(1, 0, 0), (0, 1, 0), (0, 0, 1)]
 
     monkeypatch.setattr(display_mod, "cc", FakeCC)
 
-    frame = np.zeros((100, 100, 3), dtype=np.uint8)
+    frame = np.zeros((50, 50, 3), dtype=np.uint8)
+    h, w = frame.shape[:2]
+
     pose = np.array(
         [
             [
-                [10, 10, 0.9],  # draw
-                [20, 20, 0.49],  # don't draw
-                [30, 30, 0.5001],  # draw (> pcutoff)
+                [-1, -1, 0.9],  # top-left offscreen
+                [48, 48, 0.9],  # bottom-right edge
+                [25, 25, 0.4],  # below cutoff
             ]
         ],
         dtype=float,
     )
 
-    draw = MagicMock(name="DrawInstance")
+    draw = MagicMock()
     monkeypatch.setattr(display_mod.ImageDraw, "Draw", MagicMock(return_value=draw))
 
     disp.display_frame(frame, pose)
 
-    # Two points above cutoff => two ellipse calls
     assert draw.ellipse.call_count == 2
+    calls = draw.ellipse.call_args_list
+
+    def expected_coords(x, y):
+        return [
+            max(0, x - r),
+            max(0, y - r),
+            min(w, x + r),
+            min(h, y + r),
+        ]
+
+    # First point
+    assert calls[0].args[0] == expected_coords(-1, -1)
+
+    # Second point
+    assert calls[1].args[0] == expected_coords(48, 48)
 
 
 def test_destroy_calls_window_destroy(headless_display_env):
