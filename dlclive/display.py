@@ -95,26 +95,10 @@ class Display:
                 for j in range(pose.shape[1]):
                     if pose[i, j, 2] > self.pcutoff:
                         try:
-                            x0 = (
-                                pose[i, j, 0] - self.radius
-                                if pose[i, j, 0] - self.radius > 0
-                                else 0
-                            )
-                            x1 = (
-                                pose[i, j, 0] + self.radius
-                                if pose[i, j, 0] + self.radius < im_size[0]
-                                else im_size[0]
-                            )
-                            y0 = (
-                                pose[i, j, 1] - self.radius
-                                if pose[i, j, 1] - self.radius > 0
-                                else 0
-                            )
-                            y1 = (
-                                pose[i, j, 1] + self.radius
-                                if pose[i, j, 1] + self.radius < im_size[1]
-                                else im_size[1]
-                            )
+                            x0 = max(0, pose[i, j, 0] - self.radius)
+                            x1 = min(im_size[0], pose[i, j, 0] + self.radius)
+                            y0 = max(0, pose[i, j, 1] - self.radius)
+                            y1 = min(im_size[1], pose[i, j, 1] + self.radius)
                             coords = [x0, y0, x1, y1]
                             draw.ellipse(
                                 coords, fill=self.colors[j], outline=self.colors[j]
