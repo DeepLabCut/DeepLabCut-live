@@ -8,6 +8,10 @@
 #
 # Licensed under GNU Lesser General Public License v3.0
 #
+
+
+# NOTE - DUPLICATED @C-Achard 2026-01-26: Copied from the original DeepLabCut codebase
+# from deeplabcut/core/inferenceutils.py
 from __future__ import annotations
 
 import heapq
@@ -17,9 +21,10 @@ import operator
 import pickle
 import warnings
 from collections import defaultdict
+from collections.abc import Iterable
 from dataclasses import dataclass
 from math import erf, sqrt
-from typing import Any, Iterable, Tuple
+from typing import Any
 
 import networkx as nx
 import numpy as np
@@ -41,7 +46,7 @@ def _conv_square_to_condensed_indices(ind_row, ind_col, n):
     return n * ind_col - ind_col * (ind_col + 1) // 2 + ind_row - 1 - ind_col
 
 
-Position = Tuple[float, float]
+Position = tuple[float, float]
 
 
 @dataclass(frozen=True)
@@ -155,7 +160,7 @@ class Assembly:
         unq, idx, cnt = np.unique(data[:, 3], return_inverse=True, return_counts=True)
         avg = np.bincount(idx, weights=data[:, 2]) / cnt
         soft = softmax(avg)
-        return dict(zip(unq.astype(int), soft))
+        return dict(zip(unq.astype(int), soft, strict=False))
 
     @property
     def affinity(self):
@@ -262,7 +267,8 @@ class Assembler:
         self._has_identity = "identity" in self[0]
         if identity_only and not self._has_identity:
             warnings.warn(
-                "The network was not trained with identity; setting `identity_only` to False."
+                "The network was not trained with identity; setting `identity_only` to False.",
+                stacklevel=2,
             )
         self.identity_only = identity_only & self._has_identity
         self.nan_policy = nan_policy
@@ -344,7 +350,9 @@ class Assembler:
             pass
         n_bpts = len(df.columns.get_level_values("bodyparts").unique())
         if n_bpts == 1:
-            warnings.warn("There is only one keypoint; skipping calibration...")
+            warnings.warn(
+                "There is only one keypoint; skipping calibration...", stacklevel=2
+            )
             return
 
         xy = df.to_numpy().reshape((-1, n_bpts, 2))
@@ -352,7 +360,9 @@ class Assembler:
         # Only keeps skeletons that are more than 90% complete
         xy = xy[frac_valid >= 0.9]
         if not xy.size:
-            warnings.warn("No complete poses were found. Skipping calibration...")
+            warnings.warn(
+                "No complete poses were found. Skipping calibration...", stacklevel=2
+            )
             return
 
         # TODO Normalize dists by longest length?
@@ -369,7 +379,8 @@ class Assembler:
         except np.linalg.LinAlgError:
             # Covariance matrix estimation fails due to numerical singularities
             warnings.warn(
-                "The assembler could not be robustly calibrated. Continuing without it..."
+                "The assembler could not be robustly calibrated. Continuing without it...",
+                stacklevel=2,
             )
 
     def calc_assembly_mahalanobis_dist(
@@ -428,10 +439,12 @@ class Assembler:
             ids = [np.ones(len(arr), dtype=int) * -1 for arr in confidence]
         else:
             ids = [arr.argmax(axis=1) for arr in ids]
-        for i, (coords, conf, id_) in enumerate(zip(coordinates, confidence, ids)):
+        for i, (coords, conf, id_) in enumerate(
+            zip(coordinates, confidence, ids, strict=False)
+        ):
             if not np.any(coords):
                 continue
-            for xy, p, g in zip(coords, conf, id_):
+            for xy, p, g in zip(coords, conf, id_, strict=False):
                 joint = Joint(tuple(xy), p.item(), i, ind, g)
                 ind += 1
                 yield joint
@@ -474,13 +487,13 @@ class Assembler:
                     (conf >= self.pcutoff * self.pcutoff) & (aff >= self.min_affinity)
                 )
                 candidates = sorted(
-                    zip(rows, cols, aff[rows, cols], lengths[rows, cols]),
+                    zip(rows, cols, aff[rows, cols], lengths[rows, cols], strict=False),
                     key=lambda x: x[2],
                     reverse=True,
                 )
                 i_seen = set()
                 j_seen = set()
-                for i, j, w, l in candidates:
+                for i, j, w, _l in candidates:
                     if i not in i_seen and j not in j_seen:
                         i_seen.add(i)
                         j_seen.add(j)
@@ -502,7 +515,7 @@ class Assembler:
                 ]
                 aff = aff[np.ix_(keep_s, keep_t)]
                 rows, cols = linear_sum_assignment(aff, maximize=True)
-                for row, col in zip(rows, cols):
+                for row, col in zip(rows, cols, strict=False):
                     w = aff[row, col]
                     if w >= self.min_affinity:
                         links.append(Link(dets_s[keep_s[row]], dets_t[keep_t[col]], w))
@@ -548,9 +561,9 @@ class Assembler:
                 d = self.calc_assembly_mahalanobis_dist(assembly, nan_policy=nan_policy)
                 if d < d_old:
                     push_to_stack(new_ind)
-                    if tabu:  
-                        _, _, link = heapq.heappop(tabu)  
-                        heapq.heappush(stack, (-link.affinity, next(counter), link)) 
+                    if tabu:
+                        _, _, link = heapq.heappop(tabu)
+                        heapq.heappush(stack, (-link.affinity, next(counter), link))
                 else:
                     heapq.heappush(tabu, (d - d_old, next(counter), best))
                     assembly.__dict__.update(assembly._dict)
@@ -665,7 +678,7 @@ class Assembler:
                             for idx in store[j]._idx:
                                 store[idx] = store[i]
                     except KeyError:
-                        # Some links may reference indices that were never added to `store`;  
+                        # Some links may reference indices that were never added to `store`;
                         # in that case we intentionally skip merging for this link
                         pass
 
@@ -791,7 +804,7 @@ class Assembler:
                 ]
             else:
                 scores = [ass._affinity for ass in assemblies]
-            lst = list(zip(scores, assemblies))
+            lst = list(zip(scores, assemblies, strict=False))
             assemblies = []
             while lst:
                 temp = max(lst, key=lambda x: x[0])
@@ -1074,7 +1087,7 @@ def match_assemblies(
                 if ~np.isnan(oks):
                     mat[i, j] = oks
         rows, cols = linear_sum_assignment(mat, maximize=True)
-        for row, col in zip(rows, cols):
+        for row, col in zip(rows, cols, strict=False):
             matched[row].ground_truth = ground_truth[col]
             matched[row].oks = mat[row, col]
             _ = inds_true.remove(col)
@@ -1087,7 +1100,7 @@ def parse_ground_truth_data_file(h5_file):
     try:
         df.drop("single", axis=1, level="individuals", inplace=True)
     except KeyError:
-        # Ignore if the "single" individual column is absent 
+        # Ignore if the "single" individual column is absent
         pass
     # Cast columns of dtype 'object' to float to avoid TypeError
     # further down in _parse_ground_truth_data.
@@ -1128,7 +1141,7 @@ def find_outlier_assemblies(dict_of_assemblies, criterion="area", qs=(5, 95)):
     for frame_ind, assemblies in dict_of_assemblies.items():
         for assembly in assemblies:
             tuples.append((frame_ind, getattr(assembly, criterion)))
-    frame_inds, vals = zip(*tuples)
+    frame_inds, vals = zip(*tuples, strict=False)
     vals = np.asarray(vals)
     lo, up = np.percentile(vals, qs, interpolation="nearest")
     inds = np.flatnonzero((vals < lo) | (vals > up)).tolist()
@@ -1246,12 +1259,14 @@ def evaluate_assembly(
     ass_pred_dict,
     ass_true_dict,
     oks_sigma=0.072,
-    oks_thresholds=np.linspace(0.5, 0.95, 10),
+    oks_thresholds=None,
     margin=0,
     symmetric_kpts=None,
     greedy_matching=False,
     with_tqdm: bool = True,
 ):
+    if oks_thresholds is None:
+        oks_thresholds = np.linspace(0.5, 0.95, 10)
     if greedy_matching:
         return evaluate_assembly_greedy(
             ass_true_dict,

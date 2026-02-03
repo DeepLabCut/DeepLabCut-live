@@ -1,9 +1,9 @@
-# NOTE JR 2026-23-01: This is duplicate code, copied from the original DeepLabCut-Live codebase.
-
+# NOTE - DUPLICATED @deruyter92 2026-01-23: Copied from the original DeepLabCut codebase
+# from deeplabcut/tests/pose_estimation_pytorch/modelzoo/test_modelzoo_utils.py
 import os
 
-import pytest
 import dlclibrary
+import pytest
 from dlclibrary.dlcmodelzoo.modelzoo_download import MODELOPTIONS
 
 from dlclive import modelzoo

@@ -1,9 +1,10 @@
 """
-Helper function to deal with default values in the model configuration. 
+Helper function to deal with default values in the model configuration.
 For instance, "num_bodyparts x 2" is replaced with the number of bodyparts multiplied by 2.
 """
-# NOTE JR 2026-23-01: This is duplicate code, copied from the original DeepLabCut-Live codebase.
 
+# NOTE - DUPLICATED @deruyter92 2026-01-23: Copied from the original DeepLabCut codebase
+# from deeplabcut/pose_estimation_pytorch/modelzoo/utils.py
 import copy
 
 
@@ -78,8 +79,7 @@ def replace_default_values(
         var_name = var_parts[0]
         if updated_values[var_name] is None:
             raise ValueError(
-                f"Found {variable} in the configuration file, but there is no default "
-                f"value for this variable."
+                f"Found {variable} in the configuration file, but there is no default value for this variable."
             )
 
         if len(var_parts) == 1:

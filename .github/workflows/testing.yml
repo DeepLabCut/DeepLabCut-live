@@ -43,7 +43,7 @@ jobs:
           df -h
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4 # uses: actions/checkout@v6
 
       - name: Install uv
         uses: astral-sh/setup-uv@v6
@@ -53,9 +53,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install the project
-        run: uv sync --no-cache --all-extras --dev
+        run: uv sync --all-extras --dev
         shell: bash
-        
+
       - name: Install ffmpeg
         run: |
           if [ "$RUNNER_OS" == "Linux" ]; then
@@ -67,9 +67,27 @@ jobs:
             choco install ffmpeg
           fi
         shell: bash
-          
-      - name: Run DLC Live Tests
+
+      - name: Run Model Benchmark Test
         run: uv run dlc-live-test --nodisplay
 
-      - name: Run Functional Benchmark Test
+      - name: Run DLC Live Unit Tests
         run: uv run pytest
+        # - name: Run DLC Live Unit Tests
+      #   run: uv run pytest --cov=dlclive --cov-report=xml --cov-report=term-missing
+
+      # - name: Coverage Report
+      #   uses: codecov/codecov-action@v5
+      #   with:
+      #     files: ./coverage.xml
+      #     flags: ${{ matrix.os }}-py${{ matrix.python-version }}
+      #     name: codecov-${{ matrix.os }}-py${{ matrix.python-version }}
+      # - name: Add coverage to job summary
+      #   if: always()
+      #   shell: bash
+      #   run: |
+      #     uv run python -m coverage report -m > coverage.txt
+      #     echo "## Coverage (dlclive)" >> "$GITHUB_STEP_SUMMARY"
+      #     echo '```' >> "$GITHUB_STEP_SUMMARY"
+      #     cat coverage.txt >> "$GITHUB_STEP_SUMMARY"
+      #     echo '```' >> "$GITHUB_STEP_SUMMARY"
