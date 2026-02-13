@@ -16,7 +16,6 @@ from dlclibrary.dlcmodelzoo.modelzoo_download import download_huggingface_model
 from dlclive.utils import download_file
 from dlclive.benchmark import benchmark_videos
 from dlclive.engine import Engine
-from dlclive.modelzoo.pytorch_model_zoo_export import export_modelzoo_model
 from dlclive.utils import get_available_backends
 
 MODEL_NAME = "superanimal_quadruped"
@@ -31,10 +30,10 @@ TORCH_CONFIG = {
 }
 TF_MODEL_DIR = TMP_DIR / "DLC_Dog_resnet_50_iteration-0_shuffle-0"
 
-MODELS_FOLDER.mkdir(parents=True, exist_ok=True)
-
 
 def run_pytorch_test(video_file: str, display: bool = False):
+    from dlclive.modelzoo.pytorch_model_zoo_export import export_modelzoo_model
+
     if Engine.PYTORCH not in get_available_backends():
         raise NotImplementedError(
             "PyTorch backend is not available. Please ensure PyTorch is installed to run the PyTorch test."
@@ -56,7 +55,7 @@ def run_pytorch_test(video_file: str, display: bool = False):
         model_type="pytorch",
         video_path=video_file,
         display=display,
-        resize=0.5,
+        # resize=0.5,
         pcutoff=0.25,
         pixels=1000,
     )
@@ -69,7 +68,6 @@ def run_tensorflow_test(video_file: str, display: bool = False):
         )
     model_dir = TF_MODEL_DIR
     model_dir.mkdir(parents=True, exist_ok=True)
-    assert model_dir.exists(), f"Model directory {model_dir} does not exist"
     if Path(model_dir / SNAPSHOT_NAME).exists():
         print("Model already downloaded, using cached version")
     else:
@@ -87,7 +85,7 @@ def run_tensorflow_test(video_file: str, display: bool = False):
         model_type="base",
         video_path=video_file,
         display=display,
-        resize=0.5,
+        # resize=0.5,
         pcutoff=0.25,
         pixels=1000,
     )
@@ -102,8 +100,16 @@ def main():
         parser.add_argument(
             "--display",
             action="store_true",
+            default=False,
             help="Run the test and display tracking",
         )
+        parser.add_argument(
+            "--nodisplay",
+            action="store_false",
+            dest="display",
+            help=argparse.SUPPRESS,
+        )
+
         args = parser.parse_args()
         display = args.display
 
@@ -114,6 +120,7 @@ def main():
         print("\nCreating temporary directory...\n")
         tmp_dir = TMP_DIR
         tmp_dir.mkdir(mode=0o775, exist_ok=True)
+        MODELS_FOLDER.mkdir(parents=True, exist_ok=True)
 
         video_file = str(tmp_dir / "dog_clip.avi")
 
@@ -131,18 +138,36 @@ def main():
 
         # assert these things exist so we can give informative error messages
         assert Path(video_file).exists(), f"Missing video file {video_file}"
+        backend_failures = {}
+        any_backend_succeeded = False
 
         for backend in get_available_backends():
-            if backend == Engine.PYTORCH:
-                print("\nRunning PyTorch test...\n")
-                run_pytorch_test(video_file, display=display)
-            elif backend == Engine.TENSORFLOW:
-                print("\nRunning TensorFlow test...\n")
-                run_tensorflow_test(video_file, display=display)
-            else:
+            try:
+                if backend == Engine.PYTORCH:
+                    print("\nRunning PyTorch test...\n")
+                    run_pytorch_test(video_file, display=display)
+                    any_backend_succeeded = True
+                elif backend == Engine.TENSORFLOW:
+                    print("\nRunning TensorFlow test...\n")
+                    run_tensorflow_test(video_file, display=display)
+                    any_backend_succeeded = True
+                else:
+                    warnings.warn(
+                        f"Unrecognized backend {backend}, skipping...", UserWarning
+                    )
+            except Exception as e:
+                backend_failures[backend] = e
                 warnings.warn(
-                    f"Unrecognized backend {backend}, skipping...", UserWarning
+                    f"Error while running test for backend {backend}: {e}. "
+                    "Continuing to test other available backends.",
+                    UserWarning,
                 )
+
+        if not any_backend_succeeded and backend_failures:
+            failure_messages = "; ".join(
+                f"{b}: {exc}" for b, exc in backend_failures.items()
+            )
+            raise RuntimeError(f"All backend tests failed. Details: {failure_messages}")
 
     finally:
         # deleting temporary files

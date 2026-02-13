@@ -29,10 +29,7 @@ from dlclive.engine import Engine
 from dlclive.utils import decode_fourcc
 
 if TYPE_CHECKING:
-    try:
-        import tensorflow
-    except ImportError:
-        tensorflow = None
+    import tensorflow  # type: ignore
 
 
 def download_benchmarking_data(
