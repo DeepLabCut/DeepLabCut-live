@@ -13,9 +13,10 @@ import subprocess
 import sys
 import time
 import warnings
-from pathlib import Path
 from typing import TYPE_CHECKING
-
+from pathlib import Path
+import argparse
+import os
 import colorcet as cc
 import cv2
 import numpy as np
@@ -24,14 +25,16 @@ from PIL import ImageColor
 from pip._internal.operations import freeze
 from tqdm import tqdm
 
+from dlclive import DLCLive
+from dlclive import VERSION
 from dlclive.engine import Engine
 from dlclive.utils import decode_fourcc
 
-from .dlclive import DLCLive
-from .version import VERSION
-
 if TYPE_CHECKING:
-    import tensorflow
+    try:
+        import tensorflow
+    except ImportError:
+        tensorflow = None
 
 
 def download_benchmarking_data(
@@ -56,16 +59,20 @@ def download_benchmarking_data(
         print(f"{zip_path} already exists. Skipping download.")
     else:
 
+
         def show_progress(count, block_size, total_size):
             pbar.update(block_size)
 
         print(f"Downloading the benchmarking data from {url} ...")
         pbar = tqdm(unit="B", total=0, position=0, desc="Downloading")
 
-        filename, _ = urllib.request.urlretrieve(url, filename=zip_path, reporthook=show_progress)
+        filename, _ = urllib.request.urlretrieve(
+            url, filename=zip_path, reporthook=show_progress
+        )
         pbar.close()
 
     print(f"Extracting {zip_path} to {target_dir} ...")
+    with zipfile.ZipFile(zip_path, "r") as zip_ref:
     with zipfile.ZipFile(zip_path, "r") as zip_ref:
         zip_ref.extractall(target_dir)
 
@@ -88,6 +95,7 @@ def benchmark_videos(
     cmap="bmy",
     save_poses=False,
     save_video=False,
+    single_animal=False,
 ):
     """Analyze videos using DeepLabCut-live exported models.
     Analyze multiple videos and/or multiple options for the size of the video
@@ -187,6 +195,7 @@ def benchmark_videos(
 
         for i in range(len(resize)):
             print(f"\nRun {i + 1} / {len(resize)}\n")
+            print(f"\nRun {i + 1} / {len(resize)}\n")
 
             this_inf_times, this_im_size, meta = benchmark(
                 model_path=model_path,
@@ -206,6 +215,7 @@ def benchmark_videos(
                 save_poses=save_poses,
                 save_video=save_video,
                 save_dir=output,
+                single_animal=single_animal,
             )
 
             inf_times.append(this_inf_times)
@@ -271,7 +281,7 @@ def get_system_info() -> dict:
         dev_type = "GPU"
         dev = [torch.cuda.get_device_name(torch.cuda.current_device())]
     else:
-        from cpuinfo import get_cpu_info
+        from cpuinfo import get_cpu_info  # noqa: F401
 
         dev_type = "CPU"
         dev = get_cpu_info()
@@ -289,6 +299,7 @@ def get_system_info() -> dict:
     }
 
 
+def save_inf_times(sys_info, inf_times, im_size, model=None, meta=None, output=None):
 def save_inf_times(sys_info, inf_times, im_size, model=None, meta=None, output=None):
     """Save inference time data collected using :function:`benchmark` with system information to a pickle file.
     This is primarily used through :function:`benchmark_videos`
@@ -358,6 +369,7 @@ def save_inf_times(sys_info, inf_times, im_size, model=None, meta=None, output=N
     return True
 
 
+
 def benchmark(
     model_path: str,
     model_type: str,
@@ -369,6 +381,8 @@ def benchmark(
     single_animal: bool = True,
     cropping: list[int] | None = None,
     dynamic: tuple[bool, float, int] = (False, 0.5, 10),
+    n_frames: int = 1000,
+    print_rate: bool = False,
     n_frames: int = 1000,
     print_rate: bool = False,
     precision: str = "FP32",
@@ -455,7 +469,10 @@ def benchmark(
     if not cap.isOpened():
         print(f"Error: Could not open video file {video_path}")
         return
-    im_size = (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+    im_size = (
+        int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
+        int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+    )
 
     if pixels is not None:
         resize = np.sqrt(pixels / (im_size[0] * im_size[1]))
@@ -512,7 +529,9 @@ def benchmark(
     frame_index = 0
 
     total_n_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
-    n_frames = int(n_frames if (n_frames > 0) and n_frames < total_n_frames else total_n_frames)
+    n_frames = int(
+        n_frames if (n_frames > 0) and n_frames < total_n_frames else total_n_frames
+    )
     iterator = range(n_frames) if print_rate or display else tqdm(range(n_frames))
     for _ in iterator:
         ret, frame = cap.read()
@@ -527,6 +546,7 @@ def benchmark(
         start_time = time.perf_counter()
         if frame_index == 0:
             pose = dlc_live.init_inference(frame)  # Loads model
+            pose = dlc_live.init_inference(frame)  # Loads model
         else:
             pose = dlc_live.get_pose(frame)
 
@@ -535,7 +555,9 @@ def benchmark(
         times.append(inf_time)
 
         if print_rate:
-            print(f"Inference rate = {1 / inf_time:.3f} FPS", end="\r", flush=True)
+            print(
+                "Inference rate = {:.3f} FPS".format(1 / inf_time), end="\r", flush=True
+            )
 
         if save_video:
             draw_pose_and_write(
@@ -548,13 +570,17 @@ def benchmark(
                 display_radius=display_radius,
                 draw_keypoint_names=draw_keypoint_names,
                 vwriter=vwriter,
+                vwriter=vwriter,
             )
 
         frame_index += 1
 
     if print_rate:
-        print(f"Mean inference rate: {np.mean(1 / np.array(times)[1:]):.3f} FPS")
+        print(
+            "Mean inference rate: {:.3f} FPS".format(np.mean(1 / np.array(times)[1:]))
+        )
 
+    metadata = _get_metadata(video_path=video_path, cap=cap, dlc_live=dlc_live)
     metadata = _get_metadata(video_path=video_path, cap=cap, dlc_live=dlc_live)
 
     cap.release()
@@ -570,12 +596,21 @@ def benchmark(
         else:
             individuals = []
         n_individuals = len(individuals) or 1
-        save_poses_to_files(video_path, save_dir, n_individuals, bodyparts, poses, timestamp=timestamp)
+        save_poses_to_files(
+            video_path, save_dir, n_individuals, bodyparts, poses, timestamp=timestamp
+        )
 
     return times, im_size, metadata
 
 
 def setup_video_writer(
+    video_path: str,
+    save_dir: str,
+    timestamp: str,
+    num_keypoints: int,
+    cmap: str,
+    fps: float,
+    frame_size: tuple[int, int],
     video_path: str,
     save_dir: str,
     timestamp: str,
@@ -591,7 +626,9 @@ def setup_video_writer(
     # Define output video path
     video_path = Path(video_path)
     video_name = video_path.stem  # filename without extension
-    output_video_path = Path(save_dir) / f"{video_name}_DLCLIVE_LABELLED_{timestamp}.mp4"
+    output_video_path = (
+        Path(save_dir) / f"{video_name}_DLCLIVE_LABELLED_{timestamp}.mp4"
+    )
 
     # Get video writer setup
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
@@ -603,6 +640,7 @@ def setup_video_writer(
     )
 
     return colors, vwriter
+
 
 
 def draw_pose_and_write(
@@ -621,7 +659,9 @@ def draw_pose_and_write(
 
     if resize is not None and resize != 1.0:
         # Resize the frame
-        frame = cv2.resize(frame, None, fx=resize, fy=resize, interpolation=cv2.INTER_LINEAR)
+        frame = cv2.resize(
+            frame, None, fx=resize, fy=resize, interpolation=cv2.INTER_LINEAR
+        )
 
         # Scale pose coordinates
         pose = pose.copy()
@@ -655,6 +695,7 @@ def draw_pose_and_write(
     vwriter.write(image=frame)
 
 
+def _get_metadata(video_path: str, cap: cv2.VideoCapture, dlc_live: DLCLive):
 def _get_metadata(video_path: str, cap: cv2.VideoCapture, dlc_live: DLCLive):
     try:
         fourcc = decode_fourcc(cap.get(cv2.CAP_PROP_FOURCC))
@@ -692,7 +733,9 @@ def _get_metadata(video_path: str, cap: cv2.VideoCapture, dlc_live: DLCLive):
     return meta
 
 
-def save_poses_to_files(video_path, save_dir, n_individuals, bodyparts, poses, timestamp):
+def save_poses_to_files(
+    video_path, save_dir, n_individuals, bodyparts, poses, timestamp
+):
     """
     Saves the detected keypoint poses from the video to CSV and HDF5 files.
 
@@ -713,7 +756,7 @@ def save_poses_to_files(video_path, save_dir, n_individuals, bodyparts, poses, t
     -------
     None
     """
-    import pandas as pd  # noqa E402
+    import pandas as pd  # noqa: F401
 
     base_filename = Path(video_path).stem
     save_dir = Path(save_dir)
@@ -728,13 +771,15 @@ def save_poses_to_files(video_path, save_dir, n_individuals, bodyparts, poses, t
     else:
         individuals = [f"individual_{i}" for i in range(n_individuals)]
         pdindex = pd.MultiIndex.from_product(
-            [individuals, bodyparts, ["x", "y", "likelihood"]], names=["individuals", "bodyparts", "coords"]
+            [individuals, bodyparts, ["x", "y", "likelihood"]],
+            names=["individuals", "bodyparts", "coords"],
         )
 
     pose_df = pd.DataFrame(flattened_poses, columns=pdindex)
 
     pose_df.to_hdf(h5_save_path, key="df_with_missing", mode="w")
     pose_df.to_csv(csv_save_path, index=False)
+
 
 
 def _create_poses_np_array(n_individuals: int, bodyparts: list, poses: list):
@@ -749,7 +794,9 @@ def _create_poses_np_array(n_individuals: int, bodyparts: list, poses: list):
         if pose.ndim == 2:
             pose = pose[np.newaxis, :, :]
         padded_pose = np.full(pose_target_shape, np.nan)
-        slices = tuple(slice(0, min(pose.shape[i], pose_target_shape[i])) for i in range(3))
+        slices = tuple(
+            slice(0, min(pose.shape[i], pose_target_shape[i])) for i in range(3)
+        )
         padded_pose[slices] = pose[slices]
         poses_array[frame] = padded_pose
 
