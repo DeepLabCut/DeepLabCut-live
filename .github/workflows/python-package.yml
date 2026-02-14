@@ -51,7 +51,7 @@ jobs:
         if: ${{ github.event_name == 'push' }}
         env:
           TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+          TWINE_PASSWORD: ${{ secrets.TWINE_API_KEY }}
         run: |
           python -m build
           ls dist/
