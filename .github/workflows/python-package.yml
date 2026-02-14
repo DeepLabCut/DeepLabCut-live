@@ -44,7 +44,7 @@ jobs:
           pip install twine
 
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Build and publish to PyPI
         if: ${{ github.event_name == 'push' }}
