@@ -41,8 +41,8 @@ jobs:
           pip install --upgrade pip
           pip install wheel
           pip install "packaging>=24.2"
-          pip install twine
           pip install build
+          pip install twine
 
       - name: Checkout code
         uses: actions/checkout@v4
