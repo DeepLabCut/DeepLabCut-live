@@ -1,32 +1,48 @@
-# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
-# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
-name: Python package
+name: Update pypi release
 
 on:
   push:
-    branches: [ main ]
+    tags:
+      - 'v*.*.*'
   pull_request:
-    branches: [ main ]
-
+    branches:
+      - main
+      - public
+    types:
+      - labeled
+      - opened
+      - edited
+      - synchronize
+      - reopened
 
 jobs:
-  build:
-
+  release:
     runs-on: ubuntu-latest
-    strategy:
-      # You can use PyPy versions in python-version. For example, pypy2 and pypy3
-      matrix:
-        python-version: ["3.10"]
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-    # You can test your matrix by printing the current Python version
-    - name: Display Python version
-      run: python -c "import sys; print(sys.version)"
-    #test installation of DLC-core dependencies:
-    - name: Install dependencies
-      run: pip install .
+      - name: Cache dependencies
+        id: pip-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install wheel
+          pip install "packaging>=24.2"
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build and publish to PyPI
+        if: ${{ github.event_name == 'push' }}
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+        run: |
+          make dist
+          ls dist/
+          tar tvf dist/deeplabcut-live-*.tar.gz
+          python3 -m twine upload --verbose dist/*
