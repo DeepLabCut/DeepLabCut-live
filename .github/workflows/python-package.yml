@@ -20,12 +20,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Setup Python
+        id: setup-python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
       - name: Cache dependencies
         id: pip-cache
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip
+          key: ${{ runner.os }}-pip-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('pyproject.toml', 'requirements.txt', 'setup.cfg', 'setup.py') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ steps.setup-python.outputs.python-version }}-
+            ${{ runner.os }}-pip-
 
       - name: Install dependencies
         run: |
