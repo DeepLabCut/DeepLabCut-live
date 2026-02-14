@@ -42,6 +42,7 @@ jobs:
           pip install wheel
           pip install "packaging>=24.2"
           pip install twine
+          pip install build
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -52,7 +53,7 @@ jobs:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
         run: |
-          make dist
+          python -m build
           ls dist/
-          tar tvf dist/deeplabcut-live-*.tar.gz
+          tar tvf dist/deeplabcut_live-*.tar.gz
           python3 -m twine upload --verbose dist/*
