@@ -1,59 +1,51 @@
-name: Update pypi release
+name: Update PyPI release
 
 on:
   push:
     tags:
       - 'v*.*.*'
-  pull_request:
-    branches:
-      - main
-      - public
-    types:
-      - labeled
-      - opened
-      - edited
-      - synchronize
-      - reopened
 
 jobs:
   release:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Setup Python
-        id: setup-python
         uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 
-      - name: Cache dependencies
-        id: pip-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('pyproject.toml', 'requirements.txt', 'setup.cfg', 'setup.py') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-${{ steps.setup-python.outputs.python-version }}-
-            ${{ runner.os }}-pip-
-
-      - name: Install dependencies
+      - name: Install build dependencies
         run: |
           pip install --upgrade pip
-          pip install wheel
-          pip install "packaging>=24.2"
-          pip install build
-          pip install twine
+          pip install build twine "packaging>=24.2"
 
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Install package (for version check)
+        run: pip install .
 
-      - name: Build and publish to PyPI
-        if: ${{ github.event_name == 'push' }}
+      - name: Verify tag matches package version
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PKG_VERSION=$(python - <<EOF
+          from importlib.metadata import version
+          print(version("deeplabcut_live"))
+          EOF
+          )
+          echo "Tag version: $TAG_VERSION"
+          echo "Package version: $PKG_VERSION"
+          test "$TAG_VERSION" = "$PKG_VERSION"
+
+      - name: Build distributions
+        run: |
+          python -m build
+          ls -l dist/
+
+      - name: Publish to PyPI
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.TWINE_API_KEY }}
         run: |
-          python -m build
-          ls dist/
-          tar tvf dist/deeplabcut_live-*.tar.gz
-          python3 -m twine upload --verbose dist/*
+          python -m twine upload --verbose dist/*
