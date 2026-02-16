@@ -3,7 +3,15 @@ name: Update PyPI release
 on:
   push:
     tags:
-      - 'v*.*.*'
+      # v*.*.* does NOT allow post/rc tags
+      # the "matching with version" check ensures that
+      # the tag version matches the package version,
+      # so we can allow more flexible tag formats here
+      - 'v*'
+
+concurrency:
+  group: pypi-release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   release:
@@ -47,5 +55,4 @@ jobs:
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.TWINE_API_KEY }}
-        run: |
-          python -m twine upload --verbose dist/*
+        run: python -m twine upload --verbose dist/*
