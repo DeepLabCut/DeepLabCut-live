@@ -31,8 +31,13 @@ jobs:
           pip install --upgrade pip
           pip install build twine "packaging>=24.2"
 
-      - name: Install package (for version check)
-        run: pip install .
+      - name: Build distributions
+        run: |
+          python -m build
+          ls -l dist/
+
+      - name: Install wheel (for version check)
+        run: pip install dist/*.whl
 
       - name: Verify tag matches package version
         run: |
@@ -45,11 +50,6 @@ jobs:
           echo "Tag version: $TAG_VERSION"
           echo "Package version: $PKG_VERSION"
           test "$TAG_VERSION" = "$PKG_VERSION"
-
-      - name: Build distributions
-        run: |
-          python -m build
-          ls -l dist/
 
       - name: Publish to PyPI
         env:
