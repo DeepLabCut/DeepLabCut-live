@@ -721,7 +721,7 @@ def save_poses_to_files(
     -------
     None
     """
-    import pandas as pd  # noqa: F401
+    import pandas as pd
 
     base_filename = Path(video_path).stem
     save_dir = Path(save_dir)

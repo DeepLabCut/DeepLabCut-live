@@ -172,20 +172,20 @@ def main():
                     UserWarning,
                 )
 
-            print("\n---\nBackend test summary:")
-            for name in ("tensorflow", "pytorch"):
-                status, _ = backend_results.get(name, ("SKIPPED", None))
-                print(f"{name:<11} [{status}]")
-            print("---")
-            for name, (status, error) in backend_results.items():
-                if status == "ERROR":
-                    print(f"{name.capitalize()} error:\n{error}\n")
+        print("\n---\nBackend test summary:")
+        for name in ("tensorflow", "pytorch"):
+            status, _ = backend_results.get(name, ("SKIPPED", None))
+            print(f"{name:<11} [{status}]")
+        print("---")
+        for name, (status, error) in backend_results.items():
+            if status == "ERROR":
+                print(f"{name.capitalize()} error:\n{error}\n")
 
-            if not any_backend_succeeded and backend_failures:
-                failure_messages = "; ".join(
-                    f"{b}: {exc}" for b, exc in backend_failures.items()
-                )
-                raise RuntimeError(f"All backend tests failed. Details: {failure_messages}")
+        if not any_backend_succeeded and backend_failures:
+            failure_messages = "; ".join(
+                f"{b}: {exc}" for b, exc in backend_failures.items()
+            )
+            raise RuntimeError(f"All backend tests failed. Details: {failure_messages}")
 
 
     finally:
