@@ -22,20 +22,20 @@ MODEL_NAME = "superanimal_quadruped"
 SNAPSHOT_NAME = "snapshot-700000.pb"
 TMP_DIR = Path(__file__).parent / "dlc-live-tmp"
 
-MODELS_FOLDER = TMP_DIR / "test_models"
+MODELS_DIR = TMP_DIR / "test_models"
 TORCH_MODEL = "resnet_50"
 TORCH_CONFIG = {
-    "checkpoint": MODELS_FOLDER / f"exported_quadruped_{TORCH_MODEL}.pt",
+    "checkpoint": MODELS_DIR / f"exported_quadruped_{TORCH_MODEL}.pt",
     "super_animal": "superanimal_quadruped",
 }
-TF_MODEL_DIR = TMP_DIR / "DLC_Dog_resnet_50_iteration-0_shuffle-0"
+TF_MODEL_DIR = MODELS_DIR / "DLC_Dog_resnet_50_iteration-0_shuffle-0"
 
 
 def run_pytorch_test(video_file: str, display: bool = False):
     from dlclive.modelzoo.pytorch_model_zoo_export import export_modelzoo_model
 
     if Engine.PYTORCH not in get_available_backends():
-        raise NotImplementedError(
+        raise ImportError(
             "PyTorch backend is not available. Please ensure PyTorch is installed to run the PyTorch test."
         )
     # Download model from the DeepLabCut Model Zoo
@@ -63,7 +63,7 @@ def run_pytorch_test(video_file: str, display: bool = False):
 
 def run_tensorflow_test(video_file: str, display: bool = False):
     if Engine.TENSORFLOW not in get_available_backends():
-        raise NotImplementedError(
+        raise ImportError(
             "TensorFlow backend is not available. Please ensure TensorFlow is installed to run the TensorFlow test."
         )
     model_dir = TF_MODEL_DIR
@@ -92,38 +92,39 @@ def run_tensorflow_test(video_file: str, display: bool = False):
 
 
 def main():
-    tmp_dir = None
+    backend_results = {}
+    
+    parser = argparse.ArgumentParser(
+        description="Test DLC-Live installation by downloading and evaluating a demo DLC project!"
+    )
+    parser.add_argument(
+        "--display",
+        action="store_true",
+        default=False,
+        help="Run the test and display tracking",
+    )
+    parser.add_argument(
+        "--nodisplay",
+        action="store_false",
+        dest="display",
+        help=argparse.SUPPRESS,
+    )
+
+    args = parser.parse_args()
+    display = args.display
+
+    if not display:
+        print("Running without displaying video")
+
+    # make temporary directory
+    print("\nCreating temporary directory...\n")
+    tmp_dir = TMP_DIR
+    tmp_dir.mkdir(mode=0o775, exist_ok=True)
+    MODELS_DIR.mkdir(parents=True, exist_ok=True)
+
+    video_file = str(tmp_dir / "dog_clip.avi")
+
     try:
-        parser = argparse.ArgumentParser(
-            description="Test DLC-Live installation by downloading and evaluating a demo DLC project!"
-        )
-        parser.add_argument(
-            "--display",
-            action="store_true",
-            default=False,
-            help="Run the test and display tracking",
-        )
-        parser.add_argument(
-            "--nodisplay",
-            action="store_false",
-            dest="display",
-            help=argparse.SUPPRESS,
-        )
-
-        args = parser.parse_args()
-        display = args.display
-
-        if not display:
-            print("Running without displaying video")
-
-        # make temporary directory
-        print("\nCreating temporary directory...\n")
-        tmp_dir = TMP_DIR
-        tmp_dir.mkdir(mode=0o775, exist_ok=True)
-        MODELS_FOLDER.mkdir(parents=True, exist_ok=True)
-
-        video_file = str(tmp_dir / "dog_clip.avi")
-
         # download dog test video from github:
         # Use raw.githubusercontent.com for direct file access
         if not Path(video_file).exists():
@@ -147,15 +148,23 @@ def main():
                     print("\nRunning PyTorch test...\n")
                     run_pytorch_test(video_file, display=display)
                     any_backend_succeeded = True
+                    backend_results["pytorch"] = ("SUCCESS", None)
                 elif backend == Engine.TENSORFLOW:
                     print("\nRunning TensorFlow test...\n")
                     run_tensorflow_test(video_file, display=display)
                     any_backend_succeeded = True
+                    backend_results["tensorflow"] = ("SUCCESS", None)
                 else:
                     warnings.warn(
                         f"Unrecognized backend {backend}, skipping...", UserWarning
                     )
             except Exception as e:
+                backend_name = (
+                    "pytorch" if backend == Engine.PYTORCH else
+                    "tensorflow" if backend == Engine.TENSORFLOW else
+                    str(backend)
+                )
+                backend_results[backend_name] = ("ERROR", str(e))
                 backend_failures[backend] = e
                 warnings.warn(
                     f"Error while running test for backend {backend}: {e}. "
@@ -163,17 +172,27 @@ def main():
                     UserWarning,
                 )
 
-        if not any_backend_succeeded and backend_failures:
-            failure_messages = "; ".join(
-                f"{b}: {exc}" for b, exc in backend_failures.items()
-            )
-            raise RuntimeError(f"All backend tests failed. Details: {failure_messages}")
+            print("\n---\nBackend test summary:")
+            for name in ("tensorflow", "pytorch"):
+                status, _ = backend_results.get(name, ("SKIPPED", None))
+                print(f"{name:<11} [{status}]")
+            print("---")
+            for name, (status, error) in backend_results.items():
+                if status == "ERROR":
+                    print(f"{name.capitalize()} error:\n{error}\n")
+
+            if not any_backend_succeeded and backend_failures:
+                failure_messages = "; ".join(
+                    f"{b}: {exc}" for b, exc in backend_failures.items()
+                )
+                raise RuntimeError(f"All backend tests failed. Details: {failure_messages}")
+
 
     finally:
         # deleting temporary files
         print("\n Deleting temporary files...\n")
         try:
-            if tmp_dir is not None and tmp_dir.exists():
+            if tmp_dir.exists():
                 shutil.rmtree(tmp_dir)
         except PermissionError:
             warnings.warn(
