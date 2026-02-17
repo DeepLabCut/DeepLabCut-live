@@ -278,7 +278,7 @@ def get_system_info() -> dict:
         dev_type = "GPU"
         dev = [torch.cuda.get_device_name(torch.cuda.current_device())]
     else:
-        from cpuinfo import get_cpu_info  # noqa: F401
+        from cpuinfo import get_cpu_info
 
         dev_type = "CPU"
         dev = get_cpu_info()
