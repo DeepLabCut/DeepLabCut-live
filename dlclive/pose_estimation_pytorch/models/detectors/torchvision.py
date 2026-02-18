@@ -14,9 +14,10 @@ from __future__ import annotations
 import torch
 import torchvision.models.detection as detection
 
-from dlclive.pose_estimation_pytorch.models.detectors.base import BaseDetector
+from dlclive.pose_estimation_pytorch.models.detectors.base import DETECTORS, BaseDetector
 
 
+@DETECTORS.register_module
 class TorchvisionDetectorAdaptor(BaseDetector):
     """An adaptor for torchvision detectors
 
@@ -26,8 +27,8 @@ class TorchvisionDetectorAdaptor(BaseDetector):
       - fasterrcnn_mobilenet_v3_large_fpn
       - fasterrcnn_resnet50_fpn_v2
 
-    This class should not be used out-of-the-box. Subclasses (such as FasterRCNN or
-    SSDLite) should be used instead.
+    This class can be used directly (e.g. with pre-trained COCO weights) or through its
+    subclasses (FasterRCNN or SSDLite) which adapt the model for DLC's 2-class detection.
 
     The torchvision implementation does not allow to get both predictions and losses
     with a single forward pass. Therefore, during evaluation only bounding box metrics
