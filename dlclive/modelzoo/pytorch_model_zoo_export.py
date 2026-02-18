@@ -32,10 +32,12 @@ def export_modelzoo_model(
         checkpoint: Path = download_super_animal_snapshot(dataset=super_animal, model_name=model_name)
         return torch.load(checkpoint, map_location="cpu", weights_only=True)["model"]
     
+    # Skip downloading the detector weights for humanbody models, as they are not on huggingface
+    skip_detector_download = (detector_name is None) or (super_animal == "superanimal_humanbody")
     export_dict = {
         "config": model_cfg,
         "pose": _load_model_weights(model_name),
-        "detector": _load_model_weights(detector_name) if detector_name is not None else None,
+        "detector": None if skip_detector_download else _load_model_weights(detector_name),
     }
     torch.save(export_dict, export_path)
 

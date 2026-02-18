@@ -16,6 +16,8 @@ import torchvision.models.detection as detection
 
 from dlclive.pose_estimation_pytorch.models.detectors.base import DETECTORS, BaseDetector
 
+SUPPORTED_TORCHVISION_DETECTORS = ["fasterrcnn_mobilenet_v3_large_fpn"]
+
 
 @DETECTORS.register_module
 class TorchvisionDetectorAdaptor(BaseDetector):
