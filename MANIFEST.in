@@ -1,1 +1,3 @@
 include dlclive/check_install/*
+include dlclive/modelzoo/model_configs/*.yaml
+include dlclive/modelzoo/project_configs/*.yaml

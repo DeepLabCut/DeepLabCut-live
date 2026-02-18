@@ -89,7 +89,11 @@ include-package-data = true
 include = ["dlclive*"]
 
 [tool.setuptools.package-data]
-dlclive = ["check_install/*"]
+dlclive = [
+    "check_install/*",
+    "modelzoo/model_configs/*.yaml",
+    "modelzoo/project_configs/*.yaml",
+]
 
 # [tool.ruff]
 # lint.select = ["E", "F", "B", "I", "UP"]
