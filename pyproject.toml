@@ -91,12 +91,18 @@ include = ["dlclive*"]
 [tool.setuptools.package-data]
 dlclive = ["check_install/*"]
 
-# [tool.ruff]
-# lint.select = ["E", "F", "B", "I", "UP"]
-# lint.ignore = ["E741"]
-# target-version = "py310"
-# fix = true
-# line-length = 120
+[tool.ruff]
+lint.select = ["E", "F", "B", "I", "UP"]
+lint.ignore = ["E741"]
+target-version = "py310"
+fix = true
+line-length = 120
 
-# [tool.ruff.lint.pydocstyle]
-# convention = "google"
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.pyproject-fmt]
+max_supported_python = "3.12"
+generate_python_version_classifiers = true
+# Avoid collapsing tables to field.key = value format (less readable)
+table_format = "long"
