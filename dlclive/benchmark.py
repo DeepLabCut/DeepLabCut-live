@@ -24,9 +24,11 @@ from PIL import ImageColor
 from pip._internal.operations import freeze
 from tqdm import tqdm
 
-from dlclive import VERSION, DLCLive
 from dlclive.engine import Engine
 from dlclive.utils import decode_fourcc
+
+from .dlclive import DLCLive
+from .version import VERSION
 
 if TYPE_CHECKING:
     import tensorflow
