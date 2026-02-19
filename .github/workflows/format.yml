@@ -51,5 +51,6 @@ jobs:
       - name: Install pre-commit
         run: pip install pre-commit
 
-      - name: Run pre-commit on changed files
-        run: pre-commit run --files ${{ needs.detect_changes.outputs.changed }}
+      - name: Run pre-commit (CI stage, check-only)
+        run: |
+          pre-commit run --hook-stage manual --files ${{ needs.detect_changes.outputs.changed }} --show-diff-on-failure
