@@ -199,7 +199,6 @@ def main():
                 f"Could not delete temporary directory {str(tmp_dir)} due to a permissions error, but otherwise dlc-live seems to be working fine!"
             )
 
-        print("\nDone!\n")
 
 
 if __name__ == "__main__":
