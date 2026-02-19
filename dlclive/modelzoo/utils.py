@@ -9,6 +9,7 @@ import logging
 from pathlib import Path
 
 from dlclibrary.dlcmodelzoo.modelzoo_download import download_huggingface_model
+from dlclibrary.dlcmodelzoo.modelzoo_download import _load_model_names as huggingface_model_paths
 from ruamel.yaml import YAML
 
 from dlclive.modelzoo.resolve_config import update_config
@@ -50,10 +51,7 @@ def list_available_projects() -> list[str]:
 
 
 def list_available_combinations() -> list[str]:
-    models = list_available_models()
-    projects = list_available_projects()
-    combinations = ["_".join([p, m]) for p in projects for m in models]
-    return combinations
+    return list(huggingface_model_paths.keys())
 
 
 def read_config_as_dict(config_path: str | Path) -> dict:

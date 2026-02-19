@@ -77,14 +77,18 @@ DeepLabCut-live can be installed from PyPI with PyTorch or Tensorflow directly:
    uv pip install deeplabcut-live[pytorch] # or [tf]
    ```
 
+Note: On **Windows**, the `deeplabcut-live[pytorch]` extra will not install the required CUDA-enabled wheels for PyTorch by default. For GPU support, install CUDA-enabled PyTorch first, then install `deeplabcut-live[pytorch]`. 
+
 Please see our instruction manual for more elaborate information on how to install on a [Windows or Linux machine](
 docs/install_desktop.md) or on a [NVIDIA Jetson Development Board](
-docs/install_jetson.md). Note, this code works with PyTorch, TensorFlow 1 or TensorFlow
+docs/install_jetson.md). 
+
+This code works with PyTorch, TensorFlow 1 or TensorFlow
 2 models, but whatever engine you exported your model with, you must import with the 
 same version (i.e., export a PyTorch model, then install PyTorch, export with TF1.13, 
 then use TF1.13 with DlC-Live; export with TF2.3, then use TF2.3 with DLC-live).
 
-Note, you can test your installation by running:
+You can test your installation by running:
 
 ```bash
 dlc-live-test

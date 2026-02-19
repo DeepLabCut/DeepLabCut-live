@@ -14,7 +14,18 @@ def export_modelzoo_model(
     detector_name: str | None = None,
 ) -> None:
     """
+    Export a DeepLabCut Model Zoo model to a single .pt file.
 
+    Downloads the model configuration and weights from HuggingFace, bundles them
+    together (optionally with a detector), and saves as a single torch archive.
+    Skips export if the output file already exists.
+
+    Args:
+        export_path: Arbitrary destination path for the exported .pt file.
+        super_animal: Super animal dataset name (e.g. "superanimal_quadruped").
+        model_name: Pose model architecture name (e.g. "resnet_50").
+        detector_name: Optional detector model name. If provided, detector
+            weights are included in the export.
     """
     Path(export_path).parent.mkdir(parents=True, exist_ok=True)
     if Path(export_path).exists():
