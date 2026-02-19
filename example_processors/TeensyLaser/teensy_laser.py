@@ -5,26 +5,23 @@ DeepLabCut Toolbox (deeplabcut.org)
 Licensed under GNU Lesser General Public License v3.0
 """
 
+import pickle
+import struct
+import time
+
+import serial
 
 from dlclive.processor.processor import Processor
-import serial
-import struct
-import pickle
-import time
 
 
 class TeensyLaser(Processor):
-    def __init__(
-        self, com, baudrate=115200, pulse_freq=50, pulse_width=5, max_stim_dur=0
-    ):
+    def __init__(self, com, baudrate=115200, pulse_freq=50, pulse_width=5, max_stim_dur=0):
 
         super().__init__()
         self.ser = serial.Serial(com, baudrate)
         self.pulse_freq = pulse_freq
         self.pulse_width = pulse_width
-        self.max_stim_dur = (
-            max_stim_dur if (max_stim_dur >= 0) and (max_stim_dur < 65356) else 0
-        )
+        self.max_stim_dur = max_stim_dur if (max_stim_dur >= 0) and (max_stim_dur < 65356) else 0
         self.stim_on = False
         self.stim_on_time = []
         self.stim_off_time = []
@@ -37,12 +34,7 @@ class TeensyLaser(Processor):
 
         # command to activate PWM signal to laser is the letter 'O' followed by three 16 bit integers -- pulse frequency, pulse width, and max stim duration
         if not self.stim_on:
-            self.ser.write(
-                b"O"
-                + struct.pack(
-                    "HHH", self.pulse_freq, self.pulse_width, self.max_stim_dur
-                )
-            )
+            self.ser.write(b"O" + struct.pack("HHH", self.pulse_freq, self.pulse_width, self.max_stim_dur))
             self.stim_on = True
             self.stim_on_time.append(time.time())
 

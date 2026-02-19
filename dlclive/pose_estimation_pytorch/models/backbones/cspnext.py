@@ -16,6 +16,7 @@ Based on the ``mmdetection`` CSPNeXt implementation. For more information, see:
 For more details about this architecture, see `RTMDet: An Empirical Study of Designing
 Real-Time Object Detectors`: https://arxiv.org/abs/1711.05101.
 """
+
 from dataclasses import dataclass
 
 import torch
@@ -99,10 +100,7 @@ class CSPNeXt(HuggingFaceWeightsMixin, BaseBackbone):
     ) -> None:
         super().__init__(stride=32, **kwargs)
         if arch not in self.ARCH:
-            raise ValueError(
-                f"Unknown `CSPNeXT` architecture: {arch}. Must be one of "
-                f"{self.ARCH.keys()}"
-            )
+            raise ValueError(f"Unknown `CSPNeXT` architecture: {arch}. Must be one of {self.ARCH.keys()}")
 
         self.model_name = model_name
         self.layer_configs = self.ARCH[arch]

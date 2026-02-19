@@ -9,6 +9,7 @@
 # Licensed under GNU Lesser General Public License v3.0
 #
 """PyTorch and ONNX runners for DeepLabCut-Live"""
+
 import copy
 from dataclasses import dataclass
 from pathlib import Path
@@ -19,8 +20,8 @@ import torch
 from torchvision.transforms import v2
 
 import dlclive.pose_estimation_pytorch.data as data
-import dlclive.pose_estimation_pytorch.models as models
 import dlclive.pose_estimation_pytorch.dynamic_cropping as dynamic_cropping
+import dlclive.pose_estimation_pytorch.models as models
 from dlclive.core.runner import BaseRunner
 from dlclive.pose_estimation_pytorch.data.image import AutoPadToDivisor
 
@@ -72,12 +73,8 @@ class SkipFrames:
         size = max(w, h)
 
         bboxes = torch.zeros((num_det, 4))
-        bboxes[:, :2] = (
-            torch.min(torch.nan_to_num(pose, size)[..., :2], dim=1)[0] - self.margin
-        )
-        bboxes[:, 2:4] = (
-            torch.max(torch.nan_to_num(pose, 0)[..., :2], dim=1)[0] + self.margin
-        )
+        bboxes[:, :2] = torch.min(torch.nan_to_num(pose, size)[..., :2], dim=1)[0] - self.margin
+        bboxes[:, 2:4] = torch.max(torch.nan_to_num(pose, 0)[..., :2], dim=1)[0] + self.margin
         bboxes = torch.clip(bboxes, min=torch.zeros(4), max=torch.tensor([w, h, w, h]))
         self._detections = dict(boxes=bboxes, scores=torch.ones(num_det))
         self._age += 1
@@ -174,7 +171,7 @@ class PyTorchRunner(BaseRunner):
     @torch.inference_mode()
     def get_pose(self, frame: np.ndarray) -> np.ndarray:
         c, h, w = frame.shape
-        tensor = torch.from_numpy(frame).permute(2, 0, 1) # CHW, still on CPU
+        tensor = torch.from_numpy(frame).permute(2, 0, 1)  # CHW, still on CPU
 
         offsets_and_scales = None
         if self.detector is not None:
@@ -191,7 +188,7 @@ class PyTorchRunner(BaseRunner):
 
             frame_batch, offsets_and_scales = self._prepare_top_down(tensor, detections)
             if len(frame_batch) == 0:
-                offsets_and_scales = [(0, 0), 1]            
+                offsets_and_scales = [(0, 0), 1]
             tensor = frame_batch  # still CHW, batched
 
         if self.dynamic is not None:
@@ -290,14 +287,8 @@ class PyTorchRunner(BaseRunner):
             w, h = crop.get("width", 256), crop.get("height", 256)
             self.dynamic.top_down_crop_size = w, h
 
-        if (
-            self.cfg["method"] == "td"
-            and self.detector is None
-            and self.dynamic is None
-        ):
-            raise ValueError(
-                "Top-down models must either use a detector or a TopDownDynamicCropper."
-            )
+        if self.cfg["method"] == "td" and self.detector is None and self.dynamic is None:
+            raise ValueError("Top-down models must either use a detector or a TopDownDynamicCropper.")
 
         pose_transforms = [v2.ToDtype(torch.float32, scale=True)]
         auto_padding_cfg = self.cfg["data"]["inference"].get("auto_padding", None)
@@ -320,9 +311,7 @@ class PyTorchRunner(BaseRunner):
         raw_data = torch.load(self.path, map_location="cpu", weights_only=True)
         return raw_data["config"]
 
-    def _prepare_top_down(
-        self, frame: torch.Tensor, detections: dict[str, torch.Tensor]
-    ):
+    def _prepare_top_down(self, frame: torch.Tensor, detections: dict[str, torch.Tensor]):
         """Prepares a frame for top-down pose estimation."""
         # Accept unbatched frame (C, H, W) or batched frame (1, C, H, W)
         if frame.dim() == 4:
@@ -371,7 +360,7 @@ class PyTorchRunner(BaseRunner):
             return torch.zeros((0, bodyparts, coords))
 
         poses = []
-        for pose, (offset, scale) in zip(batch_pose, offsets_and_scales):
+        for pose, (offset, scale) in zip(batch_pose, offsets_and_scales, strict=False):
             poses.append(
                 torch.cat(
                     [

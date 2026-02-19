@@ -5,27 +5,31 @@ DeepLabCut Toolbox (deeplabcut.org)
 Licensed under GNU Lesser General Public License v3.0
 """
 
+import argparse
+import os
+import pickle
 import platform
 import subprocess
 import sys
 import time
 import warnings
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import colorcet as cc
 import cv2
 import numpy as np
-import pickle
+import torch
 from PIL import ImageColor
 from pip._internal.operations import freeze
-import torch
 from tqdm import tqdm
 
-from dlclive import DLCLive
-from dlclive import VERSION
-from dlclive import __file__ as dlcfile
+from dlclive import VERSION, DLCLive
 from dlclive.engine import Engine
 from dlclive.utils import decode_fourcc
+
+if TYPE_CHECKING:
+    import tensorflow
 
 
 def download_benchmarking_data(
@@ -49,6 +53,7 @@ def download_benchmarking_data(
     if os.path.exists(zip_path):
         print(f"{zip_path} already exists. Skipping download.")
     else:
+
         def show_progress(count, block_size, total_size):
             pbar.update(block_size)
 
@@ -59,7 +64,7 @@ def download_benchmarking_data(
         pbar.close()
 
     print(f"Extracting {zip_path} to {target_dir} ...")
-    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+    with zipfile.ZipFile(zip_path, "r") as zip_ref:
         zip_ref.extractall(target_dir)
 
 
@@ -168,7 +173,7 @@ def benchmark_videos(
         im_size_out = []
 
         for i in range(len(resize)):
-            print(f"\nRun {i+1} / {len(resize)}\n")
+            print(f"\nRun {i + 1} / {len(resize)}\n")
 
             this_inf_times, this_im_size, meta = benchmark(
                 model_path=model_path,
@@ -243,11 +248,7 @@ def get_system_info() -> dict:
     git_hash = None
     dlc_basedir = os.path.dirname(os.path.dirname(__file__))
     try:
-        git_hash = (
-            subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=dlc_basedir)
-            .decode("utf-8")
-            .strip()
-        )
+        git_hash = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=dlc_basedir).decode("utf-8").strip()
     except subprocess.CalledProcessError:
         # Not installed from git repo, e.g., pypi
         pass
@@ -275,9 +276,7 @@ def get_system_info() -> dict:
     }
 
 
-def save_inf_times(
-    sys_info, inf_times, im_size, model=None, meta=None, output=None
-):
+def save_inf_times(sys_info, inf_times, im_size, model=None, meta=None, output=None):
     """Save inference time data collected using :function:`benchmark` with system information to a pickle file.
     This is primarily used through :function:`benchmark_videos`
 
@@ -314,9 +313,7 @@ def save_inf_times(
             model_type = None
 
     fn_ind = 0
-    base_name = (
-        f"benchmark_{sys_info['host_name']}_{sys_info['device_type']}_{fn_ind}.pickle"
-    )
+    base_name = f"benchmark_{sys_info['host_name']}_{sys_info['device_type']}_{fn_ind}.pickle"
     out_file = os.path.normpath(f"{output}/{base_name}")
     while os.path.isfile(out_file):
         fn_ind += 1
@@ -327,6 +324,7 @@ def save_inf_times(
     stats = zip(
         np.mean(inf_times, 1),
         np.std(inf_times, 1) * 1.0 / np.sqrt(np.shape(inf_times)[1]),
+        strict=False,
     )
 
     data = {
@@ -346,6 +344,7 @@ def save_inf_times(
 
     return True
 
+
 def benchmark(
     model_path: str,
     model_type: str,
@@ -357,8 +356,8 @@ def benchmark(
     single_animal: bool = True,
     cropping: list[int] | None = None,
     dynamic: tuple[bool, float, int] = (False, 0.5, 10),
-    n_frames: int =1000,
-    print_rate: bool=False,
+    n_frames: int = 1000,
+    print_rate: bool = False,
     precision: str = "FP32",
     display: bool = True,
     pcutoff: float = 0.5,
@@ -491,26 +490,20 @@ def benchmark(
     frame_index = 0
 
     total_n_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
-    n_frames = int(
-        n_frames
-        if (n_frames > 0) and n_frames < total_n_frames
-        else total_n_frames
-    )
+    n_frames = int(n_frames if (n_frames > 0) and n_frames < total_n_frames else total_n_frames)
     iterator = range(n_frames) if print_rate or display else tqdm(range(n_frames))
     for _ in iterator:
         ret, frame = cap.read()
         if not ret:
             warnings.warn(
-                (
-                    "Did not complete {:d} frames. "
-                    "There probably were not enough frames in the video {}."
-                ).format(n_frames, video_path)
+                f"Did not complete {n_frames:d} frames. There probably were not enough frames in the video {video_path}.",
+                stacklevel=2,
             )
             break
 
         start_time = time.perf_counter()
         if frame_index == 0:
-            pose = dlc_live.init_inference(frame) # Loads model
+            pose = dlc_live.init_inference(frame)  # Loads model
         else:
             pose = dlc_live.get_pose(frame)
 
@@ -519,7 +512,7 @@ def benchmark(
         times.append(inf_time)
 
         if print_rate:
-            print("Inference rate = {:.3f} FPS".format(1 / inf_time), end="\r", flush=True)
+            print(f"Inference rate = {1 / inf_time:.3f} FPS", end="\r", flush=True)
 
         if save_video:
             draw_pose_and_write(
@@ -531,19 +524,15 @@ def benchmark(
                 pcutoff=pcutoff,
                 display_radius=display_radius,
                 draw_keypoint_names=draw_keypoint_names,
-                vwriter=vwriter
+                vwriter=vwriter,
             )
 
         frame_index += 1
 
     if print_rate:
-        print("Mean inference rate: {:.3f} FPS".format(np.mean(1 / np.array(times)[1:])))
+        print(f"Mean inference rate: {np.mean(1 / np.array(times)[1:]):.3f} FPS")
 
-    metadata = _get_metadata(
-        video_path=video_path,
-        cap=cap,
-        dlc_live=dlc_live
-    )
+    metadata = _get_metadata(video_path=video_path, cap=cap, dlc_live=dlc_live)
 
     cap.release()
 
@@ -564,20 +553,17 @@ def benchmark(
 
 
 def setup_video_writer(
-    video_path:str,
-    save_dir:str,
-    timestamp:str,
-    num_keypoints:int,
-    cmap:str,
-    fps:float,
-    frame_size:tuple[int, int],
+    video_path: str,
+    save_dir: str,
+    timestamp: str,
+    num_keypoints: int,
+    cmap: str,
+    fps: float,
+    frame_size: tuple[int, int],
 ):
     # Set colors and convert to RGB
     cmap_colors = getattr(cc, cmap)
-    colors = [
-        ImageColor.getrgb(color)
-        for color in cmap_colors[:: int(len(cmap_colors) / num_keypoints)]
-    ]
+    colors = [ImageColor.getrgb(color) for color in cmap_colors[:: int(len(cmap_colors) / num_keypoints)]]
 
     # Define output video path
     video_path = Path(video_path)
@@ -594,6 +580,7 @@ def setup_video_writer(
     )
 
     return colors, vwriter
+
 
 def draw_pose_and_write(
     frame: np.ndarray,
@@ -642,15 +629,10 @@ def draw_pose_and_write(
                         lineType=cv2.LINE_AA,
                     )
 
-
     vwriter.write(image=frame)
 
 
-def _get_metadata(
-    video_path: str,
-    cap: cv2.VideoCapture,
-    dlc_live: DLCLive
-):
+def _get_metadata(video_path: str, cap: cv2.VideoCapture, dlc_live: DLCLive):
     try:
         fourcc = decode_fourcc(cap.get(cv2.CAP_PROP_FOURCC))
     except Exception:
@@ -708,7 +690,7 @@ def save_poses_to_files(video_path, save_dir, n_individuals, bodyparts, poses, t
     -------
     None
     """
-    import pandas as pd
+    import pandas as pd  # noqa E402
 
     base_filename = Path(video_path).stem
     save_dir = Path(save_dir)
@@ -719,9 +701,7 @@ def save_poses_to_files(video_path, save_dir, n_individuals, bodyparts, poses, t
     flattened_poses = poses_array.reshape(poses_array.shape[0], -1)
 
     if n_individuals == 1:
-        pdindex = pd.MultiIndex.from_product(
-            [bodyparts, ["x", "y", "likelihood"]], names=["bodyparts", "coords"]
-        )
+        pdindex = pd.MultiIndex.from_product([bodyparts, ["x", "y", "likelihood"]], names=["bodyparts", "coords"])
     else:
         individuals = [f"individual_{i}" for i in range(n_individuals)]
         pdindex = pd.MultiIndex.from_product(
@@ -732,6 +712,7 @@ def save_poses_to_files(video_path, save_dir, n_individuals, bodyparts, poses, t
 
     pose_df.to_hdf(h5_save_path, key="df_with_missing", mode="w")
     pose_df.to_csv(csv_save_path, index=False)
+
 
 def _create_poses_np_array(n_individuals: int, bodyparts: list, poses: list):
     # Create numpy array with poses:
@@ -752,21 +733,13 @@ def _create_poses_np_array(n_individuals: int, bodyparts: list, poses: list):
     return poses_array
 
 
-import argparse
-import os
-
-
 def main():
     """Provides a command line interface to benchmark_videos function."""
-    parser = argparse.ArgumentParser(
-        description="Analyze a video using a DeepLabCut model and visualize keypoints."
-    )
+    parser = argparse.ArgumentParser(description="Analyze a video using a DeepLabCut model and visualize keypoints.")
     parser.add_argument("model_path", type=str, help="Path to the model.")
     parser.add_argument("video_path", type=str, help="Path to the video file.")
     parser.add_argument("model_type", type=str, help="Type of the model (e.g., 'DLC').")
-    parser.add_argument(
-        "device", type=str, help="Device to run the model on (e.g., 'cuda' or 'cpu')."
-    )
+    parser.add_argument("device", type=str, help="Device to run the model on (e.g., 'cuda' or 'cpu').")
     parser.add_argument(
         "-p",
         "--precision",
@@ -774,9 +747,7 @@ def main():
         default="FP32",
         help="Model precision (e.g., 'FP32', 'FP16').",
     )
-    parser.add_argument(
-        "-d", "--display", action="store_true", help="Display keypoints on the video."
-    )
+    parser.add_argument("-d", "--display", action="store_true", help="Display keypoints on the video.")
     parser.add_argument(
         "-c",
         "--pcutoff",
@@ -814,9 +785,7 @@ def main():
         default=[False, 0.5, 10],
         help="Dynamic cropping [flag, pcutoff, margin].",
     )
-    parser.add_argument(
-        "--save-poses", action="store_true", help="Save the keypoint poses to files."
-    )
+    parser.add_argument("--save-poses", action="store_true", help="Save the keypoint poses to files.")
     parser.add_argument(
         "--save-video",
         action="store_true",
@@ -833,9 +802,7 @@ def main():
         action="store_true",
         help="Draw keypoint names on the video.",
     )
-    parser.add_argument(
-        "--cmap", type=str, default="bmy", help="Colormap for keypoints visualization."
-    )
+    parser.add_argument("--cmap", type=str, default="bmy", help="Colormap for keypoints visualization.")
     parser.add_argument(
         "--no-sys-info",
         action="store_false",

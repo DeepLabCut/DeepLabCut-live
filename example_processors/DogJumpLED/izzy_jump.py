@@ -5,17 +5,16 @@ DeepLabCut Toolbox (deeplabcut.org)
 Licensed under GNU Lesser General Public License v3.0
 """
 
-
-import serial
-import struct
 import time
-import numpy as np
 
-from dlclive.processor import Processor, KalmanFilterPredictor
+import numpy as np
+import serial
+
+from dlclive.processor import KalmanFilterPredictor, Processor
 
 
 class IzzyJump(Processor):
-    def __init__(self, com="", lik_thresh=0.5, baudrate=int(9600), **kwargs):
+    def __init__(self, com="", lik_thresh=0.5, baudrate=9600, **kwargs):
 
         super().__init__()
         self.ser = serial.Serial(com, baudrate, timeout=0)
@@ -69,11 +68,7 @@ class IzzyJump(Processor):
         l_elbow = pose[12, 1] if pose[12, 2] > self.lik_thresh else None
         r_elbow = pose[13, 1] if pose[13, 2] > self.lik_thresh else None
         elbows = [l_elbow, r_elbow]
-        this_elbow = (
-            min([e for e in elbows if e is not None])
-            if any([e is not None for e in elbows])
-            else None
-        )
+        this_elbow = min([e for e in elbows if e is not None]) if any([e is not None for e in elbows]) else None
 
         withers = pose[6, 1] if pose[6, 2] > self.lik_thresh else None
 
@@ -107,17 +102,19 @@ class IzzyJumpKF(KalmanFilterPredictor, IzzyJump):
         self,
         com="",
         lik_thresh=0.5,
-        baudrate=int(9600),
+        baudrate=9600,
         adapt=True,
         forward=0.003,
         fps=30,
         nderiv=2,
-        priors=[1, 1],
+        priors=None,
         initial_var=1,
         process_var=1,
         dlc_var=4,
     ):
 
+        if priors is None:
+            priors = [1, 1]
         super().__init__(
             adapt=adapt,
             forward=forward,

@@ -1,6 +1,7 @@
 from enum import Enum
 from pathlib import Path
 
+
 class Engine(Enum):
     TENSORFLOW = "tensorflow"
     PYTORCH = "pytorch"

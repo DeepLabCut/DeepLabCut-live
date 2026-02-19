@@ -1,5 +1,5 @@
-/* 
- * Commands: 
+/*
+ * Commands:
  * O = opto on; command = O, frequency, width, duration
  * X = opto off
  * R = reboot
@@ -14,7 +14,7 @@ unsigned int opto_start = 0,
   opto_dur = 0;
 
 unsigned int read_int16() {
-  union u_tag { 
+  union u_tag {
     byte b[2];
     unsigned int val;
   } par;
@@ -35,13 +35,13 @@ void setup() {
 void loop() {
 
   unsigned int curr_time = millis();
-  
+
   while (Serial.available() > 0) {
 
     unsigned int cmd = Serial.read();
-    
+
     if(cmd == 'O') {
-      
+
       opto_start = curr_time;
       opto_freq = read_int16();
       opto_width = read_int16();
@@ -59,15 +59,15 @@ void loop() {
       Serial.print(opto_dur);
       Serial.print('\n');
       Serial.flush();
-      
+
     } else if(cmd == 'X') {
 
       analogWrite(opto_pin, 0);
-      
+
     } else if(cmd == 'R') {
 
       _reboot_Teensyduino_();
-      
+
     }
   }
 

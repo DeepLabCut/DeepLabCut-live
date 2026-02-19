@@ -2,8 +2,10 @@
 Tests for the Factory module - runner building
 """
 
-import pytest
 from unittest.mock import Mock, patch
+
+import pytest
+
 from dlclive import factory
 
 
@@ -37,9 +39,7 @@ class TestFactory:
         mock_runner = Mock()
         mock_runner_class.return_value = mock_runner
 
-        runner = factory.build_runner(
-            "pytorch", model_path, device="cpu", precision="FP32"
-        )
+        runner = factory.build_runner("pytorch", model_path, device="cpu", precision="FP32")
 
         mock_runner_class.assert_called_once()
         assert runner == mock_runner
@@ -56,9 +56,7 @@ class TestFactory:
             pytest.skip("TensorFlow runner module not available")
 
         # Patch the TensorFlowRunner class in the runner module
-        with patch.object(
-            runner, "TensorFlowRunner", autospec=True
-        ) as mock_runner_class:
+        with patch.object(runner, "TensorFlowRunner", autospec=True) as mock_runner_class:
             mock_runner = Mock()
             mock_runner_class.return_value = mock_runner
 
@@ -70,9 +68,7 @@ class TestFactory:
                 importlib.reload(sys.modules["dlclive.factory"])
             from dlclive import factory as factory_module
 
-            runner_instance = factory_module.build_runner(
-                "base", model_path, precision="FP32"
-            )
+            runner_instance = factory_module.build_runner("base", model_path, precision="FP32")
 
             mock_runner_class.assert_called_once()
             assert runner_instance == mock_runner
@@ -89,9 +85,7 @@ class TestFactory:
             pytest.skip("TensorFlow runner module not available")
 
         # Patch the TensorFlowRunner class in the runner module
-        with patch.object(
-            runner, "TensorFlowRunner", autospec=True
-        ) as mock_runner_class:
+        with patch.object(runner, "TensorFlowRunner", autospec=True) as mock_runner_class:
             mock_runner = Mock()
             mock_runner_class.return_value = mock_runner
 

@@ -3,6 +3,7 @@ Tests for the Engine class - engine detection and model type handling
 """
 
 import pytest
+
 from dlclive.engine import Engine
 
 

@@ -9,6 +9,7 @@
 # Licensed under GNU Lesser General Public License v3.0
 #
 """Helpers for configuration file IO"""
+
 from pathlib import Path
 
 import ruamel.yaml
@@ -22,7 +23,7 @@ def read_yaml(file_path: str | Path) -> dict:
             "was not found. Please check the path to the exported model directory"
         )
 
-    with open(file_path, "r") as f:
+    with open(file_path) as f:
         cfg = ruamel.yaml.YAML(typ="safe", pure=True).load(f)
 
     return cfg

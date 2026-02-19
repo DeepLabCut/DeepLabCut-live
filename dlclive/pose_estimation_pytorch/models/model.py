@@ -48,10 +48,7 @@ class PoseModel(nn.Module):
         self.heads = nn.ModuleDict(heads)
         self.neck = neck
 
-        self._strides = {
-            name: _model_stride(self.backbone.stride, head.stride)
-            for name, head in heads.items()
-        }
+        self._strides = {name: _model_stride(self.backbone.stride, head.stride) for name, head in heads.items()}
 
     def forward(self, x: torch.Tensor) -> dict[str, dict[str, torch.Tensor]]:
         """
@@ -83,13 +80,10 @@ class PoseModel(nn.Module):
         Returns:
             A dictionary containing the predictions of each head group
         """
-        return {
-            name: head.predictor(self._strides[name], outputs[name])
-            for name, head in self.heads.items()
-        }
+        return {name: head.predictor(self._strides[name], outputs[name]) for name, head in self.heads.items()}
 
     @staticmethod
-    def build(cfg: dict) -> "PoseModel":
+    def build(cfg: dict) -> PoseModel:
         """
         Args:
             cfg: The configuration of the model to build.

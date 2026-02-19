@@ -1,107 +1,98 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
+requires = [ "setuptools>=61", "wheel" ]
 
 [project]
 name = "deeplabcut-live"
 version = "1.1.1rc1"
 description = "Class to load exported DeepLabCut networks and perform pose estimation on single frames (from a camera feed)"
 readme = "README.md"
-requires-python = ">=3.10,<3.13"
+keywords = [ "deep-learning", "deeplabcut", "pose-estimation", "real-time" ]
 license = { text = "GNU Affero General Public License v3 or later (AGPLv3+)" }
-authors = [
-    { name = "A. & M. Mathis Labs", email = "admin@deeplabcut.org" }
-]
-
-keywords = ["deeplabcut", "pose-estimation", "real-time", "deep-learning"]
-
+requires-python = ">=3.10,<3.13"
 classifiers = [
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
-    "Operating System :: OS Independent",
+  "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
 ]
-
 dependencies = [
-    "numpy>=1.20,<2",
-    "ruamel.yaml>=0.17.20",
-    "colorcet>=3.0.0",
-    "einops>=0.6.1",
-    "Pillow>=8.0.0",
-    "py-cpuinfo>=5.0.0",
-    "tqdm>=4.62.3",
-    "pandas>=1.0.1,!=1.5.0",
-    "tables>=3.8",
-    "opencv-python-headless>=4.5",
-    "dlclibrary>=0.0.6",
-    "scipy>=1.9",
-    "pip",
+  "colorcet>=3",
+  "dlclibrary>=0.0.6",
+  "einops>=0.6.1",
+  "numpy>=1.20,<2",
+  "opencv-python-headless>=4.5",
+  "pandas>=1.0.1,!=1.5",
+  "pillow>=8",
+  "pip",
+  "py-cpuinfo>=5",
+  "ruamel-yaml>=0.17.20",
+  "scipy>=1.9",
+  "tables>=3.8",
+  "tqdm>=4.62.3",
 ]
-
+[[project.authors]]
+name = "A. & M. Mathis Labs"
+email = "admin@deeplabcut.org"
 [project.optional-dependencies]
 pytorch = [
-    "timm>=1.0.7",
-    "torch>=2.0.0",
-    "torchvision>=0.15",
+  "timm>=1.0.7",
+  "torch>=2",
+  "torchvision>=0.15",
 ]
-
 tf = [
-    "tensorflow>=2.7.0,<2.12; platform_system == 'Linux' and python_version < '3.11'",
-    "tensorflow>=2.12.0; platform_system == 'Linux' and python_version >= '3.11'",
-    "tensorflow-macos>=2.7.0,<2.12; platform_system == 'Darwin' and python_version < '3.11'",
-    "tensorflow-macos>=2.12.0; platform_system == 'Darwin' and python_version >= '3.11'",
-    # Tensorflow is not supported on Windows with Python >= 3.11
-    "tensorflow>=2.7,<=2.10; platform_system == 'Windows' and python_version < '3.11'",
-    "tensorflow-io-gcs-filesystem==0.27; platform_system == 'Windows' and python_version < '3.11'",
-    "tensorflow-io-gcs-filesystem; platform_system != 'Windows'",
+  # Tensorflow is not supported on Windows with Python >= 3.11
+  "tensorflow>=2.7,<=2.10; platform_system=='Windows' and python_version<'3.11'",
+  "tensorflow>=2.7,<2.12; platform_system=='Linux' and python_version<'3.11'",
+  "tensorflow>=2.12; platform_system=='Linux' and python_version>='3.11'",
+  "tensorflow-io-gcs-filesystem; platform_system!='Windows'",
+  "tensorflow-io-gcs-filesystem==0.27; platform_system=='Windows' and python_version<'3.11'",
+  "tensorflow-macos>=2.7,<2.12; platform_system=='Darwin' and python_version<'3.11'",
+  "tensorflow-macos>=2.12; platform_system=='Darwin' and python_version>='3.11'",
 ]
+[project.scripts]
+dlc-live-test = "dlclive.check_install.check_install:main"
+dlc-live-benchmark = "dlclive.benchmark:main"
+[project.urls]
+Homepage = "https://github.com/DeepLabCut/DeepLabCut-live"
+Repository = "https://github.com/DeepLabCut/DeepLabCut-live"
 
 [dependency-groups]
 dev = [
-    "pytest",
-    "pytest-cov",
-    "hypothesis",
-    "black",
-    "ruff",
+  "black",
+  "hypothesis",
+  "pytest",
+  "pytest-cov",
+  "ruff",
 ]
 
 # Keep only for backward compatibility with Poetry
 # (without this section, Poetry assumes the wrong root directory of the project)
 [tool.poetry]
-packages = [
-    { include = "dlclive" }
-]
-
-[project.scripts]
-dlc-live-test = "dlclive.check_install.check_install:main"
-dlc-live-benchmark = "dlclive.benchmark:main"
-
-[project.urls]
-Homepage = "https://github.com/DeepLabCut/DeepLabCut-live"
-Repository = "https://github.com/DeepLabCut/DeepLabCut-live"
+packages = [ { include = "dlclive" } ]
 
 [tool.setuptools]
 include-package-data = true
-
-[tool.setuptools.packages.find]
-include = ["dlclive*"]
-
 [tool.setuptools.package-data]
 dlclive = [
-    "check_install/*",
-    "modelzoo/model_configs/*.yaml",
-    "modelzoo/project_configs/*.yaml",
+  "check_install/*",
+  "modelzoo/model_configs/*.yaml",
+  "modelzoo/project_configs/*.yaml",
 ]
+[tool.setuptools.packages.find]
+include = [ "dlclive*" ]
 
 [tool.ruff]
-lint.select = ["E", "F", "B", "I", "UP"]
-lint.ignore = ["E741"]
 target-version = "py310"
-fix = true
 line-length = 120
-
+fix = true
+[tool.ruff.lint]
+select = [ "E", "F", "B", "I", "UP" ]
+ignore = [ "E741", "E501", "F403", "F401" ]
+[tool.ruff.lint.per-file-ignores]
+"dlclive/__init__.py" = [ "E402" ]
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 

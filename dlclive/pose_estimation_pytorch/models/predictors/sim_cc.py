@@ -13,14 +13,15 @@
 Based on the official ``mmpose`` SimCC codec and RTMCC head implementation. For more
 information, see <https://github.com/open-mmlab/mmpose>.
 """
+
 from __future__ import annotations
 
 import numpy as np
 import torch
 
 from dlclive.pose_estimation_pytorch.models.predictors.base import (
-    BasePredictor,
     PREDICTORS,
+    BasePredictor,
 )
 
 
@@ -58,9 +59,7 @@ class SimCCPredictor(BasePredictor):
             self.sigma = np.array(sigma)
         self.decode_beta = decode_beta
 
-    def forward(
-        self, stride: float, outputs: dict[str, torch.Tensor]
-    ) -> dict[str, torch.Tensor]:
+    def forward(self, stride: float, outputs: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
         x, y = outputs["x"].detach(), outputs["y"].detach()
 
         if self.normalize_outputs:
@@ -70,9 +69,7 @@ class SimCCPredictor(BasePredictor):
             x = x * (self.sigma[0] * self.decode_beta)
             y = y * (self.sigma[1] * self.decode_beta)
 
-        keypoints, scores = get_simcc_maximum(
-            x.cpu().numpy(), y.cpu().numpy(), self.apply_softmax
-        )
+        keypoints, scores = get_simcc_maximum(x.cpu().numpy(), y.cpu().numpy(), self.apply_softmax)
 
         if keypoints.ndim == 2:
             keypoints = keypoints[None, :]

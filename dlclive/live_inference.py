@@ -55,11 +55,7 @@ def get_system_info() -> dict:
     git_hash = None
     dlc_basedir = os.path.dirname(os.path.dirname(__file__))
     try:
-        git_hash = (
-            subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=dlc_basedir)
-            .decode("utf-8")
-            .strip()
-        )
+        git_hash = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=dlc_basedir).decode("utf-8").strip()
     except subprocess.CalledProcessError:
         # Not installed from git repo, e.g., pypi
         pass
@@ -191,16 +187,11 @@ def analyze_live_video(
 
     # Set colors and convert to RGB
     cmap_colors = getattr(cc, cmap)
-    colors = [
-        ImageColor.getrgb(color)
-        for color in cmap_colors[:: int(len(cmap_colors) / num_keypoints)]
-    ]
+    colors = [ImageColor.getrgb(color) for color in cmap_colors[:: int(len(cmap_colors) / num_keypoints)]]
 
     if save_video:
         # Define output video path
-        output_video_path = os.path.join(
-            save_dir, f"{experiment_name}_DLCLIVE_LABELLED_{timestamp}.mp4"
-        )
+        output_video_path = os.path.join(save_dir, f"{experiment_name}_DLCLIVE_LABELLED_{timestamp}.mp4")
 
         # Get video writer setup
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
@@ -279,9 +270,7 @@ def analyze_live_video(
         print(get_system_info())
 
     if save_poses:
-        save_poses_to_files(
-            experiment_name, save_dir, bodyparts, poses, timestamp=timestamp
-        )
+        save_poses_to_files(experiment_name, save_dir, bodyparts, poses, timestamp=timestamp)
 
     return poses, times
 
@@ -312,18 +301,14 @@ def save_poses_to_files(experiment_name, save_dir, bodyparts, poses, timestamp):
     # Save to CSV
     with open(csv_save_path, mode="w", newline="") as file:
         writer = csv.writer(file)
-        header = ["frame"] + [
-            f"{bp}_{axis}" for bp in bodyparts for axis in ["x", "y", "confidence"]
-        ]
+        header = ["frame"] + [f"{bp}_{axis}" for bp in bodyparts for axis in ["x", "y", "confidence"]]
         writer.writerow(header)
         for entry in poses:
             frame_num = entry["frame"]
             pose_data = entry["pose"]["poses"][0][0]
             # Convert tensor data to numeric values
             row = [frame_num] + [
-                item.item() if isinstance(item, torch.Tensor) else item
-                for kp in pose_data
-                for item in kp
+                item.item() if isinstance(item, torch.Tensor) else item for kp in pose_data for item in kp
             ]
             writer.writerow(row)
 

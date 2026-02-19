@@ -15,10 +15,10 @@ from dlclive.pose_estimation_pytorch.models.predictors.base import (
 from dlclive.pose_estimation_pytorch.models.predictors.dekr_predictor import (
     DEKRPredictor,
 )
+from dlclive.pose_estimation_pytorch.models.predictors.paf_predictor import (
+    PartAffinityFieldPredictor,
+)
 from dlclive.pose_estimation_pytorch.models.predictors.sim_cc import SimCCPredictor
 from dlclive.pose_estimation_pytorch.models.predictors.single_predictor import (
     HeatmapPredictor,
-)
-from dlclive.pose_estimation_pytorch.models.predictors.paf_predictor import (
-    PartAffinityFieldPredictor,
 )

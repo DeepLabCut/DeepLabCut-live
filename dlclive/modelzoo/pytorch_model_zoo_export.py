@@ -1,10 +1,10 @@
 import warnings
-from pathlib import Path
 from collections import OrderedDict
+from pathlib import Path
 
 import torch
 
-from dlclive.modelzoo.utils import load_super_animal_config, download_super_animal_snapshot
+from dlclive.modelzoo.utils import download_super_animal_snapshot, load_super_animal_config
 
 
 def export_modelzoo_model(
@@ -29,7 +29,7 @@ def export_modelzoo_model(
     """
     Path(export_path).parent.mkdir(parents=True, exist_ok=True)
     if Path(export_path).exists():
-        warnings.warn(f"Export path {export_path} already exists, skipping export", UserWarning)
+        warnings.warn(f"Export path {export_path} already exists, skipping export", UserWarning, stacklevel=2)
         return
 
     model_cfg = load_super_animal_config(
@@ -42,7 +42,7 @@ def export_modelzoo_model(
         """Download the model weights from huggingface and load them in torch state dict"""
         checkpoint: Path = download_super_animal_snapshot(dataset=super_animal, model_name=model_name)
         return torch.load(checkpoint, map_location="cpu", weights_only=True)["model"]
-    
+
     export_dict = {
         "config": model_cfg,
         "pose": _load_model_weights(model_name),
@@ -52,14 +52,14 @@ def export_modelzoo_model(
 
 
 if __name__ == "__main__":
-    """Example usage"""	
+    """Example usage"""
     from utils import _MODELZOO_PATH
-    
+
     model_name = "resnet_50"
     super_animal = "superanimal_quadruped"
 
     export_modelzoo_model(
-        export_path=_MODELZOO_PATH / 'exported_models' / f'exported_{super_animal}_{model_name}.pt',
+        export_path=_MODELZOO_PATH / "exported_models" / f"exported_{super_animal}_{model_name}.pt",
         super_animal=super_animal,
         model_name=model_name,
     )
