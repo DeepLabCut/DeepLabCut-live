@@ -49,15 +49,12 @@ def run_pytorch_test(video_file: str, display: bool = False):
             f"Failed to export {TORCH_CONFIG['super_animal']} model"
         )
     if TORCH_CONFIG["checkpoint"].stat().st_size == 0:
-        raise ValueError(
-        f"Exported {TORCH_CONFIG['super_animal']} model is empty"
-        )
+        raise ValueError(f"Exported {TORCH_CONFIG['super_animal']} model is empty")
     benchmark_videos(
         model_path=str(TORCH_CONFIG["checkpoint"]),
         model_type="pytorch",
         video_path=video_file,
         display=display,
-        # resize=0.5,
         pcutoff=0.25,
         pixels=1000,
     )
@@ -87,7 +84,6 @@ def run_tensorflow_test(video_file: str, display: bool = False):
         model_type="base",
         video_path=video_file,
         display=display,
-        # resize=0.5,
         pcutoff=0.25,
         pixels=1000,
     )
@@ -95,7 +91,7 @@ def run_tensorflow_test(video_file: str, display: bool = False):
 
 def main():
     backend_results = {}
-    
+
     parser = argparse.ArgumentParser(
         description="Test DLC-Live installation by downloading and evaluating a demo DLC project!"
     )
@@ -163,9 +159,11 @@ def main():
                     )
             except Exception as e:
                 backend_name = (
-                    "pytorch" if backend == Engine.PYTORCH else
-                    "tensorflow" if backend == Engine.TENSORFLOW else
-                    str(backend)
+                    "pytorch"
+                    if backend == Engine.PYTORCH
+                    else "tensorflow"
+                    if backend == Engine.TENSORFLOW
+                    else str(backend)
                 )
                 backend_results[backend_name] = ("ERROR", str(e))
                 backend_failures[backend] = e
@@ -190,7 +188,6 @@ def main():
             )
             raise RuntimeError(f"All backend tests failed. Details: {failure_messages}")
 
-
     finally:
         # deleting temporary files
         print("\n Deleting temporary files...\n")
@@ -201,7 +198,6 @@ def main():
             warnings.warn(
                 f"Could not delete temporary directory {str(tmp_dir)} due to a permissions error."
             )
-
 
 
 if __name__ == "__main__":
