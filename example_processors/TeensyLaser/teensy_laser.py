@@ -32,7 +32,9 @@ class TeensyLaser(Processor):
 
     def turn_stim_on(self):
 
-        # command to activate PWM signal to laser is the letter 'O' followed by three 16 bit integers -- pulse frequency, pulse width, and max stim duration
+        # command to activate PWM signal to laser is
+        # the letter 'O' followed by three 16 bit integers
+        # -- pulse frequency, pulse width, and max stim duration
         if not self.stim_on:
             self.ser.write(b"O" + struct.pack("HHH", self.pulse_freq, self.pulse_width, self.max_stim_dur))
             self.stim_on = True

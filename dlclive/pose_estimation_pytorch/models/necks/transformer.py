@@ -27,7 +27,9 @@ BN_MOMENTUM = 0.1
 class Transformer(BaseNeck):
     """Transformer Neck for pose estimation.
        title={TokenPose: Learning Keypoint Tokens for Human Pose Estimation},
-       author={Yanjie Li and Shoukui Zhang and Zhicheng Wang and Sen Yang and Wankou Yang and Shu-Tao Xia and Erjin Zhou},
+       author={
+           Yanjie Li and Shoukui Zhang and Zhicheng Wang and Sen Yang
+           and Wankou Yang and Shu-Tao Xia and Erjin Zhou},
        booktitle={IEEE/CVF International Conference on Computer Vision (ICCV)},
        year={2021}
 

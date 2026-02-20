@@ -164,7 +164,9 @@ class TensorFlowRunner(BaseRunner):
         elif self.model_type == "tensorrt":
             if trt is None:
                 raise DLCLiveError(
-                    "TensorRT integration requires tensorflow 1.x and the tensorflow.contrib.tensorrt module, which is not available in your current environment."
+                    "TensorRT integration requires tensorflow 1.x "
+                    "and the tensorflow.contrib.tensorrt module,"
+                    " which is not available in your current environment."
                 )
             graph_def = read_graph(model_file)
             graph = finalize_graph(graph_def)

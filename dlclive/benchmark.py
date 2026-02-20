@@ -113,15 +113,19 @@ def benchmark_videos(
     resize : int, optional
         resize factor. Can only use one of resize or pixels. If both are provided, will use pixels. by default None
     pixels : int, optional
-        downsize image to this number of pixels, maintaining aspect ratio. Can only use one of resize or pixels. If both are provided, will use pixels. by default None
+        downsize image to this number of pixels, maintaining aspect ratio. Can only use one of resize or pixels.
+        If both are provided, will use pixels. by default None
     cropping : list of int
         cropping parameters in pixel number: [x1, x2, y1, y2]
     dynamic: triple containing (state, detectiontreshold, margin)
-        If the state is true, then dynamic cropping will be performed. That means that if an object is detected (i.e. any body part > detectiontreshold),
-        then object boundaries are computed according to the smallest/largest x position and smallest/largest y position of all body parts. This  window is
-        expanded by the margin and from then on only the posture within this crop is analyzed (until the object is lost, i.e. <detectiontreshold). The
-        current position is utilized for updating the crop window for the next frame (this is why the margin is important and should be set large
-        enough given the movement of the animal)
+        If the state is true, then dynamic cropping will be performed.
+        That means that if an object is detected (i.e. any body part > detectiontreshold),
+        then object boundaries are computed according to the
+        smallest/largest x position and smallest/largest y position of all body parts.
+        This  window is expanded by the margin and from then on only
+        the posture within this crop is analyzed (until the object is lost, i.e. <detectiontreshold).
+        The current position is utilized for updating the crop window for the next frame
+        (this is why the margin is important and should be set large enough given the movement of the animal)
     n_frames : int, optional
         number of frames to run inference on, by default 1000
     print_rate : bool, optional
@@ -133,11 +137,14 @@ def benchmark_videos(
     display_radius : int, optional
         size (radius in pixels) of keypoint to display
     cmap : str, optional
-        a string indicating the :package:`colorcet` colormap, `options here <https://colorcet.holoviz.org/>`, by default "bmy"
+        a string indicating the :package:`colorcet` colormap, `options here <https://colorcet.holoviz.org/>`,
+        by default "bmy"
     save_poses : bool, optional
-        flag to save poses to an hdf5 file. If True, operates similar to :function:`DeepLabCut.benchmark_videos`, by default False
+        flag to save poses to an hdf5 file. If True, operates similar to :function:`DeepLabCut.benchmark_videos`,
+        by default False
     save_video : bool, optional
-        flag to save a labeled video. If True, operates similar to :function:`DeepLabCut.create_labeled_video`, by default False
+        flag to save a labeled video.
+        If True, operates similar to :function:`DeepLabCut.create_labeled_video`, by default False
 
     Example
     -------
@@ -145,13 +152,17 @@ def benchmark_videos(
     dlclive.benchmark_videos('/my/exported/model', 'my_video.avi', n_frames=10000)
     dlclive.benchmark_videos('/my/exported/model', ['my_video1.avi', 'my_video2.avi'], n_frames=10000)
 
-    Return a vector of inference times, testing full size and resizing images to half the width and height for inference, for two videos
-    dlclive.benchmark_videos('/my/exported/model', ['my_video1.avi', 'my_video2.avi'], n_frames=10000, resize=[1.0, 0.5])
+    Return a vector of inference times, testing full size and resizing images
+    to half the width and height for inference, for two videos
+    dlclive.benchmark_videos(
+        '/my/exported/model', ['my_video1.avi', 'my_video2.avi'], n_frames=10000, resize=[1.0, 0.5]
+        )
 
     Display keypoints to check the accuracy of an exported model
     dlclive.benchmark_videos('/my/exported/model', 'my_video.avi', display=True)
 
-    Analyze a video (save poses to hdf5) and create a labeled video, similar to :function:`DeepLabCut.benchmark_videos` and :function:`create_labeled_video`
+    Analyze a video (save poses to hdf5) and create a labeled video,
+    similar to :function:`DeepLabCut.benchmark_videos` and :function:`create_labeled_video`
     dlclive.benchmark_videos('/my/exported/model', 'my_video.avi', save_poses=True, save_video=True)
     """
     # convert video_paths to list
@@ -371,7 +382,8 @@ def benchmark(
     draw_keypoint_names: bool = False,
 ):
     """
-    Analyzes a video to track keypoints using a DeepLabCut model, and optionally saves the keypoint data and the labeled video.
+    Analyzes a video to track keypoints using a DeepLabCut model,
+    and optionally saves the keypoint data and the labeled video.
 
     Parameters
     ----------
@@ -388,7 +400,8 @@ def benchmark(
     device : str
         Pytorch only. Device to run the model on ('cpu' or 'cuda').
     resize : float or None, optional
-        Resize dimensions for video frames. e.g. if resize = 0.5, the video will be processed in half the original size. If None, no resizing is applied.
+        Resize dimensions for video frames. e.g. if resize = 0.5,
+        the video will be processed in half the original size. If None, no resizing is applied.
     pixels : int, optional
         downsize image to this number of pixels, maintaining aspect ratio.
         Can only use one of resize or pixels. If both are provided, will use pixels.
@@ -397,7 +410,14 @@ def benchmark(
     cropping : list of int or None, optional
         Cropping parameters [x1, x2, y1, y2] in pixels. If None, no cropping is applied.
     dynamic : tuple, optional, default=(False, 0.5, 10) (True/false), p cutoff, margin)
-        Parameters for dynamic cropping. If the state is true, then dynamic cropping will be performed. That means that if an object is detected (i.e. any body part > detectiontreshold), then object boundaries are computed according to the smallest/largest x position and smallest/largest y position of all body parts. This window is expanded by the margin and from then on only the posture within this crop is analyzed (until the object is lost, i.e. <detection treshold). The current position is utilized for updating the crop window for the next frame (this is why the margin is important and should be set large enough given the movement of the animal).
+        Parameters for dynamic cropping.
+        If the state is true, then dynamic cropping will be performed.
+        That means that if an object is detected (i.e. any body part > detectiontreshold),
+        then object boundaries are computed according to the smallest/largest x position and smallest/largest y
+        position of all body parts. This window is expanded by the margin and from then on only the posture within
+        this crop is analyzed (until the object is lost, i.e. <detection treshold).
+        The current position is utilized for updating the crop window for the next frame
+        (this is why the margin is important and should be set large enough given the movement of the animal).
     n_frames : int, optional
         Number of frames to run inference on, by default 1000
     print_rate: bool, optional, default=False
@@ -498,7 +518,8 @@ def benchmark(
         ret, frame = cap.read()
         if not ret:
             warnings.warn(
-                f"Did not complete {n_frames:d} frames. There probably were not enough frames in the video {video_path}.",
+                f"Did not complete {n_frames:d} frames."
+                " There probably were not enough frames in the video {video_path}.",
                 stacklevel=2,
             )
             break

@@ -105,7 +105,8 @@ def analyze_live_video(
     save_video=False,
 ):
     """
-        Analyzes a video to track keypoints using a DeepLabCut model, and optionally saves the keypoint data and the labeled video.
+        Analyzes a video to track keypoints using a DeepLabCut model,
+        and optionally saves the keypoint data and the labeled video.
 
     Parameters
     ----------
@@ -128,11 +129,21 @@ def analyze_live_video(
     display_radius : int, optional, default=5
         Radius of circles drawn for keypoints on video frames.
     resize : tuple of int (width, height) or None, optional
-        Resize dimensions for video frames. e.g. if resize = 0.5, the video will be processed in half the original size. If None, no resizing is applied.
+        Resize dimensions for video frames. e.g. if resize = 0.5,
+        the video will be processed in half the original size.
+        If None, no resizing is applied.
     cropping : list of int or None, optional
         Cropping parameters [x1, x2, y1, y2] in pixels. If None, no cropping is applied.
     dynamic : tuple, optional, default=(False, 0.5, 10) (True/false), p cutoff, margin)
-        Parameters for dynamic cropping. If the state is true, then dynamic cropping will be performed. That means that if an object is detected (i.e. any body part > detectiontreshold), then object boundaries are computed according to the smallest/largest x position and smallest/largest y position of all body parts. This window is expanded by the margin and from then on only the posture within this crop is analyzed (until the object is lost, i.e. <detection treshold). The current position is utilized for updating the crop window for the next frame (this is why the margin is important and should be set large enough given the movement of the animal).
+        Parameters for dynamic cropping.
+        If the state is true, then dynamic cropping will be performed.
+        That means that if an object is detected (i.e. any body part > detectiontreshold),
+        then object boundaries are computed according to the
+        smallest/largest x position and smallest/largest y position of all body parts.
+        This window is expanded by the margin and from then on only the posture within
+        this crop is analyzed (until the object is lost, i.e. <detection treshold).
+        The current position is utilized for updating the crop window for the next frame
+        (this is why the margin is important and should be set large enough given the movement of the animal).
     save_poses : bool, optional, default=False
         Whether to save the detected poses to CSV and HDF5 files.
     save_dir : str, optional, default='model_predictions'

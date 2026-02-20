@@ -90,7 +90,7 @@ line-length = 120
 fix = true
 [tool.ruff.lint]
 select = [ "E", "F", "B", "I", "UP" ]
-ignore = [ "E741", "E501", "F403", "F401" ]
+ignore = [ "E741", "F403", "F401" ]
 [tool.ruff.lint.per-file-ignores]
 "dlclive/__init__.py" = [ "E402" ]
 [tool.ruff.lint.pydocstyle]

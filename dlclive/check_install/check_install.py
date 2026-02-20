@@ -85,7 +85,7 @@ def main():
         shutil.rmtree(tmp_dir)
     except PermissionError:
         warnings.warn(
-            f"Could not delete temporary directory {str(tmp_dir)} due to a permissions error, but otherwise dlc-live seems to be working fine!",
+            f"Could not delete temporary directory {str(tmp_dir)} due to a permissions error.",
             stacklevel=2,
         )
 
