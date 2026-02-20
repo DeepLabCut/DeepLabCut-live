@@ -5,10 +5,10 @@ DeepLabCut Toolbox (deeplabcut.org)
 Licensed under GNU Lesser General Public License v3.0
 """
 
-import warnings
-from pathlib import Path
 import urllib.error
 import urllib.request
+import warnings
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -72,6 +72,7 @@ def img_to_rgb(frame: np.ndarray) -> np.ndarray:
         warnings.warn(
             f"Image has {frame.ndim} dimensions. Must be 2 or 3 dimensions to convert to RGB",
             DLCLiveWarning,
+            stacklevel=2,
         )
         return frame
 
@@ -140,9 +141,7 @@ def _img_as_ubyte_np(frame: np.ndarray) -> np.ndarray:
         return frame.astype(np.uint8)
 
     else:
-        raise TypeError(
-            "image of type {} could not be converted to ubyte".format(im_type)
-        )
+        raise TypeError(f"image of type {im_type} could not be converted to ubyte")
 
 
 def decode_fourcc(cc):
@@ -162,7 +161,7 @@ def decode_fourcc(cc):
     """
     try:
         decoded = "".join([chr((int(cc) >> 8 * i) & 0xFF) for i in range(4)])
-    except:
+    except Exception:
         decoded = ""
 
     return decoded
@@ -171,77 +170,80 @@ def decode_fourcc(cc):
 def get_available_backends() -> list[Engine]:
     """
     Check which backends (TensorFlow or PyTorch) are installed.
-    
+
     Returns:
-        list[str]: List of installed backends. Possible values: ["tensorflow"], ["pytorch"], 
+        list[str]: List of installed backends. Possible values: ["tensorflow"], ["pytorch"],
                    or ["tensorflow", "pytorch"]. Returns an empty list if neither is installed.
-    
+
     Warns:
         DLCLiveWarning: If neither TensorFlow nor PyTorch is installed.
     """
     backends = []
-    
+
     try:
         import tensorflow
+
         backends.append(Engine.TENSORFLOW)
     except (ImportError, ModuleNotFoundError):
         pass
-    
+
     try:
         import torch
+
         backends.append(Engine.PYTORCH)
     except (ImportError, ModuleNotFoundError):
         pass
-    
+
     if not backends:
         warnings.warn(
             "Neither TensorFlow nor PyTorch is installed. One of these is required to use DLCLive!"
             "Install with: pip install deeplabcut-live[tf] or pip install deeplabcut-live[pytorch]",
             DLCLiveWarning,
+            stacklevel=2,
         )
-    
+
     return backends
 
 
 def download_file(url: str, filepath: str, chunk_size: int = 8192) -> None:
     """
     Download a file from a URL with progress bar and error handling.
-    
+
     Args:
         url: URL to download from
         filepath: Local path to save the file
         chunk_size: Size of chunks to read (default: 8192 bytes)
-    
+
     Raises:
         urllib.error.URLError: If the download fails
         IOError: If the file cannot be written
     """
     filepath = Path(filepath)
-    
+
     # Check if file already exists
     if filepath.exists():
         print(f"File already exists at {filepath}, skipping download.")
         return
-    
+
     # Ensure parent directory exists
     filepath.parent.mkdir(parents=True, exist_ok=True)
-    
+
     try:
         # Open the URL
         with urllib.request.urlopen(url) as response:
             # Get file size if available
-            total_size = int(response.headers.get('Content-Length', 0))
-            
+            total_size = int(response.headers.get("Content-Length", 0))
+
             # Create progress bar if file size is known
             if total_size > 0:
-                pbar = tqdm(total=total_size, unit='B', unit_scale=True, desc="Downloading")
+                pbar = tqdm(total=total_size, unit="B", unit_scale=True, desc="Downloading")
             else:
                 pbar = None
                 print("Downloading...")
-            
+
             # Download and write file
             downloaded = 0
-            with open(filepath, 'wb') as f:
+            with open(filepath, "wb") as f:
                 while True:
                     chunk = response.read(chunk_size)
                     if not chunk:
@@ -250,19 +252,19 @@ def download_file(url: str, filepath: str, chunk_size: int = 8192) -> None:
                     downloaded += len(chunk)
                     if pbar:
                         pbar.update(len(chunk))
-            
+
             if pbar:
                 pbar.close()
-            
+
             # Verify file was written
             if not filepath.exists() or filepath.stat().st_size == 0:
-                raise IOError(f"Downloaded file is empty or was not written to {filepath}")
-            
+                raise OSError(f"Downloaded file is empty or was not written to {filepath}")
+
             print(f"Successfully downloaded to {filepath}")
-            
+
     except urllib.error.HTTPError as e:
-        raise urllib.error.URLError(f"HTTP error {e.code}: {e.reason} when downloading from {url}")
+        raise urllib.error.URLError(f"HTTP error {e.code}: {e.reason} when downloading from {url}") from e
     except urllib.error.URLError as e:
-        raise urllib.error.URLError(f"Failed to download from {url}: {e.reason}")
-    except IOError as e:
-        raise IOError(f"Failed to write file to {filepath}: {e}")
+        raise urllib.error.URLError(f"Failed to download from {url}: {e.reason}") from e
+    except OSError as e:
+        raise OSError(f"Failed to write file to {filepath}") from e

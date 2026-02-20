@@ -3,6 +3,7 @@ Tests for Processor base class
 """
 
 import numpy as np
+
 from dlclive.processor import Processor
 
 

@@ -16,12 +16,12 @@ pipeline for real-time applications that has minimal (software) dependencies. Th
 is as easy to install as possible (in particular, on atypical systems like [
 NVIDIA Jetson boards](https://developer.nvidia.com/buy-jetson)).
 
-If you've used DeepLabCut-Live with TensorFlow models and want to try the PyTorch 
+If you've used DeepLabCut-Live with TensorFlow models and want to try the PyTorch
 version, take a look at [_Switching from TensorFlow to PyTorch_](
 #Switching-from-TensorFlow-to-PyTorch)
 
-**Performance of TensorFlow models:** If you would like to see estimates on how your 
-model should perform given different video sizes, neural network type, and hardware, 
+**Performance of TensorFlow models:** If you would like to see estimates on how your
+model should perform given different video sizes, neural network type, and hardware,
 please see: [deeplabcut.github.io/DLC-inferencespeed-benchmark/
 ](https://deeplabcut.github.io/DLC-inferencespeed-benchmark/). **We're working on
 getting these benchmarks for PyTorch architectures as well.**
@@ -29,13 +29,13 @@ getting these benchmarks for PyTorch architectures as well.**
 If you have different hardware, please consider [submitting your results too](
 https://github.com/DeepLabCut/DLC-inferencespeed-benchmark)!
 
-**What this SDK provides:** This package provides a `DLCLive` class which enables pose 
+**What this SDK provides:** This package provides a `DLCLive` class which enables pose
 estimation online to provide feedback. This object loads and prepares a DeepLabCut
 network for inference, and will return the predicted pose for single images.
 
-To perform processing on poses (such as predicting the future pose of an animal given 
-its current pose, or to trigger external hardware like send TTL pulses to a laser for 
-optogenetic stimulation), this object takes in a `Processor` object. Processor objects 
+To perform processing on poses (such as predicting the future pose of an animal given
+its current pose, or to trigger external hardware like send TTL pulses to a laser for
+optogenetic stimulation), this object takes in a `Processor` object. Processor objects
 must contain two methods: `process` and `save`.
 
 - The `process` method takes in a pose, performs some processing, and returns processed
@@ -44,20 +44,20 @@ pose.
 
 For more details and examples, see documentation [here](dlclive/processor/README.md).
 
-**🔥🔥🔥🔥🔥 Note :: alone, this object does not record video or capture images from a 
+**🔥🔥🔥🔥🔥 Note :: alone, this object does not record video or capture images from a
 camera. This must be done separately, i.e. see our [DeepLabCut-live GUI](
 https://github.com/DeepLabCut/DeepLabCut-live-GUI).🔥🔥🔥🔥🔥**
 
 ### News!
 
 - **WIP 2025**: DeepLabCut-Live is implemented for models trained with the PyTorch engine!
-- March 2022: DeepLabCut-Live! 1.0.2 supports poetry installation `poetry install 
+- March 2022: DeepLabCut-Live! 1.0.2 supports poetry installation `poetry install
 deeplabcut-live`, thanks to PR #60.
-- March 2021: DeepLabCut-Live! [**version 1.0** is released](https://pypi.org/project/deeplabcut-live/), with support for 
+- March 2021: DeepLabCut-Live! [**version 1.0** is released](https://pypi.org/project/deeplabcut-live/), with support for
 tensorflow 1 and tensorflow 2!
 - Feb 2021: DeepLabCut-Live! was featured in **Nature Methods**:
 ["Real-time behavioral analysis"](https://www.nature.com/articles/s41592-021-01072-z)
-- Jan 2021: full **eLife** paper is published: ["Real-time, low-latency closed-loop 
+- Jan 2021: full **eLife** paper is published: ["Real-time, low-latency closed-loop
 feedback using markerless posture tracking"](https://elifesciences.org/articles/61909)
 - Dec 2020: we talked to **RTS Suisse Radio** about DLC-Live!: ["Capture animal
 movements in real time"](
@@ -65,27 +65,27 @@ https://www.rts.ch/play/radio/cqfd/audio/capturer-les-mouvements-des-animaux-en-
 
 ### Installation
 
-DeepLabCut-live can be installed from PyPI with PyTorch or Tensorflow directly: 
+DeepLabCut-live can be installed from PyPI with PyTorch or Tensorflow directly:
    ```bash
    # With PyTorch (recommended)
    pip install deeplabcut-live[pytorch]
-   
+
    # Or with TensorFlow
    pip install deeplabcut-live[tf]
-   
+
    # Or using uv
    uv pip install deeplabcut-live[pytorch] # or [tf]
    ```
 
-Note: On **Windows**, the `deeplabcut-live[pytorch]` extra will not install the required CUDA-enabled wheels for PyTorch by default. For GPU support, install CUDA-enabled PyTorch first, then install `deeplabcut-live[pytorch]`. 
+Note: On **Windows**, the `deeplabcut-live[pytorch]` extra will not install the required CUDA-enabled wheels for PyTorch by default. For GPU support, install CUDA-enabled PyTorch first, then install `deeplabcut-live[pytorch]`.
 
 Please see our instruction manual for more elaborate information on how to install on a [Windows or Linux machine](
 docs/install_desktop.md) or on a [NVIDIA Jetson Development Board](
-docs/install_jetson.md). 
+docs/install_jetson.md).
 
 This code works with PyTorch, TensorFlow 1 or TensorFlow
-2 models, but whatever engine you exported your model with, you must import with the 
-same version (i.e., export a PyTorch model, then install PyTorch, export with TF1.13, 
+2 models, but whatever engine you exported your model with, you must import with the
+same version (i.e., export a PyTorch model, then install PyTorch, export with TF1.13,
 then use TF1.13 with DlC-Live; export with TF2.3, then use TF2.3 with DLC-live).
 
 You can test your installation by running:
@@ -139,7 +139,7 @@ dlc_live.get_pose(<your image>)
   - `index 0` = use dynamic cropping, bool
   - `index 1` = detection threshold, float
   - `index 2` = margin (in pixels) around identified points, int
-- `resize` = float, optional; factor by which to resize image (resize=0.5 downsizes 
+- `resize` = float, optional; factor by which to resize image (resize=0.5 downsizes
   both width and height of image by half). Can be used to downsize large images for
   faster inference
 - `processor` = dlc pose processor object, optional
@@ -148,43 +148,43 @@ dlc_live.get_pose(<your image>)
 
 `DLCLive` **inputs:**
 
-- `<path to exported model>` = 
-  - For TensorFlow models: path to the folder that has the `.pb` files that you 
+- `<path to exported model>` =
+  - For TensorFlow models: path to the folder that has the `.pb` files that you
   acquire after running `deeplabcut.export_model`
-  - For PyTorch models: path to the `.pt` file that is generated after running 
+  - For PyTorch models: path to the `.pt` file that is generated after running
   `deeplabcut.export_model`
 - `<your image>` = is a numpy array of each frame
 
 #### DLCLive - PyTorch Specific Guide
 
-This guide is for users who trained a model with the PyTorch engine with 
+This guide is for users who trained a model with the PyTorch engine with
 `DeepLabCut 3.0`.
 
 Once you've trained your model in [DeepLabCut](https://github.com/DeepLabCut/DeepLabCut)
-and you are happy with its performance, you can export the model to be used for live 
+and you are happy with its performance, you can export the model to be used for live
 inference with DLCLive!
 
 ### Switching from TensorFlow to PyTorch
 
-This section is for users who **have already used DeepLabCut-Live** with 
+This section is for users who **have already used DeepLabCut-Live** with
 TensorFlow models (through DeepLabCut 1.X or 2.X) and want to switch to using the
 PyTorch Engine. Some quick notes:
 
 - You may need to adapt your code slightly when creating the DLCLive instance.
-- Processors that were created for TensorFlow models will function the same way with 
-PyTorch models. As multi-animal models can be used with PyTorch, the shape of the `pose` 
+- Processors that were created for TensorFlow models will function the same way with
+PyTorch models. As multi-animal models can be used with PyTorch, the shape of the `pose`
 array given to the processor may be `(num_individuals, num_keypoints, 3)`. Just call
 `DLCLive(..., single_animal=True)` and it will work.
 
 ### Benchmarking/Analyzing your exported DeepLabCut models
 
-DeepLabCut-live offers some analysis tools that allow users to perform the following 
+DeepLabCut-live offers some analysis tools that allow users to perform the following
 operations on videos, from python or from the command line:
 
 #### Test inference speed across a range of image sizes
 
-Downsizing images can be done by specifying the `resize` or `pixels` parameter. Using 
-the `pixels` parameter will resize images to the desired number of `pixels`, without 
+Downsizing images can be done by specifying the `resize` or `pixels` parameter. Using
+the `pixels` parameter will resize images to the desired number of `pixels`, without
 changing the aspect ratio. Results will be saved (along with system info) to a pickle
 file if you specify an output directory.
 
@@ -192,7 +192,7 @@ Inside a **python** shell or script, you can run:
 
 ```python
 dlclive.benchmark_videos(
-    "/path/to/exported/model", 
+    "/path/to/exported/model",
     ["/path/to/video1", "/path/to/video2"],
     output="/path/to/output",
     resize=[1.0, 0.75, '0.5'],
@@ -211,7 +211,7 @@ Inside a **python** shell or script, you can run:
 
 ```python
 dlclive.benchmark_videos(
-    "/path/to/exported/model", 
+    "/path/to/exported/model",
     "/path/to/video",
     resize=0.5,
     display=True,
@@ -229,7 +229,7 @@ dlc-live-benchmark /path/to/exported/model /path/to/video -r 0.5 --display --pcu
 
 #### Analyze and create a labeled video using the exported model and desired resize parameters.
 
-This option functions similar to `deeplabcut.benchmark_videos` and 
+This option functions similar to `deeplabcut.benchmark_videos` and
 `deeplabcut.create_labeled_video` (note, this is slow and only for testing purposes).
 
 Inside a **python** shell or script, you can run:
@@ -255,9 +255,9 @@ dlc-live-benchmark /path/to/exported/model /path/to/video -r 0.5 --pcutoff 0.5 -
 
 ## License:
 
-This project is licensed under the GNU AGPLv3. Note that the software is provided "as 
-is", without warranty of any kind, express or implied. If you use the code or data, we 
-ask that you please cite us! This software is available for licensing via the EPFL 
+This project is licensed under the GNU AGPLv3. Note that the software is provided "as
+is", without warranty of any kind, express or implied. If you use the code or data, we
+ask that you please cite us! This software is available for licensing via the EPFL
 Technology Transfer Office (https://tto.epfl.ch/, info.tto@epfl.ch).
 
 ## Community Support, Developers, & Help:
@@ -270,9 +270,9 @@ https://github.com/DeepLabCut/DeepLabCut/blob/master/CONTRIBUTING.md), which is 
 at the main repository of DeepLabCut.
 - We are a community partner on the [![Image.sc forum](https://img.shields.io/badge/dynamic/json.svg?label=forum&amp;url=https%3A%2F%2Fforum.image.sc%2Ftags%2Fdeeplabcut.json&amp;query=%24.topic_list.tags.0.topic_count&amp;colorB=brightgreen&amp;&amp;suffix=%20topics&amp;logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAABPklEQVR42m3SyyqFURTA8Y2BER0TDyExZ+aSPIKUlPIITFzKeQWXwhBlQrmFgUzMMFLKZeguBu5y+//17dP3nc5vuPdee6299gohUYYaDGOyyACq4JmQVoFujOMR77hNfOAGM+hBOQqB9TjHD36xhAa04RCuuXeKOvwHVWIKL9jCK2bRiV284QgL8MwEjAneeo9VNOEaBhzALGtoRy02cIcWhE34jj5YxgW+E5Z4iTPkMYpPLCNY3hdOYEfNbKYdmNngZ1jyEzw7h7AIb3fRTQ95OAZ6yQpGYHMMtOTgouktYwxuXsHgWLLl+4x++Kx1FJrjLTagA77bTPvYgw1rRqY56e+w7GNYsqX6JfPwi7aR+Y5SA+BXtKIRfkfJAYgj14tpOF6+I46c4/cAM3UhM3JxyKsxiOIhH0IO6SH/A1Kb1WBeUjbkAAAAAElFTkSuQmCC)](https://forum.image.sc/tags/deeplabcut). Please post help and
 support questions on the forum with the tag DeepLabCut. Check out their mission
-statement [Scientific Community Image Forum: A discussion forum for scientific image 
+statement [Scientific Community Image Forum: A discussion forum for scientific image
 software](https://journals.plos.org/plosbiology/article?id=10.1371/journal.pbio.3000340).
-- If you encounter a previously unreported bug/code issue, please post here (we 
+- If you encounter a previously unreported bug/code issue, please post here (we
 encourage you to search issues first): [github.com/DeepLabCut/DeepLabCut-live/issues](
 https://github.com/DeepLabCut/DeepLabCut-live/issues)
 - For quick discussions here: [![Gitter](
@@ -281,7 +281,7 @@ https://gitter.im/DeepLabCut/community?utm_source=badge&utm_medium=badge&utm_cam
 
 ### Reference:
 
-If you utilize our tool, please [cite Kane et al, eLife 2020](https://elifesciences.org/articles/61909). The preprint is 
+If you utilize our tool, please [cite Kane et al, eLife 2020](https://elifesciences.org/articles/61909). The preprint is
 available here: https://www.biorxiv.org/content/10.1101/2020.08.04.236422v2
 
 ```

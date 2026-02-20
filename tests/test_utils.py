@@ -2,9 +2,11 @@
 Tests for utility functions - image processing and file operations
 """
 
-import pytest
+from unittest.mock import MagicMock, patch
+
 import numpy as np
-from unittest.mock import patch, MagicMock
+import pytest
+
 from dlclive import utils
 
 

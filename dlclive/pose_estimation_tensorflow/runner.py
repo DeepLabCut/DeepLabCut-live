@@ -9,6 +9,7 @@
 # Licensed under GNU Lesser General Public License v3.0
 #
 """TensorFlow runners for DeepLabCut-Live"""
+
 import glob
 import os
 from pathlib import Path
@@ -32,6 +33,12 @@ from dlclive.pose_estimation_tensorflow.pose import (
     extract_cnn_output,
     multi_pose_predict,
 )
+
+try:
+    # TensorFlow 1.x TensorRT integration
+    from tensorflow.contrib import tensorrt as trt  # type: ignore[attr-defined]
+except Exception:
+    trt = None
 
 
 class TensorFlowRunner(BaseRunner):
@@ -62,9 +69,7 @@ class TensorFlowRunner(BaseRunner):
 
     def get_pose(self, frame: np.ndarray, **kwargs) -> np.ndarray:
         if self.model_type in ["base", "tensorrt"]:
-            pose_output = self.sess.run(
-                self.outputs, feed_dict={self.inputs: np.expand_dims(frame, axis=0)}
-            )
+            pose_output = self.sess.run(self.outputs, feed_dict={self.inputs: np.expand_dims(frame, axis=0)})
 
         elif self.model_type == "tflite":
             self.tflite_interpreter.set_tensor(
@@ -79,14 +84,11 @@ class TensorFlowRunner(BaseRunner):
                     self.tflite_interpreter.get_tensor(self.outputs[1]["index"]),
                 ]
             else:
-                pose_output = self.tflite_interpreter.get_tensor(
-                    self.outputs[0]["index"]
-                )
+                pose_output = self.tflite_interpreter.get_tensor(self.outputs[0]["index"])
 
         else:
             raise DLCLiveError(
-                f"model_type={self.model_type} is not supported. model_type must be "
-                f"'base', 'tflite', or 'tensorrt'"
+                f"model_type={self.model_type} is not supported. model_type must be 'base', 'tflite', or 'tensorrt'"
             )
 
         # check if using TFGPUinference flag
@@ -95,9 +97,7 @@ class TensorFlowRunner(BaseRunner):
             scmap, locref = extract_cnn_output(pose_output, self.cfg)
             num_outputs = self.cfg.get("num_outputs", 1)
             if num_outputs > 1:
-                pose = multi_pose_predict(
-                    scmap, locref, self.cfg["stride"], num_outputs
-                )
+                pose = multi_pose_predict(scmap, locref, self.cfg["stride"], num_outputs)
             else:
                 pose = argmax_pose_predict(scmap, locref, self.cfg["stride"])
         else:
@@ -116,9 +116,7 @@ class TensorFlowRunner(BaseRunner):
         if self.model_type == "base":
             graph_def = read_graph(model_file)
             graph = finalize_graph(graph_def)
-            self.sess, self.inputs, self.outputs = extract_graph(
-                graph, tf_config=self.tf_config
-            )
+            self.sess, self.inputs, self.outputs = extract_graph(graph, tf_config=self.tf_config)
 
         elif self.model_type == "tflite":
             ###
@@ -150,15 +148,13 @@ class TensorFlowRunner(BaseRunner):
 
             try:
                 tflite_model = converter.convert()
-            except Exception:
+            except Exception as e:
                 raise DLCLiveError(
-                    (
-                        "This model cannot be converted to tensorflow lite format. "
-                        "To use tensorflow lite for live inference, "
-                        "make sure to set TFGPUinference=False "
-                        "when exporting the model from DeepLabCut"
-                    )
-                )
+                    "This model cannot be converted to tensorflow lite format. "
+                    "To use tensorflow lite for live inference, "
+                    "make sure to set TFGPUinference=False "
+                    "when exporting the model from DeepLabCut"
+                ) from e
 
             self.tflite_interpreter = tf.lite.Interpreter(model_content=tflite_model)
             self.tflite_interpreter.allocate_tensors()
@@ -166,6 +162,12 @@ class TensorFlowRunner(BaseRunner):
             self.outputs = self.tflite_interpreter.get_output_details()
 
         elif self.model_type == "tensorrt":
+            if trt is None:
+                raise DLCLiveError(
+                    "TensorRT integration requires tensorflow 1.x "
+                    "and the tensorflow.contrib.tensorrt module,"
+                    " which is not available in your current environment."
+                )
             graph_def = read_graph(model_file)
             graph = finalize_graph(graph_def)
             output_tensors = get_output_tensors(graph)
@@ -188,14 +190,11 @@ class TensorFlowRunner(BaseRunner):
                 )
 
             graph = finalize_graph(graph_def)
-            self.sess, self.inputs, self.outputs = extract_graph(
-                graph, tf_config=self.tf_config
-            )
+            self.sess, self.inputs, self.outputs = extract_graph(graph, tf_config=self.tf_config)
 
         else:
             raise DLCLiveError(
-                f"model_type={self.model_type} is not supported. model_type must be "
-                "'base', 'tflite', or 'tensorrt'"
+                f"model_type={self.model_type} is not supported. model_type must be 'base', 'tflite', or 'tensorrt'"
             )
 
         return self.get_pose(frame, **kwargs)

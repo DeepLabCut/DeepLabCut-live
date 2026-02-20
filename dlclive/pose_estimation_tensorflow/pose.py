@@ -69,9 +69,7 @@ def argmax_pose_predict(scmap, offmat, stride):
     num_joints = scmap.shape[2]
     pose = []
     for joint_idx in range(num_joints):
-        maxloc = np.unravel_index(
-            np.argmax(scmap[:, :, joint_idx]), scmap[:, :, joint_idx].shape
-        )
+        maxloc = np.unravel_index(np.argmax(scmap[:, :, joint_idx]), scmap[:, :, joint_idx].shape)
         offset = np.array(offmat[maxloc][joint_idx])[::-1]
         pos_f8 = np.array(maxloc).astype("float") * stride + 0.5 * stride + offset
         pose.append(np.hstack((pos_f8[::-1], [scmap[maxloc][joint_idx]])))

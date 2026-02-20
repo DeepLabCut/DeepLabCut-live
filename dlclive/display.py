@@ -35,9 +35,7 @@ class Display:
 
     def __init__(self, cmap="bmy", radius=3, pcutoff=0.5):
         if not _TKINTER_AVAILABLE:
-            raise ImportError(
-                "tkinter is not available. Display functionality requires tkinter. "
-            )
+            raise ImportError("tkinter is not available. Display functionality requires tkinter. ")
         self.cmap = cmap
         self.colors = None
         self.radius = radius
@@ -100,9 +98,7 @@ class Display:
                             y0 = max(0, pose[i, j, 1] - self.radius)
                             y1 = min(im_size[1], pose[i, j, 1] + self.radius)
                             coords = [x0, y0, x1, y1]
-                            draw.ellipse(
-                                coords, fill=self.colors[j], outline=self.colors[j]
-                            )
+                            draw.ellipse(coords, fill=self.colors[j], outline=self.colors[j])
                         except Exception as e:
                             print(e)
         img_tk = ImageTk.PhotoImage(image=img, master=self.window)

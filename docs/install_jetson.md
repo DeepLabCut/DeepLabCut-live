@@ -49,9 +49,9 @@ pip install -U pip testresources setuptools
 
 #### Install DeepLabCut-live dependencies
 
-First, install `python` dependencies to run `PyTorch` (from [NVIDIA instructions to 
+First, install `python` dependencies to run `PyTorch` (from [NVIDIA instructions to
 install PyTorch for Jetson Platform](
-https://docs.nvidia.com/deeplearning/frameworks/install-pytorch-jetson-platform/index.html)). 
+https://docs.nvidia.com/deeplearning/frameworks/install-pytorch-jetson-platform/index.html)).
 _This may take ~15-30 minutes._
 
 ```
@@ -76,8 +76,8 @@ To install PyTorch >= 2.0
 pip3 install --no-cache https://developer.download.nvidia.com/compute/redist/jp/v51/pytorch/<torch_version_desired>
 ```
 
-Currently, the only available PyTorch version that can be used is 
-`torch-2.0.0a0+8aa34602.nv23.03-cp38-cp38-linux_aarch64.whl`. 
+Currently, the only available PyTorch version that can be used is
+`torch-2.0.0a0+8aa34602.nv23.03-cp38-cp38-linux_aarch64.whl`.
 
 
 Lastly, copy the opencv-python bindings into your virtual environment:
@@ -88,7 +88,7 @@ cp -r /usr/lib/python3.12/dist-packages ~/dlc-live/lib/python3.12/dist-packages
 
 #### Install the DeepLabCut-live package
 
-Finally, please install DeepLabCut-live from PyPi (_this will take 3-5 mins_), then 
+Finally, please install DeepLabCut-live from PyPi (_this will take 3-5 mins_), then
 test the installation:
 
 ```
