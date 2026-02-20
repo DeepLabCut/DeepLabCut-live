@@ -44,12 +44,14 @@ def run_pytorch_test(video_file: str, display: bool = False):
         super_animal=TORCH_CONFIG["super_animal"],
         model_name=TORCH_MODEL,
     )
-    assert TORCH_CONFIG["checkpoint"].exists(), (
-        f"Failed to export {TORCH_CONFIG['super_animal']} model"
-    )
-    assert TORCH_CONFIG["checkpoint"].stat().st_size > 0, (
+    if not TORCH_CONFIG["checkpoint"].exists():
+        raise FileNotFoundError(
+            f"Failed to export {TORCH_CONFIG['super_animal']} model"
+        )
+    if TORCH_CONFIG["checkpoint"].stat().st_size == 0:
+        raise ValueError(
         f"Exported {TORCH_CONFIG['super_animal']} model is empty"
-    )
+        )
     benchmark_videos(
         model_path=str(TORCH_CONFIG["checkpoint"]),
         model_type="pytorch",
@@ -138,7 +140,8 @@ def main():
             print(f"Video file already exists at {video_file}, skipping download.")
 
         # assert these things exist so we can give informative error messages
-        assert Path(video_file).exists(), f"Missing video file {video_file}"
+        if not Path(video_file).exists():
+            raise FileNotFoundError(f"Missing video file {video_file}")
         backend_failures = {}
         any_backend_succeeded = False
 
@@ -196,7 +199,7 @@ def main():
                 shutil.rmtree(tmp_dir)
         except PermissionError:
             warnings.warn(
-                f"Could not delete temporary directory {str(tmp_dir)} due to a permissions error, but otherwise dlc-live seems to be working fine!"
+                f"Could not delete temporary directory {str(tmp_dir)} due to a permissions error."
             )
 
 
