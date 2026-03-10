@@ -86,7 +86,7 @@ def benchmark_videos(
     cmap="bmy",
     save_poses=False,
     save_video=False,
-    single_animal=False,
+    single_animal=True,
 ):
     """Analyze videos using DeepLabCut-live exported models.
     Analyze multiple videos and/or multiple options for the size of the video

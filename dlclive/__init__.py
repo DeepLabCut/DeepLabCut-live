@@ -22,8 +22,6 @@ __all__ = [
     "Display",
     "Processor",
     "Engine",
-    "benchmark_videos",
-    "download_benchmarking_data",
     "VERSION",
     "__version__",
 ]

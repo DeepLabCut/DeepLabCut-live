@@ -69,7 +69,7 @@ jobs:
         shell: bash
 
       - name: Run Model Benchmark Test
-        run: uv run dlc-live-test
+        run: uv run dlc-live-test --nodisplay
 
       - name: Run DLC Live Unit Tests
         run: uv run pytest
