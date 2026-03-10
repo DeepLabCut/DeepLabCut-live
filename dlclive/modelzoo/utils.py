@@ -9,11 +9,15 @@ import logging
 from pathlib import Path
 
 from dlclibrary.dlcmodelzoo.modelzoo_download import download_huggingface_model
-from dlclibrary.dlcmodelzoo.modelzoo_download import _load_model_names as huggingface_model_paths
+from dlclibrary.dlcmodelzoo.modelzoo_download import (
+    _load_model_names as huggingface_model_paths,
+)
 from ruamel.yaml import YAML
 
 from dlclive.modelzoo.resolve_config import update_config
-from dlclive.pose_estimation_pytorch.models.detectors.torchvision import SUPPORTED_TORCHVISION_DETECTORS
+from dlclive.pose_estimation_pytorch.models.detectors.torchvision import (
+    SUPPORTED_TORCHVISION_DETECTORS,
+)
 
 _MODELZOO_PATH = Path(__file__).parent
 
@@ -100,9 +104,13 @@ def add_metadata(
 def _get_torchvision_detector_config(detector_name: str) -> dict:
     """Get a torchvision detector configuration for the superanimal humanbody model"""
     if detector_name is None:
-        raise ValueError(f"Detector name is required for superanimal humanbody models. Must be one of {SUPPORTED_TORCHVISION_DETECTORS}.")
+        raise ValueError(
+            f"Detector name is required for superanimal humanbody models. Must be one of {SUPPORTED_TORCHVISION_DETECTORS}."
+        )
     if detector_name not in SUPPORTED_TORCHVISION_DETECTORS:
-        raise ValueError(f"Unsupported humanbody detector {detector_name}. Should be one of {SUPPORTED_TORCHVISION_DETECTORS}")
+        raise ValueError(
+            f"Unsupported humanbody detector {detector_name}. Should be one of {SUPPORTED_TORCHVISION_DETECTORS}"
+        )
     return {
         "type": "TorchvisionDetectorAdaptor",
         "model": detector_name,
@@ -145,12 +153,10 @@ def load_super_animal_config(
         model_config["method"] = "BU"
     else:
         model_config["method"] = "TD"
-        detector_cfg_path = get_super_animal_model_config_path(
-            model_name=detector_name
-        )
+        detector_cfg_path = get_super_animal_model_config_path(model_name=detector_name)
         detector_cfg = read_config_as_dict(detector_cfg_path)
         model_config["detector"] = detector_cfg
-    
+
     if super_animal == "superanimal_humanbody":
         # Raises ValueError if Detector name is not one of SUPPORTED_TORCHVISION_DETECTORS
         torchvision_detector_config = _get_torchvision_detector_config(detector_name)
