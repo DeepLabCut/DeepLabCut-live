@@ -8,16 +8,15 @@ Licensed under GNU Lesser General Public License v3.0
 import argparse
 import shutil
 import urllib
-import warnings
 import urllib.error
+import warnings
 from pathlib import Path
 
 from dlclibrary.dlcmodelzoo.modelzoo_download import download_huggingface_model
 
-from dlclive.utils import download_file
 from dlclive.benchmark import benchmark_videos
 from dlclive.engine import Engine
-from dlclive.utils import get_available_backends
+from dlclive.utils import download_file, get_available_backends
 
 MODEL_NAME = "superanimal_quadruped"
 SNAPSHOT_NAME = "snapshot-700000.pb"
@@ -46,9 +45,7 @@ def run_pytorch_test(video_file: str, display: bool = False):
         model_name=TORCH_MODEL,
     )
     if not TORCH_CONFIG["checkpoint"].exists():
-        raise FileNotFoundError(
-            f"Failed to export {TORCH_CONFIG['super_animal']} model"
-        )
+        raise FileNotFoundError(f"Failed to export {TORCH_CONFIG['super_animal']} model")
     if TORCH_CONFIG["checkpoint"].stat().st_size == 0:
         raise ValueError(f"Exported {TORCH_CONFIG['super_animal']} model is empty")
     benchmark_videos(
@@ -71,14 +68,10 @@ def run_tensorflow_test(video_file: str, display: bool = False):
     if Path(model_dir / SNAPSHOT_NAME).exists():
         print("Model already downloaded, using cached version")
     else:
-        print(
-            "Downloading superanimal_quadruped model from the DeepLabCut Model Zoo..."
-        )
+        print("Downloading superanimal_quadruped model from the DeepLabCut Model Zoo...")
         download_huggingface_model(MODEL_NAME, str(model_dir))
 
-    assert Path(model_dir / SNAPSHOT_NAME).exists(), (
-        f"Missing model file {model_dir / SNAPSHOT_NAME}"
-    )
+    assert Path(model_dir / SNAPSHOT_NAME).exists(), f"Missing model file {model_dir / SNAPSHOT_NAME}"
 
     benchmark_videos(
         model_path=str(model_dir),
@@ -131,7 +124,7 @@ def main():
             url_link = "https://raw.githubusercontent.com/DeepLabCut/DeepLabCut-live/master/check_install/dog_clip.avi"
             try:
                 download_file(url_link, video_file)
-            except (urllib.error.URLError, IOError) as e:
+            except (OSError, urllib.error.URLError) as e:
                 raise RuntimeError(f"Failed to download video file: {e}") from e
         else:
             print(f"Video file already exists at {video_file}, skipping download.")
@@ -155,9 +148,7 @@ def main():
                     any_backend_succeeded = True
                     backend_results["tensorflow"] = ("SUCCESS", None)
                 else:
-                    warnings.warn(
-                        f"Unrecognized backend {backend}, skipping...", UserWarning
-                    )
+                    warnings.warn(f"Unrecognized backend {backend}, skipping...", UserWarning, stacklevel=2)
             except Exception as e:
                 backend_name = (
                     "pytorch"
@@ -172,6 +163,7 @@ def main():
                     f"Error while running test for backend {backend}: {e}. "
                     "Continuing to test other available backends.",
                     UserWarning,
+                    stacklevel=2,
                 )
 
         print("\n---\nBackend test summary:")
@@ -184,9 +176,7 @@ def main():
                 print(f"{name.capitalize()} error:\n{error}\n")
 
         if not any_backend_succeeded and backend_failures:
-            failure_messages = "; ".join(
-                f"{b}: {exc}" for b, exc in backend_failures.items()
-            )
+            failure_messages = "; ".join(f"{b}: {exc}" for b, exc in backend_failures.items())
             raise RuntimeError(f"All backend tests failed. Details: {failure_messages}")
 
     finally:
@@ -197,7 +187,7 @@ def main():
                 shutil.rmtree(tmp_dir)
         except PermissionError:
             warnings.warn(
-                f"Could not delete temporary directory {str(tmp_dir)} due to a permissions error."
+                f"Could not delete temporary directory {str(tmp_dir)} due to a permissions error.", stacklevel=2
             )
 
 
@@ -207,7 +197,8 @@ if __name__ == "__main__":
     print(f"Available backends: {[b.value for b in available_backends]}")
     if len(available_backends) == 0:
         raise NotImplementedError(
-            "Neither TensorFlow nor PyTorch is installed. Please install at least one of these frameworks to run the installation test."
+            "Neither TensorFlow nor PyTorch is installed. "
+            "Please install at least one of these frameworks to run the installation test."
         )
 
     main()
