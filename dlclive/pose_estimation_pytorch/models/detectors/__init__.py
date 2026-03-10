@@ -12,5 +12,8 @@ from dlclive.pose_estimation_pytorch.models.detectors.base import (
     DETECTORS,
     BaseDetector,
 )
+from dlclive.pose_estimation_pytorch.models.detectors.torchvision import (
+    TorchvisionDetectorAdaptor,
+)
 from dlclive.pose_estimation_pytorch.models.detectors.fasterRCNN import FasterRCNN
 from dlclive.pose_estimation_pytorch.models.detectors.ssd import SSDLite

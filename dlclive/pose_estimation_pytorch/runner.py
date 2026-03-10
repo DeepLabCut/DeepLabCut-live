@@ -268,10 +268,24 @@ class PyTorchRunner(BaseRunner):
             self.model = self.model.half()
 
         self.detector = None
-        if self.dynamic is None and raw_data.get("detector") is not None:
+        detector_cfg = self.cfg.get("detector")
+        has_detector_weights = raw_data.get("detector") is not None
+        if detector_cfg is not None:
+            detector_model_cfg = detector_cfg["model"]
+            uses_pretrained = (
+                detector_model_cfg.get("pretrained", False)
+                or detector_model_cfg.get("weights") is not None
+            )
+        else:
+            uses_pretrained = False
+
+        if self.dynamic is None and (has_detector_weights or uses_pretrained):
             self.detector = models.DETECTORS.build(self.cfg["detector"]["model"])
             self.detector.to(self.device)
-            self.detector.load_state_dict(raw_data["detector"])
+
+            if has_detector_weights:
+                self.detector.load_state_dict(raw_data["detector"])
+
             self.detector.eval()
             if self.precision == "FP16":
                 self.detector = self.detector.half()
@@ -281,7 +295,8 @@ class PyTorchRunner(BaseRunner):
             self.top_down_config.read_config(self.cfg)
 
             detector_transforms = [v2.ToDtype(torch.float32, scale=True)]
-            if self.cfg["detector"]["data"]["inference"].get("normalize_images", False):
+            detector_data_cfg = detector_cfg.get("data", {}).get("inference", {})
+            if detector_data_cfg.get("normalize_images", False):
                 detector_transforms.append(v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]))
             self.detector_transform = v2.Compose(detector_transforms)
 
