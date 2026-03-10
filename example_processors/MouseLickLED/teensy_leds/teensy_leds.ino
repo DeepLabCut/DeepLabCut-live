@@ -8,7 +8,7 @@ void blink() {
   Serial.flush();
   noTone(IR);
   while (digitalRead(REC) == 0) {}
-  
+
 }
 
 void setup() {
@@ -24,26 +24,26 @@ void setup() {
 void loop() {
 
   unsigned int ser_avail = Serial.available();
-  
+
   while (ser_avail > 0) {
-    
+
     unsigned int cmd = Serial.read();
 
     if (cmd == 'L') {
-      
+
       digitalWrite(LED, !digitalRead(LED));
-    
+
     } else if (cmd == 'R') {
 
       Serial.write(digitalRead(LED));
       Serial.flush();
-      
+
     } else if (cmd == 'I') {
 
       tone(IR, 38000);
-      
+
     }
-    
+
   }
-  
+
 }

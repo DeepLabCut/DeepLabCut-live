@@ -1,4 +1,5 @@
 """Factory to build runners for DeepLabCut-Live inference"""
+
 from __future__ import annotations
 
 from pathlib import Path

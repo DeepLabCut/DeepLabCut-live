@@ -13,14 +13,15 @@
 Based on the official ``mmpose`` RTMCC head implementation. For more information, see
 <https://github.com/open-mmlab/mmpose>.
 """
+
 from __future__ import annotations
 
 import torch
 import torch.nn as nn
 
 from dlclive.pose_estimation_pytorch.models.heads.base import (
-    BaseHead,
     HEADS,
+    BaseHead,
 )
 from dlclive.pose_estimation_pytorch.models.modules import (
     GatedAttentionUnit,

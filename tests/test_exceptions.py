@@ -3,6 +3,7 @@ Tests for exception classes
 """
 
 import pytest
+
 from dlclive.exceptions import DLCLiveError, DLCLiveWarning
 
 
@@ -30,7 +31,7 @@ class TestExceptions:
         with pytest.warns(DLCLiveWarning):
             import warnings
 
-            warnings.warn("Test warning", DLCLiveWarning)
+            warnings.warn("Test warning", DLCLiveWarning, stacklevel=2)
 
     def test_dlclive_warning_inheritance(self):
         """Test DLCLiveWarning is a Warning"""
