@@ -11,7 +11,6 @@ from dlclive.utils import get_available_backends
 
 _AVAILABLE_BACKENDS = get_available_backends()
 
-from dlclive.benchmark import benchmark_videos, download_benchmarking_data
 from dlclive.display import Display
 from dlclive.dlclive import DLCLive
 from dlclive.engine import Engine
