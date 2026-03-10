@@ -30,6 +30,35 @@ def test_get_config_model_paths(super_animal, model_name, detector_name):
         assert "detector" in model_config
 
 
+def test_humanbody_requires_detector_name():
+    with pytest.raises(ValueError):
+        modelzoo.load_super_animal_config(
+            super_animal="superanimal_humanbody",
+            model_name="hrnet_w32",
+            detector_name=None,
+        )
+
+
+def test_humanbody_rejects_unsupported_detector():
+    with pytest.raises(ValueError):
+        modelzoo.load_super_animal_config(
+            super_animal="superanimal_humanbody",
+            model_name="hrnet_w32",
+            detector_name="fasterrcnn_resnet50_fpn_v2",
+        )
+
+
+def test_humanbody_uses_torchvision_detector_config():
+    model_config = modelzoo.load_super_animal_config(
+        super_animal="superanimal_humanbody",
+        model_name="hrnet_w32",
+        detector_name="fasterrcnn_mobilenet_v3_large_fpn",
+    )
+    detector_model_cfg = model_config["detector"]["model"]
+    assert model_config["method"].lower() == "td"
+    assert detector_model_cfg["type"] == "TorchvisionDetectorAdaptor"
+
+
 def test_download_huggingface_model(tmp_path_factory, model="full_cat"):
     folder = tmp_path_factory.mktemp("temp")
     dlclibrary.download_huggingface_model(model, str(folder))
