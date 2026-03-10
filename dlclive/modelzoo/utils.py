@@ -97,6 +97,21 @@ def add_metadata(
     return config
 
 
+def _get_torchvision_detector_config(detector_name: str) -> dict:
+    """Get a torchvision detector configuration for the superanimal humanbody model"""
+    if detector_name is None:
+        raise ValueError(f"Detector name is required for superanimal humanbody models. Must be one of {SUPPORTED_TORCHVISION_DETECTORS}.")
+    if detector_name not in SUPPORTED_TORCHVISION_DETECTORS:
+        raise ValueError(f"Unsupported humanbody detector {detector_name}. Should be one of {SUPPORTED_TORCHVISION_DETECTORS}")
+    return {
+        "type": "TorchvisionDetectorAdaptor",
+        "model": detector_name,
+        "weights": "COCO_V1",
+        "num_classes": None,
+        "box_score_thresh": 0.6,
+    }
+
+
 # NOTE - DUPLICATED @deruyter92 2026-01-23: Copied from the original DeepLabCut codebase
 # from deeplabcut/pose_estimation_pytorch/modelzoo/utils.py
 def load_super_animal_config(
@@ -126,7 +141,7 @@ def load_super_animal_config(
     model_config = add_metadata(project_config, model_config)
     model_config = update_config(model_config, max_individuals, device)
 
-    if detector_name is None and super_animal != "superanimal_humanbody":
+    if detector_name is None:
         model_config["method"] = "BU"
     else:
         model_config["method"] = "TD"
@@ -135,16 +150,11 @@ def load_super_animal_config(
         )
         detector_cfg = read_config_as_dict(detector_cfg_path)
         model_config["detector"] = detector_cfg
-        if super_animal == "superanimal_humanbody":
-            # Apply specific updates required to run the torchvision detector with pretrained weights
-            assert detector_name in SUPPORTED_TORCHVISION_DETECTORS
-            model_config["detector"]['model']= {
-                "type": "TorchvisionDetectorAdaptor",
-                "model": detector_name,
-                "weights": "COCO_V1",
-                "num_classes": None,
-                "box_score_thresh": 0.6,
-            }
+    
+    if super_animal == "superanimal_humanbody":
+        # Raises ValueError if Detector name is not one of SUPPORTED_TORCHVISION_DETECTORS
+        torchvision_detector_config = _get_torchvision_detector_config(detector_name)
+        model_config["detector"]["model"] = torchvision_detector_config
     return model_config
 
 

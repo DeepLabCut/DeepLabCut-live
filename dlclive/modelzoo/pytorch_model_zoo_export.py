@@ -24,7 +24,7 @@ def export_modelzoo_model(
         export_path: Arbitrary destination path for the exported .pt file.
         super_animal: Super animal dataset name (e.g. "superanimal_quadruped").
         model_name: Pose model architecture name (e.g. "resnet_50").
-        detector_name: Optional detector model name. If provided, detector
+        detector_name: Detector model name for top-down models. If provided, detector
             weights are included in the export.
     """
     Path(export_path).parent.mkdir(parents=True, exist_ok=True)
