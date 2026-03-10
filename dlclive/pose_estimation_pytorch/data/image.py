@@ -101,9 +101,7 @@ def top_down_crop(
     out_w, out_h = output_size
 
     bbox = fix_bbox_aspect_ratio(bbox, margin, out_w, out_h)
-    x1, y1, x2, y2, pad_left, pad_top, pad_x, pad_y = crop_corners(
-        bbox, img_size, center_padding
-    )
+    x1, y1, x2, y2, pad_left, pad_top, pad_x, pad_y = crop_corners(bbox, img_size, center_padding)
     w, h = x2 - x1, y2 - y1
     crop_w, crop_h = w + pad_x, h + pad_y
 

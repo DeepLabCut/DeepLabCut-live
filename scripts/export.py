@@ -1,4 +1,5 @@
 """Exports DeepLabCut models for DeepLabCut-Live"""
+
 import warnings
 from pathlib import Path
 
@@ -14,8 +15,8 @@ def read_config_as_dict(config_path: str | Path) -> dict:
     Returns:
         The configuration file with pure Python classes
     """
-    with open(config_path, "r") as f:
-        cfg = YAML(typ='safe', pure=True).load(f)
+    with open(config_path) as f:
+        cfg = YAML(typ="safe", pure=True).load(f)
 
     return cfg
 
@@ -43,13 +44,14 @@ def export_dlc3_model(
         if model_cfg["method"].lower() == "td":
             warnings.warn(
                 "The model is a top-down model but no detector snapshot was given."
-                "The configuration will be changed to run the model in bottom-up mode."
+                "The configuration will be changed to run the model in bottom-up mode.",
+                stacklevel=2,
             )
             model_cfg["method"] = "bu"
 
     else:
         if model_cfg["method"].lower() == "bu":
-            raise ValueError(f"Cannot use a detector with a bottom-up model!")
+            raise ValueError("Cannot use a detector with a bottom-up model!")
         detector_weights = torch.load(detector_snapshot, **load_kwargs)["model"]
 
     torch.save(

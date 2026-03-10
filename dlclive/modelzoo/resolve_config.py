@@ -99,9 +99,7 @@ def replace_default_values(
             else:
                 raise ValueError(f"Unknown operator for variable: {variable}")
 
-        raise ValueError(
-            f"Found {variable} in the configuration file, but cannot parse it."
-        )
+        raise ValueError(f"Found {variable} in the configuration file, but cannot parse it.")
 
     updated_values = {
         "num_bodyparts": num_bodyparts,
@@ -127,10 +125,7 @@ def replace_default_values(
                 backbone_output_channels,
                 **kwargs,
             )
-        elif (
-            isinstance(config[k], str)
-            and config[k].strip().split(" ")[0] in updated_values.keys()
-        ):
+        elif isinstance(config[k], str) and config[k].strip().split(" ")[0] in updated_values.keys():
             config[k] = get_updated_value(config[k])
 
     return config

@@ -10,13 +10,11 @@
 #
 from __future__ import annotations
 
-from typing import Tuple
-
 import torch
 
 from dlclive.pose_estimation_pytorch.models.predictors.base import (
-    BasePredictor,
     PREDICTORS,
+    BasePredictor,
 )
 
 
@@ -55,9 +53,7 @@ class HeatmapPredictor(BasePredictor):
         self.location_refinement = location_refinement
         self.locref_std = locref_std
 
-    def forward(
-        self, stride: float, outputs: dict[str, torch.Tensor]
-    ) -> dict[str, torch.Tensor]:
+    def forward(self, stride: float, outputs: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
         """Forward pass of SinglePredictor. Gets predictions from model output.
 
         Args:
@@ -85,9 +81,7 @@ class HeatmapPredictor(BasePredictor):
         locrefs = None
         if self.location_refinement:
             locrefs = outputs["locref"]
-            locrefs = locrefs.permute(0, 2, 3, 1).reshape(
-                batch_size, height, width, num_joints, 2
-            )
+            locrefs = locrefs.permute(0, 2, 3, 1).reshape(batch_size, height, width, num_joints, 2)
             locrefs = locrefs * self.locref_std
 
         poses = self.get_pose_prediction(heatmaps, locrefs, scale_factors)
@@ -97,9 +91,7 @@ class HeatmapPredictor(BasePredictor):
 
         return {"poses": poses}
 
-    def get_top_values(
-        self, heatmap: torch.Tensor
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    def get_top_values(self, heatmap: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Get the top values from the heatmap.
 
         Args:
@@ -119,9 +111,7 @@ class HeatmapPredictor(BasePredictor):
         y, x = heatmap_top // nx, heatmap_top % nx
         return y, x
 
-    def get_pose_prediction(
-        self, heatmap: torch.Tensor, locref: torch.Tensor | None, scale_factors
-    ) -> torch.Tensor:
+    def get_pose_prediction(self, heatmap: torch.Tensor, locref: torch.Tensor | None, scale_factors) -> torch.Tensor:
         """Gets the pose prediction given the heatmaps and locref.
 
         Args:

@@ -3,6 +3,7 @@ Tests for configuration file reading
 """
 
 import pytest
+
 from dlclive.core import config
 
 

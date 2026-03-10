@@ -19,13 +19,15 @@ class KalmanFilterPredictor(Processor):
         forward=0.002,
         fps=30,
         nderiv=2,
-        priors=[10, 10],
+        priors=None,
         initial_var=5,
         process_var=5,
         dlc_var=20,
         lik_thresh=0,
         **kwargs,
     ):
+        if priors is None:
+            priors = [10, 10]
         super().__init__(**kwargs)
 
         self.adapt = adapt
@@ -121,11 +123,7 @@ class KalmanFilterPredictor(Processor):
             liks = self._get_state_likelihood(pose)
             self._update(liks)
 
-            forward_time = (
-                (time.time() - kwargs["frame_time"] + self.forward)
-                if self.adapt
-                else self.forward
-            )
+            forward_time = (time.time() - kwargs["frame_time"] + self.forward) if self.adapt else self.forward
 
             future_pose = self._get_future_pose(forward_time)
             future_pose = np.hstack((future_pose, pose[:, 2].reshape(self.bp, 1)))

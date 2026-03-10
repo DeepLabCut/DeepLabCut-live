@@ -8,15 +8,14 @@ Licensed under GNU Lesser General Public License v3.0
 # Script for running the official benchmark from Kane et al, 2020.
 # Please share your results at https://github.com/DeepLabCut/DLC-inferencespeed-benchmark
 
-import os, pathlib
 import glob
+import os
+import pathlib
 
 from dlclive import benchmark_videos, download_benchmarking_data
 from dlclive.engine import Engine
 
-datafolder = os.path.join(
-    pathlib.Path(__file__).parent.absolute(), "Data-DLC-live-benchmark"
-)
+datafolder = os.path.join(pathlib.Path(__file__).parent.absolute(), "Data-DLC-live-benchmark")
 
 if not os.path.isdir(datafolder):  # only download if data doesn't exist!
     # Downloading data.... this takes a while (see terminal)
@@ -44,7 +43,7 @@ for model_path in dog_models:
         video_path=dog_video,
         output=out_dir,
         n_frames=n_frames,
-        pixels=pixels
+        pixels=pixels,
     )
 
 for model_path in mouse_models:
@@ -54,5 +53,5 @@ for model_path in mouse_models:
         video_path=mouse_video,
         output=out_dir,
         n_frames=n_frames,
-        pixels=pixels
+        pixels=pixels,
     )

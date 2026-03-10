@@ -5,17 +5,16 @@ DeepLabCut Toolbox (deeplabcut.org)
 Licensed under GNU Lesser General Public License v3.0
 """
 
-
-import serial
-import struct
 import time
+
 import numpy as np
+import serial
 
 from dlclive import Processor
 
 
 class MouseLickLED(Processor):
-    def __init__(self, com, lik_thresh=0.5, baudrate=int(9600)):
+    def __init__(self, com, lik_thresh=0.5, baudrate=9600):
 
         super().__init__()
         self.ser = serial.Serial(com, baudrate, timeout=0)
@@ -75,9 +74,7 @@ class MouseLickLED(Processor):
         in_time = np.array(self.in_time)
         frame_time = np.array(self.lick_frame_time)
         try:
-            np.savez(
-                filename, out_time=out_time, in_time=in_time, frame_time=frame_time
-            )
+            np.savez(filename, out_time=out_time, in_time=in_time, frame_time=frame_time)
             save_code = True
         except Exception:
             save_code = False

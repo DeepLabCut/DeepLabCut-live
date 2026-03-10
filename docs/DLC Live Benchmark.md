@@ -25,7 +25,7 @@
 | Linux  | ONNX       | ONNX     | CPU         | FP16                                   | Pigeon       | 36s - ~1k                   | 30  | (480, 270) | Resize=0.25      | `ResNet50 + SSDLite detector` (td) | 161.32 ms ± 18.29ms                                      | 161.3 ms ± 18.29ms       | 6 ± 1             |            |
 
 ** **CUDA: NVIDIA GeForce RTX 3050 (6GB)**
-** **CPU: 13th Gen Intel Core i7-13620H × 16** 
+** **CPU: 13th Gen Intel Core i7-13620H × 16**
 ** **Linux: Ubuntu 24.04 LTS**
 
 ^ *Startup time at inference for a TensorRT engine takes between 30 and 50 seconds,
