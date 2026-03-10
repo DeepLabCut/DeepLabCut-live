@@ -559,7 +559,6 @@ def benchmark(
         print(f"Mean inference rate: {np.mean(1 / np.array(times)[1:]):.3f} FPS")
 
     metadata = _get_metadata(video_path=video_path, cap=cap, dlc_live=dlc_live)
-    metadata = _get_metadata(video_path=video_path, cap=cap, dlc_live=dlc_live)
 
     cap.release()
 
