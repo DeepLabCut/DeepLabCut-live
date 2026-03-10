@@ -7,6 +7,7 @@ Licensed under GNU Lesser General Public License v3.0
 
 import argparse
 import shutil
+import tempfile
 import urllib
 import urllib.error
 import warnings
@@ -20,7 +21,7 @@ from dlclive.utils import download_file, get_available_backends
 
 MODEL_NAME = "superanimal_quadruped"
 SNAPSHOT_NAME = "snapshot-700000.pb"
-TMP_DIR = Path(__file__).parent / "dlc-live-tmp"
+TMP_DIR = Path(tempfile.gettempdir()) / "dlc-live-tmp"
 
 MODELS_DIR = TMP_DIR / "test_models"
 TORCH_MODEL = "resnet_50"
@@ -71,7 +72,8 @@ def run_tensorflow_test(video_file: str, display: bool = False):
         print("Downloading superanimal_quadruped model from the DeepLabCut Model Zoo...")
         download_huggingface_model(MODEL_NAME, str(model_dir))
 
-    assert Path(model_dir / SNAPSHOT_NAME).exists(), f"Missing model file {model_dir / SNAPSHOT_NAME}"
+    if not Path(model_dir / SNAPSHOT_NAME).exists():
+        raise FileNotFoundError(f"Missing model file {model_dir / SNAPSHOT_NAME}")
 
     benchmark_videos(
         model_path=str(model_dir),
@@ -100,6 +102,7 @@ def main():
         action="store_false",
         dest="display",
         help=argparse.SUPPRESS,
+        default=False,
     )
 
     args = parser.parse_args()
@@ -135,7 +138,15 @@ def main():
         backend_failures = {}
         any_backend_succeeded = False
 
-        for backend in get_available_backends():
+        available_backends = get_available_backends()
+        if not available_backends:
+            raise RuntimeError(
+                "No available backends to test. "
+                "Please ensure that at least one of the supported backends "
+                "(TensorFlow or PyTorch) is installed."
+            )
+
+        for backend in available_backends:
             try:
                 if backend == Engine.PYTORCH:
                     print("\nRunning PyTorch test...\n")
