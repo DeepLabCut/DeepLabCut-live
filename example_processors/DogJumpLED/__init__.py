@@ -5,5 +5,11 @@ DeepLabCut Toolbox (deeplabcut.org)
 Licensed under GNU Lesser General Public License v3.0
 """
 
-from .izzy_jump import IzzyJump, IzzyJumpKF
-from .izzy_jump import IzzyJumpOffline, IzzyJumpKFOffline
+from .izzy_jump import IzzyJump, IzzyJumpKF, IzzyJumpKFOffline, IzzyJumpOffline
+
+__all__ = [
+    "IzzyJump",
+    "IzzyJumpKF",
+    "IzzyJumpKFOffline",
+    "IzzyJumpOffline",
+]

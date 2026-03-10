@@ -2,9 +2,11 @@
 Tests for DLCLive core functionality - frame processing, cropping, etc.
 """
 
-import pytest
-import numpy as np
 from unittest.mock import Mock, patch
+
+import numpy as np
+import pytest
+
 from dlclive import DLCLive
 from dlclive.exceptions import DLCLiveError
 
@@ -40,7 +42,7 @@ class TestDLCLive:
 
         assert dlc.path == model_path
         assert dlc.model_type == "pytorch"
-        assert dlc.is_initialized == False
+        assert not dlc.is_initialized
         assert dlc.cropping is None
         assert dlc.dynamic == (False, 0.5, 10)
         assert dlc.processor is None
@@ -93,9 +95,7 @@ class TestDLCLive:
 
     @patch("dlclive.factory.build_runner")
     @patch("dlclive.utils.img_to_rgb")
-    def test_process_frame_cropping(
-        self, mock_img_to_rgb, mock_build_runner, mock_runner, sample_frame, tmp_path
-    ):
+    def test_process_frame_cropping(self, mock_img_to_rgb, mock_build_runner, mock_runner, sample_frame, tmp_path):
         """Test frame processing with cropping"""
         model_path = tmp_path / "model.pt"
         model_path.write_text("test")
@@ -134,9 +134,7 @@ class TestDLCLive:
         mock_resize.assert_called_once()
 
     @patch("dlclive.factory.build_runner")
-    def test_process_frame_dynamic_cropping(
-        self, mock_build_runner, mock_runner, sample_frame, tmp_path
-    ):
+    def test_process_frame_dynamic_cropping(self, mock_build_runner, mock_runner, sample_frame, tmp_path):
         """Test dynamic cropping functionality"""
         model_path = tmp_path / "model.pt"
         model_path.write_text("test")
@@ -190,13 +188,11 @@ class TestDLCLive:
         dlc.is_initialized = True
         dlc.close()
 
-        assert dlc.is_initialized == False
+        assert not dlc.is_initialized
         mock_runner.close.assert_called_once()
 
     @patch("dlclive.factory.build_runner")
-    def test_post_process_pose_with_processor(
-        self, mock_build_runner, mock_runner, sample_frame, tmp_path
-    ):
+    def test_post_process_pose_with_processor(self, mock_build_runner, mock_runner, sample_frame, tmp_path):
         """Test pose post-processing with processor"""
         model_path = tmp_path / "model.pt"
         model_path.write_text("test")

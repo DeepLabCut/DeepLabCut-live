@@ -39,9 +39,7 @@ def test_display_frame_creates_window_and_updates(headless_display_env):
     env.tk.update.assert_called_once_with()
 
 
-def test_display_draws_only_points_above_cutoff_with_clamping(
-    headless_display_env, monkeypatch
-):
+def test_display_draws_only_points_above_cutoff_with_clamping(headless_display_env, monkeypatch):
     env = headless_display_env
     display_mod = env.mod
     disp = display_mod.Display(radius=3, pcutoff=0.5)

@@ -25,22 +25,22 @@ Install from PyPI with PyTorch or TensorFlow:
    ```bash
    # With PyTorch (recommended)
    pip install deeplabcut-live[pytorch]
-   
+
    # Or with TensorFlow
    pip install deeplabcut-live[tf]
-   
+
    # Or using uv
    uv pip install deeplabcut-live[pytorch] # or [tf]
    ```
-   
-### Windows-users with GPU: 
-On **Windows**, the `deeplabcut-live[pytorch]` extra will not install the required CUDA-enabled wheels for PyTorch by default. Windows users with a CUDA GPU should install CUDA-enabled PyTorch first: 
+
+### Windows-users with GPU:
+On **Windows**, the `deeplabcut-live[pytorch]` extra will not install the required CUDA-enabled wheels for PyTorch by default. Windows users with a CUDA GPU should install CUDA-enabled PyTorch first:
 
 
    ```bash
    # First install PyTorch with CUDA support
    pip install torch torchvision --index-url https://download.pytorch.org/whl/cu124
-   
+
    # Then install DeepLabCut-live (it will use the existing GPU-enabled PyTorch)
    pip install deeplabcut-live[pytorch]
    ```
@@ -62,7 +62,7 @@ If you want to install from a local clone of the repository, follow these steps:
    # Using uv
    uv sync --extra pytorch --python 3.11 # or --extra tf for TensorFlow
    ```
-   
+
    **Option B - using pip in a conda environment**
    ```
    conda create -n dlc-live python=3.11
@@ -75,7 +75,7 @@ If the above instructions do not work, or you want to use a specific Pytorch or 
    ```
    # Install Pytorch
    pip install torch torchvision --index-url https://download.pytorch.org/whl/cu124
-   
+
    # Or install TensorFlow instead
    pip install tensorflow
    ```

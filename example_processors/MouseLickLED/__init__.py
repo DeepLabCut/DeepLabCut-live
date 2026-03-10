@@ -6,3 +6,7 @@ Licensed under GNU Lesser General Public License v3.0
 """
 
 from .lick_led import MouseLickLED
+
+__all__ = [
+    "MouseLickLED",
+]

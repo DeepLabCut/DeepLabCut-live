@@ -9,6 +9,7 @@
 # Licensed under GNU Lesser General Public License v3.0
 #
 """Base runner for DeepLabCut-Live"""
+
 import abc
 from pathlib import Path
 

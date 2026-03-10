@@ -9,6 +9,7 @@
 # Licensed under GNU Lesser General Public License v3.0
 #
 """Normalization layers"""
+
 from __future__ import annotations
 
 import torch

@@ -8,8 +8,8 @@ import copy
 import logging
 from pathlib import Path
 
-from dlclibrary.dlcmodelzoo.modelzoo_download import download_huggingface_model
 from dlclibrary.dlcmodelzoo.modelzoo_download import _load_model_names as huggingface_model_paths
+from dlclibrary.dlcmodelzoo.modelzoo_download import download_huggingface_model
 from ruamel.yaml import YAML
 
 from dlclive.modelzoo.resolve_config import update_config
@@ -87,8 +87,7 @@ def add_metadata(
     config["metadata"] = {
         "project_path": project_config["project_path"],
         "pose_config_path": "",
-        "bodyparts": project_config.get("multianimalbodyparts")
-        or project_config["bodyparts"],
+        "bodyparts": project_config.get("multianimalbodyparts") or project_config["bodyparts"],
         "unique_bodyparts": project_config.get("uniquebodyparts", []),
         "individuals": project_config.get("individuals", ["animal"]),
         "with_identity": project_config.get("identity", False),
@@ -130,9 +129,7 @@ def load_super_animal_config(
     else:
         model_config["method"] = "TD"
         if super_animal != "superanimal_humanbody":
-            detector_cfg_path = get_super_animal_model_config_path(
-                model_name=detector_name
-            )
+            detector_cfg_path = get_super_animal_model_config_path(model_name=detector_name)
             detector_cfg = read_config_as_dict(detector_cfg_path)
             model_config["detector"] = detector_cfg
     return model_config
@@ -161,17 +158,13 @@ def download_super_animal_snapshot(dataset: str, model_name: str) -> Path:
         return model_path
 
     try:
-        download_huggingface_model(
-            model_name, target_dir=str(snapshot_dir), rename_mapping=model_filename
-        )
+        download_huggingface_model(model_name, target_dir=str(snapshot_dir), rename_mapping=model_filename)
 
         if not model_path.exists():
             raise RuntimeError(f"Failed to download {model_name} to {model_path}")
 
     except Exception as e:
-        logging.error(
-            f"Failed to download superanimal snapshot {model_name} to {model_path}: {e}"
-        )
+        logging.error(f"Failed to download superanimal snapshot {model_name} to {model_path}: {e}")
         raise e
 
     return model_path
