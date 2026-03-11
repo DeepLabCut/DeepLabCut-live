@@ -7,7 +7,7 @@ from typing import Literal
 
 from dlclive.core.runner import BaseRunner
 from dlclive.engine import Engine
-from dlclive.utils import get_torch
+from dlclive.utils import get_tensorflow, get_torch
 
 
 def build_runner(
@@ -44,6 +44,7 @@ def build_runner(
         return PyTorchRunner(model_path, **filter_keys(valid, kwargs))
 
     elif Engine.from_model_type(model_type) == Engine.TENSORFLOW:
+        get_tensorflow(required=True, feature="TensorFlow inference")
         from dlclive.pose_estimation_tensorflow.runner import TensorFlowRunner
 
         if model_type.lower() == "tensorflow":
