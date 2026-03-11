@@ -31,6 +31,7 @@ def download_benchmarking_data(*args, **kwargs):
 
     return _download_benchmarking_data(*args, **kwargs)
 
+
 __all__ = [
     "DLCLive",
     "Display",
