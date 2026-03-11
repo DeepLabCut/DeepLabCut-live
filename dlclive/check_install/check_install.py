@@ -85,8 +85,19 @@ def run_tensorflow_test(video_file: str, display: bool = False):
     )
 
 
+BACKEND_TESTS = {
+    Engine.PYTORCH: run_pytorch_test,
+    Engine.TENSORFLOW: run_tensorflow_test,
+}
+BACKEND_DISPLAY_NAMES = {
+    Engine.PYTORCH: "PyTorch",
+    Engine.TENSORFLOW: "TensorFlow",
+}
+
+
 def main():
-    backend_results = {}
+    backend_results: dict[Engine, tuple[str, str | None]] = {}
+    backend_failures: dict[Engine, Exception] = {}
 
     parser = argparse.ArgumentParser(
         description="Test DLC-Live installation by downloading and evaluating a demo DLC project!"
@@ -111,7 +122,6 @@ def main():
     if not display:
         print("Running without displaying video")
 
-    # make temporary directory
     print("\nCreating temporary directory...\n")
     tmp_dir = TMP_DIR
     tmp_dir.mkdir(mode=0o775, exist_ok=True)
@@ -132,10 +142,9 @@ def main():
         else:
             print(f"Video file already exists at {video_file}, skipping download.")
 
-        # assert these things exist so we can give informative error messages
         if not Path(video_file).exists():
             raise FileNotFoundError(f"Missing video file {video_file}")
-        backend_failures = {}
+
         any_backend_succeeded = False
 
         available_backends = get_available_backends()
@@ -147,28 +156,23 @@ def main():
             )
 
         for backend in available_backends:
-            try:
-                if backend == Engine.PYTORCH:
-                    print("\nRunning PyTorch test...\n")
-                    run_pytorch_test(video_file, display=display)
-                    any_backend_succeeded = True
-                    backend_results["pytorch"] = ("SUCCESS", None)
-                elif backend == Engine.TENSORFLOW:
-                    print("\nRunning TensorFlow test...\n")
-                    run_tensorflow_test(video_file, display=display)
-                    any_backend_succeeded = True
-                    backend_results["tensorflow"] = ("SUCCESS", None)
-                else:
-                    warnings.warn(f"Unrecognized backend {backend}, skipping...", UserWarning, stacklevel=2)
-            except Exception as e:
-                backend_name = (
-                    "pytorch"
-                    if backend == Engine.PYTORCH
-                    else "tensorflow"
-                    if backend == Engine.TENSORFLOW
-                    else str(backend)
+            test_func = BACKEND_TESTS.get(backend)
+            if test_func is None:
+                warnings.warn(
+                    f"No test function defined for backend {backend}, skipping...",
+                    UserWarning,
+                    stacklevel=2,
                 )
-                backend_results[backend_name] = ("ERROR", str(e))
+                continue
+
+            try:
+                print(f"\nRunning {BACKEND_DISPLAY_NAMES.get(backend, backend.value)} test...\n")
+                test_func(video_file, display=display)
+                any_backend_succeeded = True
+                backend_results[backend] = ("SUCCESS", None)
+
+            except Exception as e:
+                backend_results[backend] = ("ERROR", str(e))
                 backend_failures[backend] = e
                 warnings.warn(
                     f"Error while running test for backend {backend}: {e}. "
@@ -178,16 +182,18 @@ def main():
                 )
 
         print("\n---\nBackend test summary:")
-        for name in ("tensorflow", "pytorch"):
-            status, _ = backend_results.get(name, ("SKIPPED", None))
-            print(f"{name:<11} [{status}]")
+        for backend in BACKEND_TESTS.keys():
+            status, _ = backend_results.get(backend, ("SKIPPED", None))
+            print(f"{backend.value:<11} [{status}]")
         print("---")
-        for name, (status, error) in backend_results.items():
+
+        for backend, (status, error) in backend_results.items():
             if status == "ERROR":
-                print(f"{name.capitalize()} error:\n{error}\n")
+                backend_name = BACKEND_DISPLAY_NAMES.get(backend, backend.value)
+                print(f"{backend_name} error:\n{error}\n")
 
         if not any_backend_succeeded and backend_failures:
-            failure_messages = "; ".join(f"{b}: {exc}" for b, exc in backend_failures.items())
+            failure_messages = "; ".join(f"{b}: {e}" for b, e in backend_failures.items())
             raise RuntimeError(f"All backend tests failed. Details: {failure_messages}")
 
     finally:
@@ -198,7 +204,8 @@ def main():
                 shutil.rmtree(tmp_dir)
         except PermissionError:
             warnings.warn(
-                f"Could not delete temporary directory {str(tmp_dir)} due to a permissions error.", stacklevel=2
+                f"Could not delete temporary directory {str(tmp_dir)} due to a permissions error.",
+                stacklevel=2,
             )
 
 
