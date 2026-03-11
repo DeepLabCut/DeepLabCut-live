@@ -15,11 +15,11 @@ import time
 import colorcet as cc
 import cv2
 import h5py
-import torch
 from PIL import ImageColor
 from pip._internal.operations import freeze
 
 from dlclive import VERSION, DLCLive
+from dlclive.utils import get_torch
 
 
 def get_system_info() -> dict:
@@ -60,8 +60,9 @@ def get_system_info() -> dict:
         # Not installed from git repo, e.g., pypi
         pass
 
-    # Get device info (GPU or CPU)
-    if torch.cuda.is_available():
+    # Get device info (GPU or CPU). Torch is optional.
+    torch = get_torch(required=False)
+    if torch is not None and torch.cuda.is_available():
         dev_type = "GPU"
         dev = [torch.cuda.get_device_name(torch.cuda.current_device())]
     else:
@@ -309,6 +310,9 @@ def save_poses_to_files(experiment_name, save_dir, bodyparts, poses, timestamp):
     csv_save_path = os.path.join(save_dir, f"{base_filename}_poses_{timestamp}.csv")
     h5_save_path = os.path.join(save_dir, f"{base_filename}_poses_{timestamp}.h5")
 
+    torch = get_torch(required=False)
+    tensor_type = torch.Tensor if torch is not None else ()
+
     # Save to CSV
     with open(csv_save_path, mode="w", newline="") as file:
         writer = csv.writer(file)
@@ -319,7 +323,7 @@ def save_poses_to_files(experiment_name, save_dir, bodyparts, poses, timestamp):
             pose_data = entry["pose"]["poses"][0][0]
             # Convert tensor data to numeric values
             row = [frame_num] + [
-                item.item() if isinstance(item, torch.Tensor) else item for kp in pose_data for item in kp
+                item.item() if isinstance(item, tensor_type) else item for kp in pose_data for item in kp
             ]
             writer.writerow(row)
 
@@ -332,7 +336,7 @@ def save_poses_to_files(experiment_name, save_dir, bodyparts, poses, timestamp):
                 data=[
                     (
                         entry["pose"]["poses"][0][0][i, 0].item()
-                        if isinstance(entry["pose"]["poses"][0][0][i, 0], torch.Tensor)
+                        if isinstance(entry["pose"]["poses"][0][0][i, 0], tensor_type)
                         else entry["pose"]["poses"][0][0][i, 0]
                     )
                     for entry in poses
@@ -343,7 +347,7 @@ def save_poses_to_files(experiment_name, save_dir, bodyparts, poses, timestamp):
                 data=[
                     (
                         entry["pose"]["poses"][0][0][i, 1].item()
-                        if isinstance(entry["pose"]["poses"][0][0][i, 1], torch.Tensor)
+                        if isinstance(entry["pose"]["poses"][0][0][i, 1], tensor_type)
                         else entry["pose"]["poses"][0][0][i, 1]
                     )
                     for entry in poses
@@ -354,7 +358,7 @@ def save_poses_to_files(experiment_name, save_dir, bodyparts, poses, timestamp):
                 data=[
                     (
                         entry["pose"]["poses"][0][0][i, 2].item()
-                        if isinstance(entry["pose"]["poses"][0][0][i, 2], torch.Tensor)
+                        if isinstance(entry["pose"]["poses"][0][0][i, 2], tensor_type)
                         else entry["pose"]["poses"][0][0][i, 2]
                     )
                     for entry in poses
