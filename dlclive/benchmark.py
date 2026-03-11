@@ -24,14 +24,12 @@ from PIL import ImageColor
 from pip._internal.operations import freeze
 from tqdm import tqdm
 
+from dlclive import VERSION, DLCLive
 from dlclive.engine import Engine
 from dlclive.utils import decode_fourcc
 
-from .dlclive import DLCLive
-from .version import VERSION
-
 if TYPE_CHECKING:
-    import tensorflow
+    import tensorflow  # type: ignore
 
 
 def download_benchmarking_data(
@@ -88,6 +86,7 @@ def benchmark_videos(
     cmap="bmy",
     save_poses=False,
     save_video=False,
+    single_animal=True,
 ):
     """Analyze videos using DeepLabCut-live exported models.
     Analyze multiple videos and/or multiple options for the size of the video
@@ -206,6 +205,7 @@ def benchmark_videos(
                 save_poses=save_poses,
                 save_video=save_video,
                 save_dir=output,
+                single_animal=single_animal,
             )
 
             inf_times.append(this_inf_times)
@@ -455,7 +455,10 @@ def benchmark(
     if not cap.isOpened():
         print(f"Error: Could not open video file {video_path}")
         return
-    im_size = (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+    im_size = (
+        int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
+        int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+    )
 
     if pixels is not None:
         resize = np.sqrt(pixels / (im_size[0] * im_size[1]))
@@ -713,7 +716,7 @@ def save_poses_to_files(video_path, save_dir, n_individuals, bodyparts, poses, t
     -------
     None
     """
-    import pandas as pd  # noqa E402
+    import pandas as pd
 
     base_filename = Path(video_path).stem
     save_dir = Path(save_dir)
@@ -728,7 +731,8 @@ def save_poses_to_files(video_path, save_dir, n_individuals, bodyparts, poses, t
     else:
         individuals = [f"individual_{i}" for i in range(n_individuals)]
         pdindex = pd.MultiIndex.from_product(
-            [individuals, bodyparts, ["x", "y", "likelihood"]], names=["individuals", "bodyparts", "coords"]
+            [individuals, bodyparts, ["x", "y", "likelihood"]],
+            names=["individuals", "bodyparts", "coords"],
         )
 
     pose_df = pd.DataFrame(flattened_poses, columns=pdindex)

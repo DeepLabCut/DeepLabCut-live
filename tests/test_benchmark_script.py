@@ -2,7 +2,7 @@ import glob
 
 import pytest
 
-from dlclive import benchmark_videos, download_benchmarking_data
+from dlclive.benchmark import benchmark_videos, download_benchmarking_data
 from dlclive.engine import Engine
 
 
