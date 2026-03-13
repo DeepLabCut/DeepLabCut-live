@@ -19,14 +19,13 @@ from typing import TYPE_CHECKING
 import colorcet as cc
 import cv2
 import numpy as np
-import torch
 from PIL import ImageColor
 from pip._internal.operations import freeze
 from tqdm import tqdm
 
 from dlclive import VERSION, DLCLive
 from dlclive.engine import Engine
-from dlclive.utils import decode_fourcc
+from dlclive.utils import decode_fourcc, get_torch
 
 if TYPE_CHECKING:
     import tensorflow  # type: ignore
@@ -266,8 +265,9 @@ def get_system_info() -> dict:
         # Not installed from git repo, e.g., pypi
         pass
 
-    # Get device info (GPU or CPU)
-    if torch.cuda.is_available():
+    # Get device info (GPU or CPU). Torch is optional.
+    torch = get_torch(required=False)
+    if torch is not None and torch.cuda.is_available():
         dev_type = "GPU"
         dev = [torch.cuda.get_device_name(torch.cuda.current_device())]
     else:
