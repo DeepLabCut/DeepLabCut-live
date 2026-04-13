@@ -7,6 +7,7 @@ from typing import Literal
 
 from dlclive.core.runner import BaseRunner
 from dlclive.engine import Engine
+from dlclive.utils import get_tensorflow, get_torch
 
 
 def build_runner(
@@ -36,12 +37,14 @@ def build_runner(
 
     """
     if Engine.from_model_type(model_type) == Engine.PYTORCH:
+        get_torch(required=True, feature="PyTorch inference")
         from dlclive.pose_estimation_pytorch.runner import PyTorchRunner
 
         valid = {"device", "precision", "single_animal", "dynamic", "top_down_config"}
         return PyTorchRunner(model_path, **filter_keys(valid, kwargs))
 
     elif Engine.from_model_type(model_type) == Engine.TENSORFLOW:
+        get_tensorflow(required=True, feature="TensorFlow inference")
         from dlclive.pose_estimation_tensorflow.runner import TensorFlowRunner
 
         if model_type.lower() == "tensorflow":

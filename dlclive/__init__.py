@@ -17,6 +17,21 @@ from dlclive.engine import Engine
 from dlclive.processor.processor import Processor
 from dlclive.version import VERSION, __version__
 
+
+def benchmark_videos(*args, **kwargs):
+    """Lazy import of benchmark_videos from dlclive.benchmark"""
+    from dlclive.benchmark import benchmark_videos as _benchmark_videos
+
+    return _benchmark_videos(*args, **kwargs)
+
+
+def download_benchmarking_data(*args, **kwargs):
+    """Lazy import of benchmark_videos from dlclive.benchmark"""
+    from dlclive.benchmark import download_benchmarking_data as _download_benchmarking_data
+
+    return _download_benchmarking_data(*args, **kwargs)
+
+
 __all__ = [
     "DLCLive",
     "Display",

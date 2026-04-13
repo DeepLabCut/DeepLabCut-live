@@ -18,6 +18,54 @@ from dlclive.engine import Engine
 from dlclive.exceptions import DLCLiveWarning
 
 
+def get_torch(required: bool = False, feature: str | None = None):
+    """Lazily import torch.
+
+    Args:
+        required: If True, raise a clear error when torch is unavailable.
+        feature: Optional feature name to include in error messages.
+
+    Returns:
+        The imported torch module, or None when unavailable and not required.
+    """
+    try:
+        import torch
+
+        return torch
+    except (ImportError, ModuleNotFoundError) as exc:
+        if required:
+            context = f" for {feature}" if feature else ""
+            raise ModuleNotFoundError(
+                f"PyTorch is required{context} but is not installed. "
+                "Install it with: pip install deeplabcut-live[pytorch]"
+            ) from exc
+        return None
+
+
+def get_tensorflow(required: bool = False, feature: str | None = None):
+    """Lazily import tensorflow.
+
+    Args:
+        required: If True, raise a clear error when tensorflow is unavailable.
+        feature: Optional feature name to include in error messages.
+
+    Returns:
+        The imported tensorflow module, or None when unavailable and not required.
+    """
+    try:
+        import tensorflow as tf
+
+        return tf
+    except (ImportError, ModuleNotFoundError) as exc:
+        if required:
+            context = f" for {feature}" if feature else ""
+            raise ModuleNotFoundError(
+                f"TensorFlow is required{context} but is not installed. "
+                "Install it with: pip install deeplabcut-live[tf]"
+            ) from exc
+        return None
+
+
 def convert_to_ubyte(frame: np.ndarray) -> np.ndarray:
     """Converts an image to unsigned 8-bit integer numpy array.
         If scikit-image is installed, uses skimage.img_as_ubyte, otherwise, uses a similar custom function.
@@ -180,19 +228,11 @@ def get_available_backends() -> list[Engine]:
     """
     backends = []
 
-    try:
-        import tensorflow
-
+    if get_tensorflow(required=False) is not None:
         backends.append(Engine.TENSORFLOW)
-    except (ImportError, ModuleNotFoundError):
-        pass
 
-    try:
-        import torch
-
+    if get_torch(required=False) is not None:
         backends.append(Engine.PYTORCH)
-    except (ImportError, ModuleNotFoundError):
-        pass
 
     if not backends:
         warnings.warn(
