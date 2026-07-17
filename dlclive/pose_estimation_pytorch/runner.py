@@ -72,11 +72,33 @@ class SkipFrames:
         num_det, num_kpts = pose.shape[:2]
         size = max(w, h)
 
-        bboxes = torch.zeros((num_det, 4))
-        bboxes[:, :2] = torch.min(torch.nan_to_num(pose, size)[..., :2], dim=1)[0] - self.margin
-        bboxes[:, 2:4] = torch.max(torch.nan_to_num(pose, 0)[..., :2], dim=1)[0] + self.margin
-        bboxes = torch.clip(bboxes, min=torch.zeros(4), max=torch.tensor([w, h, w, h]))
-        self._detections = dict(boxes=bboxes, scores=torch.ones(num_det))
+        bboxes = pose.new_zeros((num_det, 4))
+
+        bboxes[:, :2] = (
+            torch.min(
+                torch.nan_to_num(pose[..., :2], nan=float(size)),
+                dim=1,
+            )[0]
+            - self.margin
+        )
+
+        bboxes[:, 2:4] = (
+            torch.max(
+                torch.nan_to_num(pose[..., :2], nan=0.0),
+                dim=1,
+            )[0]
+            + self.margin
+        )
+
+        minimum = pose.new_zeros(4)
+        maximum = pose.new_tensor([w, h, w, h])
+
+        bboxes = torch.clamp(bboxes, min=minimum, max=maximum)
+
+        self._detections = {
+            "boxes": bboxes,
+            "scores": pose.new_ones(num_det),
+        }
         self._age += 1
 
 
