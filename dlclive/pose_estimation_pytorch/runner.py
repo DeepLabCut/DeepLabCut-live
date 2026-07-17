@@ -409,7 +409,10 @@ class PyTorchRunner(BaseRunner):
             )
             poses.append(transformed_pose)
 
-        return torch.stack(poses, dim=0)
+        result = torch.cat(poses, dim=0)
+
+        if result.ndim != 3:
+            raise ValueError(f"Expected result of shape (detections, bodyparts, coords), got {tuple(result.shape)}")
 
 
 def _parse_device(device: str | None) -> str:
