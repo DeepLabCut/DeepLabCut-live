@@ -11,6 +11,7 @@
 """PyTorch and ONNX runners for DeepLabCut-Live"""
 
 import copy
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
@@ -24,6 +25,9 @@ import dlclive.pose_estimation_pytorch.dynamic_cropping as dynamic_cropping
 import dlclive.pose_estimation_pytorch.models as models
 from dlclive.core.runner import BaseRunner
 from dlclive.pose_estimation_pytorch.data.image import AutoPadToDivisor
+from dlclive.utils import DebugTimingStats
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -72,11 +76,33 @@ class SkipFrames:
         num_det, num_kpts = pose.shape[:2]
         size = max(w, h)
 
-        bboxes = torch.zeros((num_det, 4))
-        bboxes[:, :2] = torch.min(torch.nan_to_num(pose, size)[..., :2], dim=1)[0] - self.margin
-        bboxes[:, 2:4] = torch.max(torch.nan_to_num(pose, 0)[..., :2], dim=1)[0] + self.margin
-        bboxes = torch.clip(bboxes, min=torch.zeros(4), max=torch.tensor([w, h, w, h]))
-        self._detections = dict(boxes=bboxes, scores=torch.ones(num_det))
+        bboxes = pose.new_zeros((num_det, 4))
+
+        bboxes[:, :2] = (
+            torch.min(
+                torch.nan_to_num(pose[..., :2], nan=float(size)),
+                dim=1,
+            )[0]
+            - self.margin
+        )
+
+        bboxes[:, 2:4] = (
+            torch.max(
+                torch.nan_to_num(pose[..., :2], nan=0.0),
+                dim=1,
+            )[0]
+            + self.margin
+        )
+
+        minimum = pose.new_zeros(4)
+        maximum = pose.new_tensor([w, h, w, h])
+
+        bboxes = torch.clamp(bboxes, min=minimum, max=maximum)
+
+        self._detections = {
+            "boxes": bboxes,
+            "scores": pose.new_ones(num_det),
+        }
         self._age += 1
 
 
@@ -143,6 +169,8 @@ class PyTorchRunner(BaseRunner):
         self.detector_transform = None
         self.pose_transform = None
 
+        self._timing = DebugTimingStats("PyTorchRunner", logger=logger, enabled=True, log_interval=2)
+
         # Parse Dynamic Cropping parameters
         if isinstance(dynamic, dict):
             dynamic_type = dynamic.get("type", "DynamicCropper")
@@ -164,67 +192,135 @@ class PyTorchRunner(BaseRunner):
         self.dynamic = dynamic
         self.top_down_config = top_down_config
 
+    def _sync_cuda_for_timing(self) -> None:
+        if self._timing.enabled and str(self.device).startswith("cuda"):
+            torch.cuda.synchronize()
+
     def close(self) -> None:
         """Clears any resources used by the runner."""
         pass
 
     @torch.inference_mode()
     def get_pose(self, frame: np.ndarray) -> np.ndarray:
-        c, h, w = frame.shape
-        tensor = torch.from_numpy(frame).permute(2, 0, 1)  # CHW, still on CPU
+        with self._timing.measure("get_pose.total"):
+            if frame.ndim != 3:
+                raise ValueError(f"Expected HWC frame, got shape {frame.shape}")
 
-        offsets_and_scales = None
-        if self.detector is not None:
-            detections = None
-            if self.top_down_config.skip_frames is not None:
-                detections = self.top_down_config.skip_frames.get_detections()
+            h, w, c = frame.shape
 
-            if detections is None:
-                # Apply detector transform before inference
-                detector_input = self.detector_transform(tensor).unsqueeze(0).to(self.device)
+            if c not in (1, 3, 4):
+                raise ValueError(f"Expected 1, 3, or 4 channels in the last dimension, got shape {frame.shape}")
+
+            if c == 4:
+                frame = frame[..., :3]
+
+            with self._timing.measure("input.numpy_to_torch"):
+                tensor = torch.from_numpy(frame).permute(2, 0, 1)
+
+            offsets_and_scales = None
+
+            if self.detector is not None:
+                detections = None
+
+                if self.top_down_config.skip_frames is not None:
+                    with self._timing.measure("skip_frames.get_detections"):
+                        detections = self.top_down_config.skip_frames.get_detections()
+
+                if detections is None:
+                    with self._timing.measure("detector.transform"):
+                        detector_input = self.detector_transform(tensor).unsqueeze(0)
+
+                    with self._timing.measure("detector.to_device"):
+                        detector_input = detector_input.to(self.device)
+
+                        if self.precision == "FP16":
+                            detector_input = detector_input.half()
+
+                    self._sync_cuda_for_timing()
+
+                    with self._timing.measure("detector.inference"):
+                        detections = self.detector(detector_input)[0]
+
+                        self._sync_cuda_for_timing()
+
+                with self._timing.measure("top_down.prepare"):
+                    frame_batch, offsets_and_scales = self._prepare_top_down(
+                        tensor,
+                        detections,
+                    )
+
+                tensor = frame_batch
+
+            if self.dynamic is not None:
+                with self._timing.measure("dynamic.crop"):
+                    tensor = self.dynamic.crop(tensor)
+
+            with self._timing.measure("pose.transform"):
+                model_input = self.pose_transform(tensor)
+
+                if model_input.dim() == 3:
+                    model_input = model_input.unsqueeze(0)
+
+            with self._timing.measure("pose.to_device"):
+                model_input = model_input.to(self.device)
+
                 if self.precision == "FP16":
-                    detector_input = detector_input.half()
-                detections = self.detector(detector_input)[0]
+                    model_input = model_input.half()
 
-            frame_batch, offsets_and_scales = self._prepare_top_down(tensor, detections)
-            if len(frame_batch) == 0:
-                offsets_and_scales = [(0, 0), 1]
-            tensor = frame_batch  # still CHW, batched
+            self._sync_cuda_for_timing()
 
-        if self.dynamic is not None:
-            tensor = self.dynamic.crop(tensor)
+            with self._timing.measure("pose.inference"):
+                outputs = self.model(model_input)
+                self._sync_cuda_for_timing()
 
-        # Apply pose transform
-        model_input = self.pose_transform(tensor)
-        # Ensure 4D input: (N, C, H, W)
-        if model_input.dim() == 3:
-            model_input = model_input.unsqueeze(0)
-        # Send to device
-        model_input = model_input.to(self.device)
-        if self.precision == "FP16":
-            model_input = model_input.half()
+            with self._timing.measure("pose.decode"):
+                batch_pose = self.model.get_predictions(outputs)["bodypart"]["poses"]
 
-        outputs = self.model(model_input)
-        batch_pose = self.model.get_predictions(outputs)["bodypart"]["poses"]
+            if self.dynamic is not None:
+                with self._timing.measure("dynamic.update"):
+                    batch_pose = self.dynamic.update(batch_pose)
 
-        if self.dynamic is not None:
-            batch_pose = self.dynamic.update(batch_pose)
+            if self.detector is None:
+                pose = batch_pose[0]
+            else:
+                with self._timing.measure("top_down.postprocess"):
+                    pose = self._postprocess_top_down(
+                        batch_pose,
+                        offsets_and_scales,
+                    )
 
-        if self.detector is None:
-            pose = batch_pose[0]
-        else:
-            pose = self._postprocess_top_down(batch_pose, offsets_and_scales)
-            if self.top_down_config.skip_frames is not None:
-                self.top_down_config.skip_frames.update(pose, w, h)
+                if self.top_down_config.skip_frames is not None:
+                    with self._timing.measure("skip_frames.update"):
+                        self.top_down_config.skip_frames.update(
+                            pose,
+                            w,
+                            h,
+                        )
 
-        if self.single_animal:
-            if len(pose) == 0:
-                bodyparts, coords = pose.shape[-2:]
-                return np.zeros((bodyparts, coords))
+            if self.single_animal:
+                if len(pose) == 0:
+                    bodyparts, coords = pose.shape[-2:]
+                    result = np.zeros(
+                        (bodyparts, coords),
+                        dtype=np.float32,
+                    )
+                else:
+                    pose = pose[0]
 
-            pose = pose[0]
+                    self._sync_cuda_for_timing()
 
-        return pose.cpu().numpy()
+                    with self._timing.measure("output.to_cpu"):
+                        result = pose.cpu().numpy()
+            else:
+                self._sync_cuda_for_timing()
+
+                with self._timing.measure("output.to_cpu"):
+                    result = pose.cpu().numpy()
+
+        self._timing.note_frame()
+        self._timing.maybe_log()
+
+        return result
 
     def init_inference(self, frame: np.ndarray, **kwargs) -> np.ndarray:
         """
@@ -345,7 +441,7 @@ class PyTorchRunner(BaseRunner):
         else:
             crop_w, crop_h = self.top_down_config.crop_size
             frame_batch = torch.zeros((1, 3, crop_h, crop_w), device=frame.device)
-            offsets_and_scales = [(0, 0), 1]
+            offsets_and_scales = [((0, 0), (1.0, 1.0))]
 
         return frame_batch, offsets_and_scales
 
@@ -357,21 +453,29 @@ class PyTorchRunner(BaseRunner):
         """Post-processes pose for top-down models."""
         if len(batch_pose) == 0:
             bodyparts, coords = batch_pose.shape[-2:]
-            return torch.zeros((0, bodyparts, coords))
+            return batch_pose.new_zeros((0, bodyparts, coords))
 
         poses = []
-        for pose, (offset, scale) in zip(batch_pose, offsets_and_scales, strict=False):
-            poses.append(
-                torch.cat(
-                    [
-                        pose[..., :2] * torch.tensor(scale) + torch.tensor(offset),
-                        pose[..., 2:3],
-                    ],
-                    dim=-1,
-                )
-            )
 
-        return torch.cat(poses)
+        for pose, (offset, scale) in zip(batch_pose, offsets_and_scales, strict=False):
+            scale_tensor = pose.new_tensor(scale)
+            offset_tensor = pose.new_tensor(offset)
+
+            transformed_pose = torch.cat(
+                [
+                    pose[..., :2] * scale_tensor + offset_tensor,
+                    pose[..., 2:3],
+                ],
+                dim=-1,
+            )
+            poses.append(transformed_pose)
+
+        result = torch.cat(poses, dim=0)
+
+        if result.ndim != 3:
+            raise ValueError(f"Expected result of shape (detections, bodyparts, coords), got {tuple(result.shape)}")
+
+        return result
 
 
 def _parse_device(device: str | None) -> str:
