@@ -11,6 +11,7 @@
 """PyTorch and ONNX runners for DeepLabCut-Live"""
 
 import copy
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
@@ -24,6 +25,8 @@ import dlclive.pose_estimation_pytorch.dynamic_cropping as dynamic_cropping
 import dlclive.pose_estimation_pytorch.models as models
 from dlclive.core.runner import BaseRunner
 from dlclive.pose_estimation_pytorch.data.image import AutoPadToDivisor
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -192,8 +195,18 @@ class PyTorchRunner(BaseRunner):
 
     @torch.inference_mode()
     def get_pose(self, frame: np.ndarray) -> np.ndarray:
-        c, h, w = frame.shape
-        tensor = torch.from_numpy(frame).permute(2, 0, 1)  # CHW, still on CPU
+        if frame.ndim != 3:
+            raise ValueError(f"Expected HWC frame, got shape {frame.shape}")
+
+        h, w, c = frame.shape
+
+        if c not in (1, 3, 4):
+            raise ValueError(f"Expected 1, 3, or 4 channels in the last dimension, got shape {frame.shape}")
+
+        if c == 4:
+            frame = frame[..., :3]
+
+        tensor = torch.from_numpy(frame).permute(2, 0, 1)
 
         offsets_and_scales = None
         if self.detector is not None:
@@ -367,7 +380,7 @@ class PyTorchRunner(BaseRunner):
         else:
             crop_w, crop_h = self.top_down_config.crop_size
             frame_batch = torch.zeros((1, 3, crop_h, crop_w), device=frame.device)
-            offsets_and_scales = [(0, 0), 1]
+            offsets_and_scales = [(0, 0), (1.0, 1.0)]
 
         return frame_batch, offsets_and_scales
 
