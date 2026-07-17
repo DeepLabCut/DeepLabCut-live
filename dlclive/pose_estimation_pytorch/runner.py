@@ -210,7 +210,7 @@ class PyTorchRunner(BaseRunner):
 
             frame_batch, offsets_and_scales = self._prepare_top_down(tensor, detections)
             if len(frame_batch) == 0:
-                offsets_and_scales = [(0, 0), 1]
+                offsets_and_scales = [((0, 0), (1.0, 1.0))]
             tensor = frame_batch  # still CHW, batched
 
         if self.dynamic is not None:
